@@ -163,7 +163,7 @@ export default function TravelCard({
   return (
     <div className={`${baseCardStyle} flex flex-col`} onClick={onClick}>
       {/* 이미지 영역 (상단) */}
-      <div className={`relative w-full shrink-0 ${isCompact ? 'aspect-square' : 'aspect-[4/3]'}`}>
+      <div className={`relative w-full shrink-0 ${isCompact ? 'aspect-square' : 'aspect-video'}`}>
         {imageUrl ? (
           <Image
             src={imageUrl}
