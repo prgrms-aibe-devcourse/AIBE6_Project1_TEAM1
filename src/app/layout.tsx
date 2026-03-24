@@ -1,4 +1,5 @@
 import GlobalHeader from "@/components/layout/GlobalHeader";
+import PageContainer from "@/components/layout/PageContainer";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -26,10 +27,10 @@ export default function RootLayout({
     <html lang="ko">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-white`}>
         <GlobalHeader />
-        <main>
+        <PageContainer>
           {children}
-        </main>
-      </body>
+        </PageContainer>
+      </body>    
     </html>
   );
 }
