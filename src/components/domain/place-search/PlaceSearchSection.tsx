@@ -1,10 +1,21 @@
 'use client'
 
+<<<<<<< HEAD
 import { createClient } from '@supabase/supabase-js'
+=======
+<<<<<<< HEAD
+>>>>>>> 459ade2 (feat: 검색기능 구현  입력값 라우팅 연결)
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import PlaceResultSection from './PlaceResultSection'
+=======
+import SearchBox from '@/components/layout/SearchBox'
+import { useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import PlaceList from './PlaceList'
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
 
+<<<<<<< HEAD
 export interface Trip {
   id: number
   title: string | null
@@ -12,6 +23,21 @@ export interface Trip {
   end_date: string | null
   is_public: boolean | null
   user_id?: string | null
+=======
+interface Place {
+  id: string
+  name: string
+  address: string
+  category: string
+  rating?: number
+<<<<<<< HEAD
+  categoryGroupCode?: string
+  categoryGroupName?: string
+  placeUrl?: string
+  phone?: string
+  latitude?: number
+  longitude?: number
+>>>>>>> 459ade2 (feat: 검색기능 구현  입력값 라우팅 연결)
 }
 
 export interface TripItem {
@@ -24,6 +50,7 @@ export interface TripItem {
   visit_day: number | null
 }
 
+<<<<<<< HEAD
 export interface Place {
   id: number
   kakao_place_id: string | null
@@ -124,12 +151,75 @@ function inferPlaceCategory(
 function includesKeyword(value: string | null | undefined, keyword: string) {
   if (!value) return false
   return value.toLowerCase().includes(keyword.toLowerCase())
+=======
+const trendingPlaces: Place[] = [
+  {
+    id: '101',
+    name: '제주 올레길 7코스',
+    address: '제주 서귀포시',
+    category: '관광명소',
+    rating: 4.8,
+  },
+  {
+    id: '102',
+    name: '경주 역사 탐방',
+    address: '경북 경주시',
+    category: '문화시설',
+    rating: 4.6,
+  },
+  {
+    id: '103',
+    name: '전주 한옥마을',
+    address: '전북 전주시',
+    category: '관광명소',
+=======
 }
 
+const dummyPlaces: Place[] = [
+  {
+    id: '1',
+    name: '강남역',
+    address: '서울 강남구 강남대로',
+    category: '지하철역',
+    rating: 4.3,
+  },
+  {
+    id: '2',
+    name: '코엑스',
+    address: '서울 강남구 영동대로',
+    category: '쇼핑몰',
+    rating: 4.5,
+  },
+  {
+    id: '3',
+    name: '서울숲',
+    address: '서울 성동구 뚝섬로',
+    category: '공원',
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
+    rating: 4.7,
+  },
+]
+
+<<<<<<< HEAD
+const CATEGORY_CODE_MAP: Record<string, string> = {
+  전체: '',
+  관광명소: 'AT4',
+  음식점: 'FD6',
+  카페: 'CE7',
+  숙박: 'AD5',
+  문화시설: 'CT1',
+  지하철역: 'SW8',
+  주차장: 'PK6',
+>>>>>>> 459ade2 (feat: 검색기능 구현  입력값 라우팅 연결)
+}
+
+=======
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
 export default function PlaceSearchSection() {
   const searchParams = useSearchParams()
   const queryFromUrl = searchParams.get('query') ?? ''
 
+<<<<<<< HEAD
   const [trips, setTrips] = useState<Trip[]>([])
   const [tripDetailsMap, setTripDetailsMap] = useState<
     Record<number, TripDetailItem[]>
@@ -158,6 +248,30 @@ export default function PlaceSearchSection() {
       setTrips([])
       setTripDetailsMap({})
       setErrorMessage('Supabase 환경변수가 설정되지 않았습니다.')
+=======
+  const [keyword, setKeyword] = useState('')
+  const [places, setPlaces] = useState<Place[]>([])
+<<<<<<< HEAD
+  const [selectedFilter, setSelectedFilter] = useState('전체')
+  const [selectedCategory, setSelectedCategory] = useState('전체')
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleSearch = async (
+    searchKeyword: string,
+    categoryName: string = selectedCategory,
+  ) => {
+=======
+
+  const handleSearch = (searchKeyword: string) => {
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
+    const trimmedKeyword = searchKeyword.trim()
+
+    if (!trimmedKeyword) {
+      setPlaces([])
+<<<<<<< HEAD
+      setErrorMessage('')
+>>>>>>> 459ade2 (feat: 검색기능 구현  입력값 라우팅 연결)
       return
     }
 
@@ -309,11 +423,42 @@ export default function PlaceSearchSection() {
     } finally {
       setIsLoading(false)
     }
+=======
+      return
+    }
+
+    const filteredPlaces = dummyPlaces.filter((place) =>
+      place.name.includes(trimmedKeyword),
+    )
+
+    setPlaces(filteredPlaces)
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
   }
 
   useEffect(() => {
+<<<<<<< HEAD
     fetchTrips(queryFromUrl, selectedCategory)
   }, [queryFromUrl, selectedCategory])
+=======
+    setKeyword(queryFromUrl)
+<<<<<<< HEAD
+
+    if (queryFromUrl) {
+      handleSearch(queryFromUrl, selectedCategory)
+    } else {
+      setPlaces([])
+      setErrorMessage('')
+    }
+  }, [queryFromUrl])
+
+  useEffect(() => {
+    if (keyword.trim()) {
+      handleSearch(keyword, selectedCategory)
+    }
+  }, [selectedCategory])
+
+  const hasKeyword = keyword.trim().length > 0
+>>>>>>> 459ade2 (feat: 검색기능 구현  입력값 라우팅 연결)
 
   return (
     <section className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -327,6 +472,25 @@ export default function PlaceSearchSection() {
           setSelectedCategory(category as CategoryOption)
         }
       />
+=======
+    handleSearch(queryFromUrl)
+  }, [queryFromUrl])
+
+  return (
+    <section className="space-y-4">
+      <SearchBox
+        value={keyword}
+        onChange={(e) => setKeyword(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            handleSearch(keyword)
+          }
+        }}
+        placeholder="장소를 검색해보세요"
+      />
+
+      <PlaceList places={places} />
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
     </section>
   )
 }
