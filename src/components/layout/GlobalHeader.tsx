@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import GNBMenu from "./GNBMenu";
 import SearchBox from "./SearchBox";
@@ -15,13 +16,12 @@ export default function GlobalHeader() {
         
         {/* 1. 좌측 로고 영역 */}
         <Link href="/" className="flex items-center gap-2">
-          {/* 로고 아이콘 자리 (뚜벅이 발자국 형태 컨셉) */}
-          <div className="flex -space-x-1">
-            <span className="w-2.5 h-4 bg-black rounded-full rotate-[-15deg]"></span>
-            <span className="w-2.5 h-4 bg-black rounded-full rotate-[15deg]"></span>
+          {/* 로고 아이콘 (SVG 적용) */}
+          <div className="relative w-8 h-8 sm:w-9 sm:h-9 shrink-0">
+            <Image src="/icon.svg" alt="뚜벅 로고" fill className="object-contain" />
           </div>
-          {/* 로고 텍스트 */}
-          <span className="font-bold text-xl tracking-tight">뚜벅</span>
+          {/* 로고 텍스트 (모바일 환경 대비: sm 이상에서만 텍스트 표시하여 좁은 화면 활용) */}
+          <span className="hidden sm:block font-bold text-xl tracking-tight text-purple-900">뚜벅</span>
         </Link>
 
         {/* 2. 중앙 검색창 영역 */}
