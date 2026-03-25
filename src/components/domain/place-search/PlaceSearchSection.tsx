@@ -35,6 +35,13 @@ const dummyPlaces: Place[] = [
     category: '공원',
     rating: 4.7,
   },
+  {
+    id: '4',
+    name: '강남2',
+    address: '서울 성동구 뚝섬ㅇㅇ로',
+    category: '공원',
+    rating: 4.7,
+  },
 ]
 
 export default function PlaceSearchSection() {
