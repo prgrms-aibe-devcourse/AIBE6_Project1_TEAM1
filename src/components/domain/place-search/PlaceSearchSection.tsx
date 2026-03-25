@@ -126,6 +126,56 @@ function includesKeyword(value: string | null | undefined, keyword: string) {
   return value.toLowerCase().includes(keyword.toLowerCase())
 }
 
+<<<<<<< HEAD
+=======
+const dummyPlaces: Place[] = [
+  {
+    id: '1',
+    name: '강남역',
+    address: '서울 강남구 강남대로',
+    category: '지하철역',
+    rating: 4.3,
+  },
+  {
+    id: '2',
+    name: '코엑스',
+    address: '서울 강남구 영동대로',
+    category: '쇼핑몰',
+    rating: 4.5,
+  },
+  {
+    id: '3',
+    name: '서울숲',
+    address: '서울 성동구 뚝섬로',
+    category: '공원',
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
+    rating: 4.7,
+  },
+  {
+    id: '4',
+    name: '강남2',
+    address: '서울 성동구 뚝섬ㅇㅇ로',
+    category: '공원',
+    rating: 4.7,
+  },
+]
+
+<<<<<<< HEAD
+const CATEGORY_CODE_MAP: Record<string, string> = {
+  전체: '',
+  관광명소: 'AT4',
+  음식점: 'FD6',
+  카페: 'CE7',
+  숙박: 'AD5',
+  문화시설: 'CT1',
+  지하철역: 'SW8',
+  주차장: 'PK6',
+>>>>>>> 459ade2 (feat: 검색기능 구현  입력값 라우팅 연결)
+}
+
+=======
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
+>>>>>>> ef4e7f6 (wip: place search 작업 중간 저장)
 export default function PlaceSearchSection() {
   const searchParams = useSearchParams()
   const queryFromUrl = searchParams.get('query') ?? ''
