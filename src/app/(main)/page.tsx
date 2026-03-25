@@ -1,8 +1,25 @@
 "use client";
 
 import TravelCard from "@/components/display/TravelCard";
+import { createClient } from "@/utils/supabase/client";
+import { useEffect } from "react";
 
 export default function Main() {
+
+  const supabase = createClient();
+
+  const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+
+      }
+    };
+
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
   // 임시 더미 데이터 배열 (추후 API 연동 시 교체)
   const dummyTravels = [
     {
