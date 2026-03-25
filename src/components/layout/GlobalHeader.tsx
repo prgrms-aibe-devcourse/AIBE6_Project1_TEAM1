@@ -2,13 +2,19 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+<<<<<<< HEAD
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+=======
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
 import GNBMenu from './GNBMenu'
 import SearchBox from './SearchBox'
 
 export default function GlobalHeader() {
   const router = useRouter()
+<<<<<<< HEAD
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
@@ -30,6 +36,14 @@ export default function GlobalHeader() {
       router.push('/search')
       return
     }
+=======
+  const [keyword, setKeyword] = useState('')
+
+  const handleSearch = () => {
+    const trimmedKeyword = keyword.trim()
+
+    if (!trimmedKeyword) return
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
 
     router.push(`/search?query=${encodeURIComponent(trimmedKeyword)}`)
   }

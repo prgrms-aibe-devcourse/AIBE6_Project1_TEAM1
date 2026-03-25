@@ -1,10 +1,17 @@
 'use client'
 
+<<<<<<< HEAD
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import PlaceCategorySection from './PlaceCategorySection'
 import PlaceFilterBar from './PlaceFilterBar'
 import PlaceResultSection from './PlaceResultSection'
+=======
+import SearchBox from '@/components/layout/SearchBox'
+import { useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import PlaceList from './PlaceList'
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
 
 interface Place {
   id: string
@@ -12,6 +19,7 @@ interface Place {
   address: string
   category: string
   rating?: number
+<<<<<<< HEAD
   categoryGroupCode?: string
   categoryGroupName?: string
   placeUrl?: string
@@ -54,10 +62,35 @@ const trendingPlaces: Place[] = [
     name: '전주 한옥마을',
     address: '전북 전주시',
     category: '관광명소',
+=======
+}
+
+const dummyPlaces: Place[] = [
+  {
+    id: '1',
+    name: '강남역',
+    address: '서울 강남구 강남대로',
+    category: '지하철역',
+    rating: 4.3,
+  },
+  {
+    id: '2',
+    name: '코엑스',
+    address: '서울 강남구 영동대로',
+    category: '쇼핑몰',
+    rating: 4.5,
+  },
+  {
+    id: '3',
+    name: '서울숲',
+    address: '서울 성동구 뚝섬로',
+    category: '공원',
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
     rating: 4.7,
   },
 ]
 
+<<<<<<< HEAD
 const CATEGORY_CODE_MAP: Record<string, string> = {
   전체: '',
   관광명소: 'AT4',
@@ -69,12 +102,15 @@ const CATEGORY_CODE_MAP: Record<string, string> = {
   주차장: 'PK6',
 }
 
+=======
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
 export default function PlaceSearchSection() {
   const searchParams = useSearchParams()
   const queryFromUrl = searchParams.get('query') ?? ''
 
   const [keyword, setKeyword] = useState('')
   const [places, setPlaces] = useState<Place[]>([])
+<<<<<<< HEAD
   const [selectedFilter, setSelectedFilter] = useState('전체')
   const [selectedCategory, setSelectedCategory] = useState('전체')
   const [errorMessage, setErrorMessage] = useState('')
@@ -84,10 +120,15 @@ export default function PlaceSearchSection() {
     searchKeyword: string,
     categoryName: string = selectedCategory,
   ) => {
+=======
+
+  const handleSearch = (searchKeyword: string) => {
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
     const trimmedKeyword = searchKeyword.trim()
 
     if (!trimmedKeyword) {
       setPlaces([])
+<<<<<<< HEAD
       setErrorMessage('')
       return
     }
@@ -144,10 +185,21 @@ export default function PlaceSearchSection() {
     } finally {
       setIsLoading(false)
     }
+=======
+      return
+    }
+
+    const filteredPlaces = dummyPlaces.filter((place) =>
+      place.name.includes(trimmedKeyword),
+    )
+
+    setPlaces(filteredPlaces)
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
   }
 
   useEffect(() => {
     setKeyword(queryFromUrl)
+<<<<<<< HEAD
 
     if (queryFromUrl) {
       handleSearch(queryFromUrl, selectedCategory)
@@ -183,6 +235,25 @@ export default function PlaceSearchSection() {
         errorMessage={errorMessage}
         isLoading={isLoading}
       />
+=======
+    handleSearch(queryFromUrl)
+  }, [queryFromUrl])
+
+  return (
+    <section className="space-y-4">
+      <SearchBox
+        value={keyword}
+        onChange={(e) => setKeyword(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            handleSearch(keyword)
+          }
+        }}
+        placeholder="장소를 검색해보세요"
+      />
+
+      <PlaceList places={places} />
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
     </section>
   )
 }
