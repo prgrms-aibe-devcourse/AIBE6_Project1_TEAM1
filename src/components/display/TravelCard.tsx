@@ -1,6 +1,6 @@
 "use client"; 
 
-import { MapPin, Star, Bookmark } from "lucide-react";
+import { Bookmark, MapPin, Star } from "lucide-react";
 import Image from "next/image";
 
 export interface TravelCardProps {
