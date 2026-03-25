@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import GlobalHeader from "@/components/layout/GlobalHeader";
-import PageContainer from "@/components/layout/PageContainer";
-import TimelineList from "@/components/domain/plan/TimelineList";
-import ItineraryMap from "@/components/domain/plan/ItineraryMap";
 import CommonButton from "@/components/domain/plan/CommonButton";
 import FilterBadge from "@/components/domain/plan/FilterBadge";
-import { Share2, MoreHorizontal, Sparkles, Calendar, MapPin } from "lucide-react";
+import ItineraryMap from "@/components/domain/plan/ItineraryMap";
 import PlaceSearchModal from "@/components/domain/plan/PlaceSearchModal";
+import TimelineList from "@/components/domain/plan/TimelineList";
+import GlobalHeader from "@/components/layout/GlobalHeader";
+import PageContainer from "@/components/layout/PageContainer";
+import { Calendar, MapPin, MoreHorizontal, Share2, Sparkles } from "lucide-react";
+import { useState } from "react";
 
 // 글로벌 공통 장소 데이터 구조
 export interface Place {

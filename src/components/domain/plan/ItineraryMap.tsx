@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Script from "next/script";
-import { Plus, Minus, LocateFixed } from "lucide-react";
 import { Place } from "@/app/plan/page";
+import { LocateFixed, Minus, Plus } from "lucide-react";
+import Script from "next/script";
+import { useEffect, useRef, useState } from "react";
 
 interface ItineraryMapProps {
   places: Place[];
