@@ -1,8 +1,33 @@
-import { Bookmark, CalendarDays, Compass, Home, User } from "lucide-react";
+"use client";
+
+import { Bookmark, CalendarDays, Compass, Home, User, LogOut, LogIn } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
+
+const supabase = createClient();
 
 export default function GNBMenu() {
-  // flex와 gap-6을 주어 아이콘들 사이의 간격을 일정하게 띄웁니다.
+  const [isLogin, setIsLogin] = useState(false);
+
+  useEffect(() => {
+    // 초기 세션 확인
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLogin(!!session);
+    });
+
+    // 로그인 상태 변화 리스너
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLogin(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
     <nav className="flex items-center gap-6 text-gray-700">
       <Link href="/" className="flex flex-col items-center gap-1 hover:text-black hover:font-medium transition-colors">
@@ -10,7 +35,6 @@ export default function GNBMenu() {
         <span className="text-[11px]">홈</span>
       </Link>
       <Link href="/explore" className="flex flex-col items-center gap-1 hover:text-black hover:font-medium transition-colors">
-        {/* 탐색 아이콘은 약간 굵게 (strokeWidth) 처리하여 강조할 수 있습니다. 이미지는 컴퍼스 모양입니다. */}
         <Compass className="w-5 h-5 stroke-[2.5]" />
         <span className="text-[11px] font-bold text-black text-center">탐색</span>
       </Link>
@@ -22,10 +46,24 @@ export default function GNBMenu() {
         <Bookmark className="w-5 h-5" />
         <span className="text-[11px]">저장</span>
       </Link>
-      <Link href="/mypage" className="flex flex-col items-center gap-1 hover:text-black hover:font-medium transition-colors">
-        <User className="w-5 h-5" />
-        <span className="text-[11px]">마이</span>
-      </Link>
+      
+      {isLogin ? (
+        <>
+          <Link href="/mypage" className="flex flex-col items-center gap-1 hover:text-black hover:font-medium transition-colors">
+            <User className="w-5 h-5" />
+            <span className="text-[11px]">마이</span>
+          </Link>
+          <button onClick={handleLogout} className="flex flex-col items-center gap-1 hover:text-black hover:font-medium transition-colors">
+            <LogOut className="w-5 h-5" />
+            <span className="text-[11px]">로그아웃</span>
+          </button>
+        </>
+      ) : (
+        <Link href="/login" className="flex flex-col items-center gap-1 hover:text-black hover:font-medium transition-colors">
+          <LogIn className="w-5 h-5" />
+          <span className="text-[11px]">로그인</span>
+        </Link>
+      )}
     </nav>
   );
 }
