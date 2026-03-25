@@ -23,8 +23,6 @@ if (error) {
     console.error('로그인 에러:', error)
     alert('로그인 중 오류가 발생했습니다.')
     return
-  }else{
-    console.log('로그인 성공:', data)
   }
 
 }
