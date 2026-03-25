@@ -9,12 +9,17 @@ import {
   MoveHorizontal,
   TrendingUp,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-export default function OptionSelector() {
+export default function OptionSelector({ onChange }: any) {
   const [slope, setSlope] = useState('완만')
   const [width, setWidth] = useState('넓음')
   const [stairs, setStairs] = useState('있음')
+
+  useEffect(() => {
+    onChange({ slope, width, stairs })
+  }, [slope, width, stairs])
+
   const Option = ({
     icon,
     label,
