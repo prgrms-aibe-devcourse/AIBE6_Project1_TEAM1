@@ -1,6 +1,9 @@
+"use client";
+
+import { Mail } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Mail, MessageCircle } from "lucide-react";
+import { handleGoogleLogin } from "./loginLogics";
 
 export default function LoginPage() {
   return (
@@ -18,21 +21,27 @@ export default function LoginPage() {
       {/* 2. 로그인 버튼 목록 영역 */}
       <div className="flex w-full max-w-[340px] flex-col gap-3">
         {/* 카카오 로그인 */}
-        <button className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#191919] px-4 py-3.5 text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
-          <MessageCircle className="h-5 w-5 fill-white" />
-          카카오로 시작하기
+        <button className="flex w-full items-center justify-center transition-opacity hover:opacity-90 active:opacity-80">
+          <Image 
+            src="/Auth/kakao/kakao_login_large_wide.png" 
+            alt="카카오로 시작하기" 
+            width={340} 
+            height={50} 
+            className="w-full h-auto"
+            priority /* 첫 화면의 주요 버튼이므로 바로 로드 */
+          />
         </button>
 
         {/* 네이버 로그인 */}
         <button className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3.5 text-[15px] font-semibold text-gray-900 transition-colors hover:bg-gray-50 flex-row">
-          <div className="flex h-5 w-5 items-center justify-center font-bold text-[#03C75A]">N</div> {/* 임시 네이버 로고 */}
-          네이버로 시작하기
+          <div className="flex h-5 w-5 items-center justify-center font-bold text-[#03C75A]">N</div>
+          <span>네이버로 시작하기</span>
         </button>
 
         {/* 이메일 로그인 */}
         <button className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3.5 text-[15px] font-semibold text-gray-900 transition-colors hover:bg-gray-50">
           <Mail className="h-5 w-5" />
-          이메일로 로그인
+          <span>이메일로 로그인</span>
         </button>
       </div>
 
@@ -56,7 +65,9 @@ export default function LoginPage() {
 
           {/* 구글 로고 */}
           <div className="flex flex-col items-center gap-2 cursor-pointer group">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 transition-colors group-hover:bg-gray-100">
+            <div 
+            onClick={handleGoogleLogin}
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 transition-colors group-hover:bg-gray-100">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512" className="h-[18px] w-[18px] fill-current text-gray-700">
                 <path d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"/>
               </svg>
