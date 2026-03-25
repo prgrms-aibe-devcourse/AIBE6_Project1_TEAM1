@@ -11,7 +11,7 @@ export default function Main() {
   const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        console.log("로그인된 사용자 정보:", user);
+
       }
     };
 
