@@ -233,6 +233,7 @@ const trendingPlaces: Place[] = [
 >>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
     rating: 4.7,
   },
+<<<<<<< HEAD
   {
     id: '4',
     name: '강남2',
@@ -250,6 +251,8 @@ const trendingPlaces: Place[] = [
 >>>>>>> 4986e65 (카테고리 수정)
     rating: 4.7,
   },
+=======
+>>>>>>> 7f759a7 (업데이트  place search section)
 ]
 
 <<<<<<< HEAD
