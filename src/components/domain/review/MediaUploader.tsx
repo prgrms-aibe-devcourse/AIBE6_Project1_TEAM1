@@ -17,13 +17,15 @@ export default function MediaUploader({ supabase, onUpload, onRemove }: any) {
     const uploadedUrls: { url: string; path: string }[] = []
 
     for (const file of Array.from(files)) {
-      const fileName = `${Date.now()}-${Math.random()}-${file.name}`
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${crypto.randomUUID()}.${file.name.split('.').pop()}`
 
       const { error } = await supabase.storage
         .from('media-storage')
         .upload(fileName, file)
 
       if (error) {
+        console.log(error)
         alert('파일 형식 및 용량을 확인해주세요')
         continue
       }
@@ -52,19 +54,23 @@ export default function MediaUploader({ supabase, onUpload, onRemove }: any) {
       .from('media-storage')
       .remove([target.path])
     console.log(error)
+    if (error) {
+      alert('삭제 실패')
+      return
+    }
 
     // 2. state에서 제거
     const updated = images.filter((_, i) => i !== index)
     setImages(updated)
 
     // 3. 부모에도 반영
-    onRemove(updated.map((i) => i.url))
+    onRemove(updated)
   }
 
   return (
     <div>
       <div
-        onClick={() => inputRef.current?.click()}
+        onClick={() => !uploading && inputRef.current?.click()}
         className="w-full border rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer text-gray-500"
       >
         <Camera />
@@ -77,7 +83,7 @@ export default function MediaUploader({ supabase, onUpload, onRemove }: any) {
         type="file"
         ref={inputRef}
         multiple
-        accept="jpg, png"
+        accept="jpg, jpeg, png"
         hidden
         onChange={handleUpload}
       />

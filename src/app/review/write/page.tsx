@@ -9,7 +9,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-export default function ReviewWritePage({ user_id, place_id }) {
+export default function ReviewWritePage() {
   const [rating, setRating] = useState(0)
   const [content, setContent] = useState('')
   const [media, setMedia] = useState<{ url: string; path: string }[]>([])
@@ -76,7 +76,8 @@ export default function ReviewWritePage({ user_id, place_id }) {
         .insert(mediaRows)
       if (mediaError) {
         console.error(mediaError)
-        alert('사진 저장 실패')
+        setLoading(false)
+        return alert('사진 저장 실패')
       }
     }
 
