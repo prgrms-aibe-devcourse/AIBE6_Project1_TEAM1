@@ -1,7 +1,7 @@
+import GlobalModal from "@/components/common/GlobalModal";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import GlobalModal from "@/components/common/GlobalModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
