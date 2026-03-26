@@ -8,7 +8,9 @@ import TimelineList from "@/components/domain/plan/TimelineList";
 import GlobalHeader from "@/components/layout/GlobalHeader";
 import PageContainer from "@/components/layout/PageContainer";
 import { Calendar, MapPin, MoreHorizontal, Share2, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 // 글로벌 공통 장소 데이터 구조
 export interface Place {
@@ -21,6 +23,10 @@ export interface Place {
 }
 
 export default function PlanPage() {
+  const router = useRouter();
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+
   const [places, setPlaces] = useState<Place[]>([
     { id: "1", name: "불국사", category: "관광", address: "경북 경주시 진현동 15", lat: 35.790104, lng: 129.332079 },
     { id: "2", name: "석굴암", category: "관광", address: "경북 경주시 불국로 873-243", lat: 35.794939, lng: 129.349141 },
@@ -28,6 +34,25 @@ export default function PlanPage() {
   
   // 모달창 on/off 상태 관리
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // 인증 검사 로직 (마운트 시점 1회 실행)
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // 비회원이면 뒤로가기 불가능한 대체(replace) 방식으로 로그인 창 이동
+        router.replace("/login");
+      } else {
+        // 회원이면 고유 ID 저장 후 로딩 해제
+        setUserId(session.user.id);
+        setIsAuthChecking(false);
+      }
+    };
+    
+    checkAuth();
+  }, [router]);
 
   // 모달창에서 장소를 선택했을 때 새 장소를 추가하는 함수
   const handleAddPlace = (lat: number, lng: number, name: string, category: string, address: string) => {
@@ -53,6 +78,16 @@ export default function PlanPage() {
     setPlaces((prev) => prev.filter((p) => p.id !== id));
   };
 
+  // 모든 훅 선언이 끝난 뒤에 로딩 방어화면을 렌더링해야 React 훅 에러가 나지 않습니다.
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center flex-col gap-4">
+        {/* 부드러운 스피너와 로딩 안내 메세지로 깜빡임(FOUC) 방어 */}
+        <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-gray-500 font-medium text-sm">인증 정보를 확인하는 중입니다...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fafafa]">
