@@ -7,9 +7,9 @@ import { createClient } from '@/utils/supabase/client'
 
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-export default function ReviewWritePage() {
+export default function ReviewWritePage(placeId: number) {
   const [rating, setRating] = useState(0)
   const [content, setContent] = useState('')
   const [media, setMedia] = useState<{ url: string; path: string }[]>([])
@@ -19,22 +19,24 @@ export default function ReviewWritePage() {
     stairs: '',
   })
 
+  const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
-  // 유저 정보 가져오기?
-  // useEffect(() => {
-  //   const getUser = async () => {
-  //     const {
-  //       data: { user },
-  //     } = await supabase.auth.getUser()
+  // 유저 정보 가져오기
+  useEffect(() => {
+    const getUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
 
-  //     setUserId(user?.id ?? null)
-  //   }
+      setUserId(user?.id ?? null)
+    }
+    getUser()
+  }, [])
 
-  //   getUser()
-  // }, [])
+  console.log('userid: ', userId)
 
   // 리뷰 등록
   const handleSubmit = async () => {
@@ -46,8 +48,10 @@ export default function ReviewWritePage() {
     const { data: reviewData, error: reviewError } = await supabase
       .from('reviews')
       .insert({
-        user_id: '0ba3c127-607e-4644-96fd-a186c7096422',
-        place_id: 2,
+        user_id: userId,
+        //user_id: '0ba3c127-607e-4644-96fd-a186c7096422',
+        place_id: placeId,
+        //place_id: 2,
         rating,
         content,
         slope: options.slope,
