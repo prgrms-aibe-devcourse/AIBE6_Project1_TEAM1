@@ -50,8 +50,8 @@ export default function ReviewWritePage(placeId: number) {
       .insert({
         user_id: userId,
         //user_id: '0ba3c127-607e-4644-96fd-a186c7096422',
-        place_id: placeId,
-        //place_id: 2,
+        // place_id: placeId,
+        place_id: 2,
         rating,
         content,
         slope: options.slope,

@@ -8,7 +8,7 @@ export default function MediaUploader({ supabase, onUpload, onRemove }: any) {
   const [images, setImages] = useState<{ url: string; path: string }[]>([])
   const [uploading, setUploading] = useState(false)
 
-  // 사진/영상 첨부
+  // 사진 첨부
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
@@ -45,7 +45,7 @@ export default function MediaUploader({ supabase, onUpload, onRemove }: any) {
     e.target.value = ''
   }
 
-  // 사진/영상 첨부 취소
+  // 사진 첨부 취소
   const handleRemove = async (index: number) => {
     const target = images[index]
 
