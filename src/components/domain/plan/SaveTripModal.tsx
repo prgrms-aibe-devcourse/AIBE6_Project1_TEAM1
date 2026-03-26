@@ -1,7 +1,7 @@
 'use client'
 
 import { X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface SaveTripModalProps {
   onClose: () => void
@@ -11,15 +11,33 @@ interface SaveTripModalProps {
     endDate: string,
     isPublic: boolean,
   ) => Promise<void>
+  totalDays: number // 자동으로 종료일을 계산하기 위해 추가
+  initialData?: {   // 기존 정보를 불러올 때 초기값 세팅용
+    title: string
+    startDate: string
+    endDate: string
+    isPublic: boolean
+  }
 }
 
-export default function SaveTripModal({ onClose, onSave }: SaveTripModalProps) {
-  const [title, setTitle] = useState('')
+export default function SaveTripModal({ onClose, onSave, totalDays, initialData }: SaveTripModalProps) {
+  const [title, setTitle] = useState(initialData?.title || '')
   // 날짜를 YYYY-MM-DD 형태로 기본값 세팅
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0])
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0])
-  const [isPublic, setIsPublic] = useState(true)
+  const [startDate, setStartDate] = useState(() => initialData?.startDate || new Date().toISOString().split('T')[0])
+  const [endDate, setEndDate] = useState(() => initialData?.endDate || new Date().toISOString().split('T')[0])
+  const [isPublic, setIsPublic] = useState(initialData?.isPublic ?? true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // 시작일이 바뀌거나 총 일수(Day 탭 개수)가 바뀌면 자동으로 종료일을 계산합니다.
+  useEffect(() => {
+    if (!startDate || totalDays < 1) return;
+    
+    const start = new Date(startDate);
+    const end = new Date(start);
+    end.setDate(start.getDate() + (totalDays - 1));
+    
+    setEndDate(end.toISOString().split('T')[0]);
+  }, [startDate, totalDays]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

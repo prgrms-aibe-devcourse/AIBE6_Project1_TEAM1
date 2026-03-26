@@ -3,9 +3,9 @@
 import CommonButton from '@/components/domain/plan/CommonButton'
 import FilterBadge from '@/components/domain/plan/FilterBadge'
 import ItineraryMap from '@/components/domain/plan/ItineraryMap'
+import MyTripsSidebar from '@/components/domain/plan/MyTripsSidebar'
 import PlaceSearchModal from '@/components/domain/plan/PlaceSearchModal'
 import SaveTripModal from '@/components/domain/plan/SaveTripModal'
-import MyTripsSidebar from '@/components/domain/plan/MyTripsSidebar'
 import TimelineList from '@/components/domain/plan/TimelineList'
 import GlobalHeader from '@/components/layout/GlobalHeader'
 import PageContainer from '@/components/layout/PageContainer'
@@ -13,13 +13,12 @@ import { createClient } from '@/utils/supabase/client'
 import {
   Calendar,
   FolderOpen,
-  MapPin,
   MoreHorizontal,
   Share2,
   Sparkles,
 } from 'lucide-react'
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
 
 // 글로벌 공통 장소 데이터 구조
 export interface Place {
@@ -33,12 +32,20 @@ export interface Place {
 }
 
 function PlanPageContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const editTripId = searchParams.get('id'); // URL에서 ?id= 파라미터 획득
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const editTripId = searchParams.get('id') // URL에서 ?id= 파라미터 획득
 
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isAuthChecking, setIsAuthChecking] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+
+  // 여행 메타데이터 (제목, 날짜 등) 상단 Badge 연동용
+  const [tripMetadata, setTripMetadata] = useState({
+    title: '',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+    isPublic: true,
+  })
 
   // 1개짜리 배열에서 N박 M일을 지원하는 객체(Record) 형태로 확장
   const [placesByDay, setPlacesByDay] = useState<Record<number, Place[]>>({
@@ -70,15 +77,21 @@ function PlanPageContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false) // 사이드바 관리 추가
 
   const handleSelectTrip = (id: string) => {
-    setIsSidebarOpen(false);
+    setIsSidebarOpen(false)
     if (id === 'new') {
-      router.push('/plan');
-      setPlacesByDay({ 1: [] });
-      setCurrentDay(1);
+      router.push('/plan')
+      setPlacesByDay({ 1: [] })
+      setCurrentDay(1)
+      setTripMetadata({
+        title: '',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+        isPublic: true,
+      })
     } else {
-      router.push(`/plan?id=${id}`);
+      router.push(`/plan?id=${id}`)
     }
-  };
+  }
 
   // 인증 검사 로직 (마운트 시점 1회 실행)
   useEffect(() => {
@@ -98,21 +111,22 @@ function PlanPageContent() {
       }
     }
 
-    checkAuth();
-  }, [router]);
+    checkAuth()
+  }, [router])
 
   // editTripId가 존재하고 유저 인증이 완료되었을 때, DB에서 기존 플랜 데이터를 불러옵니다.
   useEffect(() => {
-    if (!editTripId || !userId) return;
+    if (!editTripId || !userId) return
 
     const fetchExistingTrip = async () => {
       try {
-        const supabase = createClient();
-        
+        const supabase = createClient()
+
         // trips와 매핑된 trip_items, places를 한 번에 Join해서 가져옵니다.
         const { data: tripData, error } = await supabase
           .from('trips')
-          .select(`
+          .select(
+            `
             id, title, start_date, end_date, is_public,
             trip_items (
               visit_day,
@@ -121,60 +135,72 @@ function PlanPageContent() {
                 id, kakao_place_id, place_name, category, address, latitude, longitude
               )
             )
-          `)
+          `,
+          )
           .eq('id', editTripId)
           .eq('user_id', userId)
-          .single();
+          .single()
 
         if (error || !tripData) {
-          console.error("여행 불러오기 에러:", error);
-          alert("여행 정보를 불러올 수 없거나 권한이 없습니다.");
-          return;
+          console.error('여행 불러오기 에러 상세:', error?.message || error)
+          // location 컬럼이 아직 DB에 없을 때 42703 에러가 날 수 있습니다.
+          alert(
+            `여행 정보를 불러올 수 없습니다. (${error?.message || '알 수 없는 에러'})`,
+          )
+          return
         }
 
+        // 여행 메타데이터 정보 갱신
+        setTripMetadata({
+          title: tripData.title || '',
+          startDate: tripData.start_date || '',
+          endDate: tripData.end_date || '',
+          isPublic: tripData.is_public ?? true,
+        })
+
         // 다른 여행을 클릭해서 넘어왔을 수도 있으니 강제로 찌꺼기를 세탁합니다.
-        const fetchedPlacesByDay: Record<number, Place[]> = {};
-        const items = tripData.trip_items || [];
-        
+        const fetchedPlacesByDay: Record<number, Place[]> = {}
+        const items = tripData.trip_items || []
+
         // 데이터베이스의 visit_order 기준으로 카드 순서 정렬
-        items.sort((a: any, b: any) => a.visit_order - b.visit_order);
+        items.sort((a: any, b: any) => a.visit_order - b.visit_order)
 
         items.forEach((item: any) => {
           if (item.places) {
-            const dayIndex = item.visit_day || 1; // 예전 데이터나 null 방어코드
-            
+            const dayIndex = item.visit_day || 1 // 예전 데이터나 null 방어코드
+
             if (!fetchedPlacesByDay[dayIndex]) {
-              fetchedPlacesByDay[dayIndex] = [];
+              fetchedPlacesByDay[dayIndex] = []
             }
-            
+
             fetchedPlacesByDay[dayIndex].push({
               id: Date.now().toString() + Math.random(), // 화면 렌더링(DND)용 임시 로컬 ID
               kakao_place_id: item.places.kakao_place_id,
               name: item.places.place_name,
               category: item.places.category,
-              address: item.places.address || "주소 없음", // DB에서 긁어온 실제 주소 맵핑
+              address: item.places.address || '주소 없음', // DB에서 긁어온 실제 주소 맵핑
               lat: item.places.latitude,
               lng: item.places.longitude,
-            });
+            })
           }
-        });
+        })
 
         // 텅 빈 여행 일정일 때를 대비해 Day 1 그릇은 최소한 하나 던져줍니다.
         if (Object.keys(fetchedPlacesByDay).length === 0) {
-          fetchedPlacesByDay[1] = [];
+          fetchedPlacesByDay[1] = []
         }
 
         // 이제 각 날짜별로 제대로 나뉜 객체를 상태에 세팅합니다!
-        setPlacesByDay(fetchedPlacesByDay);
+        setPlacesByDay(fetchedPlacesByDay)
         // 불러올 땐 항상 Day 1 탭을 보여줍니다.
-        setCurrentDay(1);
+        setCurrentDay(1)
       } catch (err) {
-        console.error("플랜 로딩 중 문제 발생:", err);
+        console.error('플랜 로딩 중 문제 발생:', err)
       }
-    };
+    }
 
-    fetchExistingTrip();
-  }, [editTripId, userId]);
+    fetchExistingTrip()
+  }, [editTripId, userId])
 
   // 모달창에서 장소를 선택했을 때 새 장소를 현재 날짜(Day) 탭에 추가하는 함수
   const handleAddPlace = (
@@ -237,49 +263,49 @@ function PlanPageContent() {
       return
     }
 
-    setIsSaving(true);
+    setIsSaving(true)
     try {
-      const supabase = createClient();
-      let tripId = editTripId; // 이미 URL 파라미터가 있다면 수정을 의미함
-      
+      const supabase = createClient()
+      let tripId = editTripId // 이미 URL 파라미터가 있다면 수정을 의미함
+
       if (!editTripId) {
         // [CREATE] 새 일정 만들기: trips 테이블에 Insert
         const { data: tripData, error: tripError } = await supabase
           .from('trips')
           .insert({
             user_id: userId,
-            title: title, 
-            start_date: startDate, 
+            title: title,
+            start_date: startDate,
             end_date: endDate,
-            is_public: isPublic
+            is_public: isPublic,
           })
           .select()
-          .single();
-          
+          .single()
+
         if (tripError || !tripData) {
-          throw new Error(tripError?.message || "플랜 생성 실패");
+          throw new Error(tripError?.message || '플랜 생성 실패')
         }
-        tripId = tripData.id;
+        tripId = tripData.id
       } else {
         // [UPDATE] 기존 일정 수정하기: trips 정보 Update
         const { error: tripError } = await supabase
           .from('trips')
           .update({
-            title: title, 
-            start_date: startDate, 
+            title: title,
+            start_date: startDate,
             end_date: endDate,
-            is_public: isPublic
+            is_public: isPublic,
           })
           .eq('id', editTripId)
-          .eq('user_id', userId);
+          .eq('user_id', userId)
 
-        if (tripError) throw new Error("플랜 수정 실패");
-        
+        if (tripError) throw new Error('플랜 수정 실패')
+
         // 플랜이 수정될 때, 타임라인 순서가 꼬이는 것을 막기 위해 기존 trip_items를 전부 날리고 새로 Insert 합니다. (가장 깔끔한 싱크 방식)
-        await supabase.from('trip_items').delete().eq('trip_id', editTripId);
+        await supabase.from('trip_items').delete().eq('trip_id', editTripId)
       }
-      
-      let globalOrder = 1; // n박 m일을 한줄로 이어붙여서 순서를 매김 (추후 trip_items에 visit_day 컬럼 확장을 고려하면 좋습니다)
+
+      let globalOrder = 1 // n박 m일을 한줄로 이어붙여서 순서를 매김 (추후 trip_items에 visit_day 컬럼 확장을 고려하면 좋습니다)
 
       // 2. places 테이블 업데이트(Upsert 성격) 후 trip_items 연결
       for (const dayStr of Object.keys(placesByDay)) {
@@ -340,6 +366,14 @@ function PlanPageContent() {
       }
 
       alert('플랜이 성공적으로 데이터베이스에 저장되었습니다!')
+
+      // 저장 성공 후 화면 상부의 Badge 정보들도 동기화해줍니다.
+      setTripMetadata({
+        title,
+        startDate,
+        endDate,
+        isPublic,
+      })
     } catch (error) {
       console.error(error)
       alert('저장 중 오류가 발생했습니다.')
@@ -379,8 +413,8 @@ function PlanPageContent() {
       <GlobalHeader />
 
       {/* 내 일정 서랍형 사이드바 (Sidebar) */}
-      <MyTripsSidebar 
-        isOpen={isSidebarOpen} 
+      <MyTripsSidebar
+        isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         userId={userId}
         currentTripId={editTripId}
@@ -392,6 +426,8 @@ function PlanPageContent() {
         <SaveTripModal
           onClose={() => setIsSaveModalOpen(false)}
           onSave={handleSaveTrip}
+          totalDays={Object.keys(placesByDay).length} // 총 일수 전달
+          initialData={editTripId ? tripMetadata : undefined} // 수정 시 초기값 전달
         />
       )}
 
@@ -403,19 +439,28 @@ function PlanPageContent() {
               <h1 className="text-[22px] font-bold text-gray-900 flex items-center gap-3">
                 여행 일정 플래너
                 {/* 내 일정 목록 (사이드바 여는 버튼) */}
-                <button 
+                <button
                   onClick={() => setIsSidebarOpen(true)}
                   className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-[13px] font-bold text-gray-600 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-all flex items-center gap-1.5 shadow-sm ml-2"
                 >
-                  <FolderOpen className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">내 보관함</span>
+                  <FolderOpen className="w-4 h-4 flex-shrink-0" />{' '}
+                  <span className="hidden sm:inline">내 보관함</span>
                 </button>
               </h1>
               <div className="flex items-center gap-2">
                 <FilterBadge className="!bg-gray-100 !text-gray-700 hover:!bg-gray-200 border-none font-medium !px-3 !py-1 !text-[11px] flex items-center gap-1.5 rounded-full">
-                  <Calendar className="w-3 h-3 text-gray-500" /> 6월 14일 (토)
-                </FilterBadge>
-                <FilterBadge className="!bg-gray-100 !text-gray-700 hover:!bg-gray-200 border-none font-medium !px-3 !py-1 !text-[11px] flex items-center gap-1.5 rounded-full">
-                  <MapPin className="w-3 h-3 text-gray-500" /> 경주
+                  <Calendar className="w-3 h-3 text-gray-500" />
+                  {tripMetadata.startDate
+                    ? (() => {
+                        const d = new Date(tripMetadata.startDate)
+                        d.setDate(d.getDate() + (currentDay - 1))
+                        return d.toLocaleDateString('ko-KR', {
+                          month: 'long',
+                          day: 'numeric',
+                          weekday: 'short',
+                        })
+                      })()
+                    : '날짜 미정'}
                 </FilterBadge>
                 <FilterBadge className="!bg-gray-100 !text-gray-700 hover:!bg-gray-200 border-none font-medium !px-3 !py-1 !text-[11px] rounded-full">
                   Day {currentDay}
@@ -500,14 +545,20 @@ function PlanPageContent() {
         </div>
       </PageContainer>
     </div>
-  );
+  )
 }
 
 // Next.js App Router 환경에서 useSearchParams()를 쓰는 컴포넌트는 전부 Suspense로 감싸주어야 합니다.
 export default function PlanPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#fafafa] flex justify-center items-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#fafafa] flex justify-center items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        </div>
+      }
+    >
       <PlanPageContent />
     </Suspense>
-  );
+  )
 }
