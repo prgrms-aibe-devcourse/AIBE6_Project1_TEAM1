@@ -25,6 +25,7 @@ export async function GET(request: Request) {
         .from('profiles')
         .select('id')
         .eq('id', user.id)
+        //maybeSingle()은 데이터가 없으면 에러를 발생시키지 않고 null을 반환합니다.
         .maybeSingle()
 
       // 없다면 새로 가입한 유저이므로 profile 테이블에 insert
