@@ -5,12 +5,12 @@ interface PlaceCategorySectionProps {
 
 const categories = [
   '전체',
-  '자연/힐링',
-  '문화/역사',
-  '맛집 투어',
-  '도심 산책',
-  '해안 코스',
-  '축제/행사',
+  '관광명소',
+  '음식점',
+  '카페',
+  '숙박',
+  '문화시설',
+  '지하철역',
 ]
 
 export default function PlaceCategorySection({
@@ -29,7 +29,7 @@ export default function PlaceCategorySection({
             onClick={() => onSelectCategory(category)}
             className={`rounded-2xl border px-4 py-4 text-sm font-medium text-left transition ${
               isActive
-                ? 'border-black bg-black text-white'
+                ? 'border-gray-900 bg-gray-900 text-white'
                 : 'border-gray-200 bg-white text-gray-800 hover:border-gray-300'
             }`}
           >

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get('query')
+  const categoryGroupCode = req.nextUrl.searchParams.get('categoryGroupCode')
 
   if (!query || !query.trim()) {
     return NextResponse.json(
@@ -20,9 +21,15 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const kakaoUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(
-      query,
-    )}`
+    const kakaoParams = new URLSearchParams({
+      query: query.trim(),
+    })
+
+    if (categoryGroupCode) {
+      kakaoParams.set('category_group_code', categoryGroupCode)
+    }
+
+    const kakaoUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?${kakaoParams.toString()}`
 
     const response = await fetch(kakaoUrl, {
       method: 'GET',

@@ -11,7 +11,6 @@ interface Place {
 interface PlaceResultSectionProps {
   keyword: string
   places: Place[]
-  trendingPlaces: Place[]
   isLoading?: boolean
   errorMessage?: string
 }
@@ -19,7 +18,6 @@ interface PlaceResultSectionProps {
 export default function PlaceResultSection({
   keyword,
   places,
-  trendingPlaces,
   isLoading = false,
   errorMessage = '',
 }: PlaceResultSectionProps) {
@@ -44,9 +42,7 @@ export default function PlaceResultSection({
 
       {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
 
-      {!isLoading && (
-        <PlaceList places={hasKeyword ? places : trendingPlaces} />
-      )}
+      {!isLoading && <PlaceList places={places} />}
     </section>
   )
 }
