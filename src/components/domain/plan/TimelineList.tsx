@@ -19,6 +19,7 @@ interface TimelineListProps {
   onReorder: (startIndex: number, endIndex: number) => void
   onDelete: (id: string) => void
   onOpenSearch: () => void
+  onSelectPlace?: (pos: { lat: number; lng: number }) => void
 }
 
 export default function TimelineList({
@@ -26,6 +27,7 @@ export default function TimelineList({
   onReorder,
   onDelete,
   onOpenSearch,
+  onSelectPlace,
 }: TimelineListProps) {
   // 드래그 앤 드롭은 브라우저(Client) 환경에서만 작동하게끔 방어하는 Hydration 꼬임 방지 장치
   const [mounted, setMounted] = useState(false)
@@ -93,7 +95,10 @@ export default function TimelineList({
                           </div>
 
                           {/* 카드 본체 */}
-                          <div className="flex-1 ml-4 bg-white rounded-xl border border-gray-200 p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)] group hover:border-gray-300 transition-colors">
+                          <div 
+                            onClick={() => onSelectPlace?.({ lat: place.lat, lng: place.lng })}
+                            className="flex-1 ml-4 bg-white rounded-xl border border-gray-200 p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)] group hover:border-purple-200 hover:shadow-md transition-all cursor-pointer"
+                          >
                             <div className="flex justify-between items-start">
                               <div className="flex flex-col">
                                 <div className="flex items-center gap-2 mb-2">

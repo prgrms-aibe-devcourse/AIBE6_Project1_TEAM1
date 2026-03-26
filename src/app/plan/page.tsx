@@ -9,6 +9,7 @@ import SaveTripModal from '@/components/domain/plan/SaveTripModal'
 import TimelineList from '@/components/domain/plan/TimelineList'
 import GlobalHeader from '@/components/layout/GlobalHeader'
 import PageContainer from '@/components/layout/PageContainer'
+import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 import {
   Calendar,
@@ -16,6 +17,7 @@ import {
   MoreHorizontal,
   Share2,
   Sparkles,
+  X,
 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
@@ -49,47 +51,63 @@ function PlanPageContent() {
 
   // 1개짜리 배열에서 N박 M일을 지원하는 객체(Record) 형태로 확장
   const [placesByDay, setPlacesByDay] = useState<Record<number, Place[]>>({
-    1: [
-      {
-        id: '1',
-        name: '불국사',
-        category: '관광',
-        address: '경북 경주시 진현동 15',
-        lat: 35.790104,
-        lng: 129.332079,
-      },
-      {
-        id: '2',
-        name: '석굴암',
-        category: '관광',
-        address: '경북 경주시 불국로 873-243',
-        lat: 35.794939,
-        lng: 129.349141,
-      },
-    ],
+    1: [],
   })
   // 현재 보고 있는 활성 탭 (ex: Day 1)
   const [currentDay, setCurrentDay] = useState<number>(1)
+
+  // 특정 장소 클릭 시 지도를 해당 위치로 이동시키기 위한 상태
+  const [focusPlace, setFocusPlace] = useState<{
+    lat: number
+    lng: number
+  } | null>(null)
 
   // 모달창 on/off 상태 관리
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false) // 사이드바 관리 추가
 
+  const { openModal } = useModalStore()
+
   const handleSelectTrip = (id: string) => {
     setIsSidebarOpen(false)
-    if (id === 'new') {
-      router.push('/plan')
-      setPlacesByDay({ 1: [] })
-      setCurrentDay(1)
-      setTripMetadata({
-        title: '',
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0],
-        isPublic: true,
+
+    // 현재 편집 중인 여행과 동일한 아이디를 클릭했다면 무시
+    if (id === editTripId) return
+
+    // 현재 작성 중인 장소가 하나라도 있는지 확인
+    const hasContent = Object.values(placesByDay).flat().length > 0
+
+    const executeNavigation = () => {
+      if (id === 'new') {
+        router.push('/plan')
+        setPlacesByDay({ 1: [] })
+        setCurrentDay(1)
+        setTripMetadata({
+          title: '',
+          startDate: new Date().toISOString().split('T')[0],
+          endDate: new Date().toISOString().split('T')[0],
+          isPublic: true,
+        })
+      } else {
+        router.push(`/plan?id=${id}`)
+      }
+    }
+
+    // 작성 중인 내용이 있다면 모달로 확인
+    if (hasContent) {
+      openModal({
+        type: 'confirm',
+        variant: 'primary',
+        title: '페이지 이동 확인',
+        description:
+          '현재 작성 중인 일정이 저장되지 않았습니다.\n다른 일정을 불러오시겠습니까?',
+        confirmText: '불러오기',
+        cancelText: '취소',
+        onConfirm: executeNavigation,
       })
     } else {
-      router.push(`/plan?id=${id}`)
+      executeNavigation()
     }
   }
 
@@ -240,6 +258,48 @@ function PlanPageContent() {
       ...prev,
       [currentDay]: (prev[currentDay] || []).filter((p) => p.id !== id),
     }))
+  }
+
+  const handleDeleteDay = (dayToDelete: number) => {
+    const dayPlaces = placesByDay[dayToDelete] || []
+
+    if (Object.keys(placesByDay).length <= 1) {
+      alert('최소 한 개의 날짜는 유지해야 합니다.')
+      return
+    }
+
+    if (dayPlaces.length > 0) {
+      if (
+        !confirm(
+          `Day ${dayToDelete}에 등록된 장소가 ${dayPlaces.length}개 있습니다. 정말 삭제하시겠습니까?`,
+        )
+      ) {
+        return
+      }
+    }
+
+    setPlacesByDay((prev) => {
+      const newPlacesByDay: Record<number, Place[]> = {}
+      const sortedDays = Object.keys(prev)
+        .map(Number)
+        .sort((a, b) => a - b)
+
+      let nextDayLabel = 1
+      sortedDays.forEach((day) => {
+        if (day !== dayToDelete) {
+          newPlacesByDay[nextDayLabel] = prev[day]
+          nextDayLabel++
+        }
+      })
+
+      if (currentDay === dayToDelete) {
+        setCurrentDay(Math.max(1, dayToDelete - 1))
+      } else if (currentDay > dayToDelete) {
+        setCurrentDay(currentDay - 1)
+      }
+
+      return newPlacesByDay
+    })
   }
 
   const [isSaving, setIsSaving] = useState(false)
@@ -497,7 +557,7 @@ function PlanPageContent() {
         <div className="flex flex-col lg:flex-row w-full gap-8 h-[calc(100vh-240px)] min-h-[600px]">
           {/* 좌측 지도 패널: 현재 탭(currentPlaces)의 장소들만 렌더링 */}
           <div className="w-full lg:w-[55%] xl:w-[60%] h-[400px] lg:h-full relative rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200">
-            <ItineraryMap places={currentPlaces} />
+            <ItineraryMap places={currentPlaces} focusPlace={focusPlace} />
           </div>
 
           {/* 우측 타임라인 패널 */}
@@ -510,13 +570,26 @@ function PlanPageContent() {
                   <button
                     key={day}
                     onClick={() => setCurrentDay(day)}
-                    className={`px-4 py-2 rounded-full text-[13px] font-bold whitespace-nowrap transition-all shadow-sm ${
+                    className={`px-4 py-2 rounded-full text-[13px] font-bold whitespace-nowrap transition-all shadow-sm flex items-center gap-1.5 ${
                       currentDay === day
                         ? 'bg-purple-600 text-white border-transparent'
                         : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                     }`}
                   >
                     Day {day}
+                    {Object.keys(placesByDay).length > 1 && (
+                      <X
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteDay(day)
+                        }}
+                        className={`w-3.5 h-3.5 p-0.5 rounded-full transition-colors ${
+                          currentDay === day
+                            ? 'text-purple-200 hover:text-white hover:bg-white/20'
+                            : 'text-gray-400 hover:text-red-500 hover:bg-gray-100'
+                        }`}
+                      />
+                    )}
                   </button>
                 )
               })}
@@ -540,6 +613,7 @@ function PlanPageContent() {
               onReorder={handleReorderPlaces}
               onDelete={handleDeletePlace}
               onOpenSearch={() => setIsSearchOpen(true)}
+              onSelectPlace={(pos) => setFocusPlace(pos)}
             />
           </div>
         </div>
