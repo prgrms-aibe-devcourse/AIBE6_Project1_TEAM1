@@ -126,6 +126,90 @@ function includesKeyword(value: string | null | undefined, keyword: string) {
   return value.toLowerCase().includes(keyword.toLowerCase())
 }
 
+<<<<<<< HEAD
+=======
+interface KakaoPlaceDocument {
+  id: string
+  place_name: string
+  road_address_name: string
+  address_name: string
+  category_name: string
+  category_group_code: string
+  category_group_name: string
+  place_url: string
+  phone: string
+  x: string
+  y: string
+}
+
+const trendingPlaces: Place[] = [
+  {
+    id: '101',
+    name: '제주 올레길 7코스',
+    address: '제주 서귀포시',
+    category: '관광명소',
+    rating: 4.8,
+  },
+  {
+    id: '102',
+    name: '경주 역사 탐방',
+    address: '경북 경주시',
+    category: '문화시설',
+    rating: 4.6,
+  },
+  {
+<<<<<<< HEAD
+    id: '3',
+    name: '서울숲',
+    address: '서울 성동구 뚝섬로',
+    category: '공원',
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
+    rating: 4.7,
+  },
+<<<<<<< HEAD
+  {
+    id: '4',
+    name: '강남2',
+    address: '서울 성동구 뚝섬ㅇㅇ로',
+    category: '공원',
+=======
+    id: '103',
+    name: '전주 한옥마을',
+    address: '전북 전주시',
+<<<<<<< HEAD
+    category: '맛집 투어',
+>>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
+=======
+    category: '관광명소',
+>>>>>>> 4986e65 (카테고리 수정)
+    rating: 4.7,
+  },
+=======
+>>>>>>> 7f759a7 (업데이트  place search section)
+]
+
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4986e65 (카테고리 수정)
+const CATEGORY_CODE_MAP: Record<string, string> = {
+  전체: '',
+  관광명소: 'AT4',
+  음식점: 'FD6',
+  카페: 'CE7',
+  숙박: 'AD5',
+  문화시설: 'CT1',
+  지하철역: 'SW8',
+  주차장: 'PK6',
+>>>>>>> 459ade2 (feat: 검색기능 구현  입력값 라우팅 연결)
+}
+
+<<<<<<< HEAD
+=======
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
+=======
+>>>>>>> 4986e65 (카테고리 수정)
+>>>>>>> 61b4c13 (업데이트  place search section)
 export default function PlaceSearchSection() {
   const searchParams = useSearchParams()
   const queryFromUrl = searchParams.get('query') ?? ''
