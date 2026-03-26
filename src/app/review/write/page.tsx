@@ -44,6 +44,8 @@ export default function ReviewWritePage() {
   const handleSubmit = async () => {
     if (loading) return
     if (!rating) return alert('별점을 선택해주세요')
+    if (!options.slope || !options.width || !options.stairs)
+      return alert('보행 환경을 선택해주세요')
     if (!content) return alert('내용을 입력해주세요')
 
     setLoading(true)
@@ -121,7 +123,7 @@ export default function ReviewWritePage() {
 
         <div className="text-xl font-bold py-4">보행 환경 체크</div>
         <div className="border rounded-xl mb-6 p-6 flex flex-col text-gray-400">
-          <OptionSelector onChange={setOptions} />
+          <OptionSelector options={options} onChange={setOptions} />
         </div>
 
         <div className="text-xl font-bold py-4">리뷰 내용</div>
