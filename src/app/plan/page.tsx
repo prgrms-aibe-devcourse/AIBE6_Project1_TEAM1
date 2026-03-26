@@ -115,9 +115,10 @@ function PlanPageContent() {
           .select(`
             id, title, start_date, end_date, is_public,
             trip_items (
+              visit_day,
               visit_order,
               places (
-                id, kakao_place_id, place_name, category, latitude, longitude
+                id, kakao_place_id, place_name, category, address, latitude, longitude
               )
             )
           `)
@@ -132,7 +133,7 @@ function PlanPageContent() {
         }
 
         // 다른 여행을 클릭해서 넘어왔을 수도 있으니 강제로 찌꺼기를 세탁합니다.
-        const fetchedPlaces: Place[] = [];
+        const fetchedPlacesByDay: Record<number, Place[]> = {};
         const items = tripData.trip_items || [];
         
         // 데이터베이스의 visit_order 기준으로 카드 순서 정렬
@@ -140,21 +141,33 @@ function PlanPageContent() {
 
         items.forEach((item: any) => {
           if (item.places) {
-            fetchedPlaces.push({
+            const dayIndex = item.visit_day || 1; // 예전 데이터나 null 방어코드
+            
+            if (!fetchedPlacesByDay[dayIndex]) {
+              fetchedPlacesByDay[dayIndex] = [];
+            }
+            
+            fetchedPlacesByDay[dayIndex].push({
               id: Date.now().toString() + Math.random(), // 화면 렌더링(DND)용 임시 로컬 ID
               kakao_place_id: item.places.kakao_place_id,
               name: item.places.place_name,
               category: item.places.category,
-              address: "주소 정보 없음 (DB에 미저장됨)", // 참고: 현재 ERD의 places에 주소 컬럼이 없습니다.
+              address: item.places.address || "주소 없음", // DB에서 긁어온 실제 주소 맵핑
               lat: item.places.latitude,
               lng: item.places.longitude,
             });
           }
         });
 
-        // 현재는 DB에 visit_day 구분이 없으므로, 불러온 모든 일정을 Day 1 탭에 몰아서 렌더링합니다.
-        // 추후 trip_items 테이블에 visit_day 컬럼이 생기면 이 부분을 날짜별로 분할할 수 있습니다.
-        setPlacesByDay({ 1: fetchedPlaces });
+        // 텅 빈 여행 일정일 때를 대비해 Day 1 그릇은 최소한 하나 던져줍니다.
+        if (Object.keys(fetchedPlacesByDay).length === 0) {
+          fetchedPlacesByDay[1] = [];
+        }
+
+        // 이제 각 날짜별로 제대로 나뉜 객체를 상태에 세팅합니다!
+        setPlacesByDay(fetchedPlacesByDay);
+        // 불러올 땐 항상 Day 1 탭을 보여줍니다.
+        setCurrentDay(1);
       } catch (err) {
         console.error("플랜 로딩 중 문제 발생:", err);
       }
@@ -295,6 +308,7 @@ function PlanPageContent() {
                   kakao_place_id: place.kakao_place_id,
                   place_name: place.name,
                   category: place.category,
+                  address: place.address, // 새롭게 추가된 주소 필드 저장 연결!
                   latitude: place.lat,
                   longitude: place.lng,
                   is_near_station: false,
@@ -316,7 +330,8 @@ function PlanPageContent() {
             await supabase.from('trip_items').insert({
               trip_id: tripId,
               place_id: dbPlaceId,
-              visit_order: globalOrder++, // Day 상관없이 전역 순서체계 사용
+              visit_day: parseInt(dayStr), // 드디어 Day 구분 정보가 DB에 저장됩니다!
+              visit_order: globalOrder++, // Day 상관없이 전역 순서체계 혹은 Day내 순서 혼용 가능 (현재 스크립트는 전체 순서 유지)
               transport_type: 'bus', // 이동수단 기본값
               travel_time: 15, // 소요시간 기본값
             })
