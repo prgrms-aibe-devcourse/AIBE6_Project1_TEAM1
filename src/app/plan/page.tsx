@@ -29,10 +29,15 @@ export default function PlanPage() {
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
-  const [places, setPlaces] = useState<Place[]>([
-    { id: "1", name: "불국사", category: "관광", address: "경북 경주시 진현동 15", lat: 35.790104, lng: 129.332079 },
-    { id: "2", name: "석굴암", category: "관광", address: "경북 경주시 불국로 873-243", lat: 35.794939, lng: 129.349141 },
-  ]);
+  // 1개짜리 배열에서 N박 M일을 지원하는 객체(Record) 형태로 확장
+  const [placesByDay, setPlacesByDay] = useState<Record<number, Place[]>>({
+    1: [
+      { id: "1", name: "불국사", category: "관광", address: "경북 경주시 진현동 15", lat: 35.790104, lng: 129.332079 },
+      { id: "2", name: "석굴암", category: "관광", address: "경북 경주시 불국로 873-243", lat: 35.794939, lng: 129.349141 },
+    ],
+  });
+  // 현재 보고 있는 활성 탭 (ex: Day 1)
+  const [currentDay, setCurrentDay] = useState<number>(1);
   
   // 모달창 on/off 상태 관리
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -57,7 +62,7 @@ export default function PlanPage() {
     checkAuth();
   }, [router]);
 
-  // 모달창에서 장소를 선택했을 때 새 장소를 추가하는 함수
+  // 모달창에서 장소를 선택했을 때 새 장소를 현재 날짜(Day) 탭에 추가하는 함수
   const handleAddPlace = (kakao_place_id: string, lat: number, lng: number, name: string, category: string, address: string) => {
     const newPlace: Place = {
       id: Date.now().toString(), 
@@ -68,18 +73,26 @@ export default function PlanPage() {
       lat,
       lng,
     };
-    setPlaces((prev) => [...prev, newPlace]);
+    setPlacesByDay((prev) => ({
+      ...prev,
+      [currentDay]: [...(prev[currentDay] || []), newPlace]
+    }));
   };
 
   const handleReorderPlaces = (startIndex: number, endIndex: number) => {
-    const newPlaces = Array.from(places); 
-    const [removed] = newPlaces.splice(startIndex, 1); 
-    newPlaces.splice(endIndex, 0, removed); 
-    setPlaces(newPlaces); 
+    setPlacesByDay((prev) => {
+      const dayPlaces = Array.from(prev[currentDay] || []); 
+      const [removed] = dayPlaces.splice(startIndex, 1); 
+      dayPlaces.splice(endIndex, 0, removed); 
+      return { ...prev, [currentDay]: dayPlaces };
+    });
   };
 
   const handleDeletePlace = (id: string) => {
-    setPlaces((prev) => prev.filter((p) => p.id !== id));
+    setPlacesByDay((prev) => ({
+      ...prev,
+      [currentDay]: (prev[currentDay] || []).filter((p) => p.id !== id)
+    }));
   };
 
   const [isSaving, setIsSaving] = useState(false);
@@ -91,8 +104,10 @@ export default function PlanPage() {
       return;
     }
     
-    if (places.length === 0) {
-      alert("여행 장소를 1개 이상 추가해주세요!");
+    const totalPlacesCount = Object.values(placesByDay).flat().length;
+    
+    if (totalPlacesCount === 0) {
+      alert("여행 장소를 전체 Day 통틀어 1개 이상 추가해주세요!");
       return;
     }
     
@@ -119,53 +134,59 @@ export default function PlanPage() {
       }
       const tripId = tripData.id;
       
+      let globalOrder = 1; // n박 m일을 한줄로 이어붙여서 순서를 매김 (추후 trip_items에 visit_day 컬럼 확장을 고려하면 좋습니다)
+
       // 2. places 테이블 업데이트(Upsert 성격) 후 trip_items 연결
-      for (let i = 0; i < places.length; i++) {
-        const place = places[i];
-        let dbPlaceId: number | null = null;
+      for (const dayStr of Object.keys(placesByDay)) {
+        const dayPlaces = placesByDay[parseInt(dayStr)];
         
-        // 검색을 통해 추가된 정상적인 장소(kakao_place_id 보장)만 처리
-        if (place.kakao_place_id) {
-          // 2-1 DB에 이미 이 카카오 장소가 들어있는지 검색 (중복 방지)
-          const { data: existingPlace } = await supabase
-            .from('places')
-            .select('id')
-            .eq('kakao_place_id', place.kakao_place_id)
-            .maybeSingle();
-            
-          if (existingPlace) {
-            dbPlaceId = existingPlace.id;
-          } else {
-            // 없다면 새로 places 테이블에 Insert
-            const { data: newPlace, error: placeError } = await supabase
+        for (let i = 0; i < dayPlaces.length; i++) {
+          const place = dayPlaces[i];
+          let dbPlaceId: number | null = null;
+          
+          // 검색을 통해 추가된 정상적인 장소(kakao_place_id 보장)만 처리
+          if (place.kakao_place_id) {
+            // 2-1 DB에 이미 이 카카오 장소가 들어있는지 검색 (중복 방지)
+            const { data: existingPlace } = await supabase
               .from('places')
-              .insert({
-                kakao_place_id: place.kakao_place_id,
-                place_name: place.name,
-                category: place.category,
-                latitude: place.lat,
-                longitude: place.lng,
-                is_near_station: false 
-              })
               .select('id')
-              .single();
+              .eq('kakao_place_id', place.kakao_place_id)
+              .maybeSingle();
               
-            if (newPlace) dbPlaceId = newPlace.id;
+            if (existingPlace) {
+              dbPlaceId = existingPlace.id;
+            } else {
+              // 없다면 새로 places 테이블에 Insert
+              const { data: newPlace, error: placeError } = await supabase
+                .from('places')
+                .insert({
+                  kakao_place_id: place.kakao_place_id,
+                  place_name: place.name,
+                  category: place.category,
+                  latitude: place.lat,
+                  longitude: place.lng,
+                  is_near_station: false 
+                })
+                .select('id')
+                .single();
+                
+              if (newPlace) dbPlaceId = newPlace.id;
+            }
+          } else {
+            // (더미용 데이터 건너뛰기)
+            console.warn(`장소 [${place.name}]는 카카오 ID가 없어 제외되었습니다.`);
           }
-        } else {
-          // (더미용 데이터 건너뛰기)
-          console.warn(`장소 [${place.name}]는 카카오 ID가 없어 제외되었습니다.`);
-        }
-        
-        // 2-2 trip_items(교차 테이블)에 일정 순서 정보를 연결지어 Insert (memo 제외)
-        if (dbPlaceId) {
-          await supabase.from('trip_items').insert({
-            trip_id: tripId,
-            place_id: dbPlaceId,
-            visit_order: i + 1, // 카드 순서대로 1번부터 매핑
-            transport_type: "bus", // 이동수단 기본값
-            travel_time: 15 // 소요시간 기본값
-          });
+          
+          // 2-2 trip_items(교차 테이블)에 일정 순서 정보를 연결지어 Insert
+          if (dbPlaceId) {
+            await supabase.from('trip_items').insert({
+              trip_id: tripId,
+              place_id: dbPlaceId,
+              visit_order: globalOrder++, // Day 상관없이 전역 순서체계 사용
+              transport_type: "bus", // 이동수단 기본값
+              travel_time: 15 // 소요시간 기본값
+            });
+          }
         }
       }
       
@@ -188,6 +209,9 @@ export default function PlanPage() {
       </div>
     );
   }
+
+  // 렌더링에 사용할 현재 선택된 Day의 장소 배열
+  const currentPlaces = placesByDay[currentDay] || [];
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fafafa]">
@@ -225,7 +249,7 @@ export default function PlanPage() {
                   <MapPin className="w-3 h-3 text-gray-500" /> 경주
                 </FilterBadge>
                 <FilterBadge className="!bg-gray-100 !text-gray-700 hover:!bg-gray-200 border-none font-medium !px-3 !py-1 !text-[11px] rounded-full">
-                  Day 1
+                  Day {currentDay}
                 </FilterBadge>
               </div>
             </div>
@@ -254,15 +278,46 @@ export default function PlanPage() {
         {/* 본문 영역: 좌측 지도, 우측 타임라인 */}
         <div className="flex flex-col lg:flex-row w-full gap-8 h-[calc(100vh-240px)] min-h-[600px]">
           
-          {/* 좌측 지도 패널: places 배열만을 넘기기 (클릭은 삭제) */}
+          {/* 좌측 지도 패널: 현재 탭(currentPlaces)의 장소들만 렌더링 */}
           <div className="w-full lg:w-[55%] xl:w-[60%] h-[400px] lg:h-full relative rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200">
-            <ItineraryMap places={places} />
+            <ItineraryMap places={currentPlaces} />
           </div>
 
-          {/* 우측 타임라인 패널: 검색 모달 onOpenSearch 함수 연결 */}
+          {/* 우측 타임라인 패널 */}
           <div className="w-full lg:w-[45%] xl:w-[40%] h-full flex flex-col relative pr-2">
+            
+            {/* Day 탭 네비게이션 UI */}
+            <div className="flex items-center gap-2 mb-2 overflow-x-auto pb-2 scrollbar-hide pt-1 px-1">
+              {Object.keys(placesByDay).map((dayStr) => {
+                const day = parseInt(dayStr);
+                return (
+                  <button 
+                    key={day}
+                    onClick={() => setCurrentDay(day)}
+                    className={`px-4 py-2 rounded-full text-[13px] font-bold whitespace-nowrap transition-all shadow-sm ${
+                      currentDay === day 
+                        ? 'bg-purple-600 text-white border-transparent' 
+                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    Day {day}
+                  </button>
+                )
+              })}
+              <button 
+                onClick={() => setPlacesByDay((prev) => {
+                  const nextDay = Math.max(...Object.keys(prev).map(Number)) + 1;
+                  return { ...prev, [nextDay]: [] };
+                })}
+                className="px-4 py-2 rounded-full text-[13px] font-bold bg-gray-50 border border-dashed border-gray-300 text-gray-500 hover:bg-gray-100 hover:text-gray-700 whitespace-nowrap transition-colors flex items-center gap-1"
+                title="새로운 여행 날짜 탭 추가"
+              >
+                + Day 추가
+              </button>
+            </div>
+
             <TimelineList 
-              places={places} 
+              places={currentPlaces} 
               onReorder={handleReorderPlaces} 
               onDelete={handleDeletePlace} 
               onOpenSearch={() => setIsSearchOpen(true)}
