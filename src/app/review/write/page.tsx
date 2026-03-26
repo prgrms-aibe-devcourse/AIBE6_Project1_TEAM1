@@ -9,10 +9,10 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-export default function ReviewWritePage() {
+export default function ReviewWritePage({ user_id, place_id }) {
   const [rating, setRating] = useState(0)
   const [content, setContent] = useState('')
-  const [media, setMedia] = useState<string[]>([])
+  const [media, setMedia] = useState<{ url: string; path: string }[]>([])
   const [options, setOptions] = useState({
     slope: '',
     width: '',
@@ -36,30 +36,53 @@ export default function ReviewWritePage() {
   //   getUser()
   // }, [])
 
+  // 리뷰 등록
   const handleSubmit = async () => {
     if (loading) return
     if (!rating) return alert('별점을 선택해주세요')
     if (!content) return alert('내용을 입력해주세요')
 
     setLoading(true)
-    const { error } = await supabase.from('reviews').insert({
-      user_id: 1,
-      place_id: 2,
-      rating,
-      content,
-      slope: options.slope,
-      width: options.width,
-      stairs: options.stairs,
-    })
-    setLoading(false)
+    const { data: reviewData, error: reviewError } = await supabase
+      .from('reviews')
+      .insert({
+        user_id: '0ba3c127-607e-4644-96fd-a186c7096422',
+        place_id: 2,
+        rating,
+        content,
+        slope: options.slope,
+        width: options.width,
+        stairs: options.stairs,
+      })
+      .select()
+      .single()
 
-    if (error) {
-      alert('에러 발생')
-      console.error(error)
-    } else {
-      alert('등록 완료!')
-      router.push('/')
+    if (reviewError) {
+      setLoading(false)
+      console.error(reviewError)
+      return alert('리뷰 저장 실패')
     }
+
+    const reviewId = reviewData.id
+    if (media.length > 0) {
+      const mediaRows = media.map((media) => ({
+        review_id: reviewId,
+        file_url: media.url,
+        file_type: 'image', // 필요하면 분기
+      }))
+
+      const { error: mediaError } = await supabase
+        .from('media')
+        .insert(mediaRows)
+      if (mediaError) {
+        console.error(mediaError)
+        alert('사진 저장 실패')
+      }
+    }
+
+    setLoading(false)
+    alert('등록 완료!')
+    router.push('/')
   }
 
   return (
@@ -102,13 +125,14 @@ export default function ReviewWritePage() {
           />
         </div>
 
-        <div className="text-xl font-bold py-4">사진/영상 첨부</div>
+        <div className="text-xl font-bold py-4">사진 첨부</div>
         <div className="mb-6">
           <MediaUploader
             supabase={supabase}
             onUpload={(urls: string[]) =>
               setMedia((prev) => [...prev, ...urls])
             }
+            onRemove={(urls: string[]) => setMedia(urls)}
           />
         </div>
 
