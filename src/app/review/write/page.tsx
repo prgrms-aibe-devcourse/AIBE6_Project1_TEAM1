@@ -26,7 +26,7 @@ export default function ReviewWritePage() {
 
   // url 형식 : /review/write?placeId=2
   const searchParams = useSearchParams()
-  const placeId = searchParams.get('placeId')
+  const placeId = Number(searchParams.get('placeId'))
 
   // 유저 정보 가져오기
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function ReviewWritePage() {
       .insert({
         //user_id: userId,
         user_id: '0ba3c127-607e-4644-96fd-a186c7096422',
-        place_id: Number(placeId),
+        place_id: placeId,
         rating,
         content,
         slope: options.slope,

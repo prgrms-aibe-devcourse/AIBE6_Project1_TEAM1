@@ -24,7 +24,7 @@ export default function ReviewEditPage() {
   const supabase = createClient()
   const router = useRouter()
 
-  // url 형식 : /review/edit?reviewId=2
+  // url 형식 : /review/edit?reviewId="리뷰번호"
   const searchParams = useSearchParams()
   const reviewId = Number(searchParams.get('reviewId'))
 
@@ -38,6 +38,21 @@ export default function ReviewEditPage() {
 
     if (error) {
       alert('리뷰 불러오기 실패')
+      return
+    }
+    return data || null
+  }
+
+  // 기존 첨부 이미지 불러오기
+  const fetchMediaData = async (reviewId: Number) => {
+    const { data, error } = await supabase
+      .from('media')
+      .select('*')
+      .eq('review_id', reviewId)
+
+    console.log(data) // 디버깅용
+    if (error) {
+      alert('사진 불러오기 실패')
       return
     }
     return data || null
@@ -58,6 +73,27 @@ export default function ReviewEditPage() {
       }
     }
     loadReview()
+
+    function extractPathFromUrl(url: string, bucketName: string) {
+      // URL에서 bucketName 뒤의 경로만 추출
+      const parts = url.split(`/storage/v1/object/public/${bucketName}/`)
+      if (parts.length < 2) return null // 형식이 안 맞으면 null
+      return parts[1] // bucket 뒤부터가 path
+    }
+
+    const loadMedia = async () => {
+      const mediaData = await fetchMediaData(reviewId)
+      console.log(mediaData) // 디버깅용
+      if (mediaData) {
+        const newMedia = mediaData.map((item) => {
+          const path = extractPathFromUrl(item.file_url, 'media-storage')
+          return { url: item.file_url, path: path ?? '' } // null 방어
+        })
+        setMedia(newMedia)
+        console.log(newMedia)
+      }
+    }
+    loadMedia()
   }, [])
 
   // 리뷰 수정 내용 업데이트
@@ -81,8 +117,7 @@ export default function ReviewEditPage() {
         width: options.width,
         stairs: options.stairs,
       })
-      .select()
-      .single()
+      .eq('id', reviewId)
 
     if (reviewError) {
       setLoading(false)
@@ -90,7 +125,6 @@ export default function ReviewEditPage() {
       return alert('리뷰 저장 실패')
     }
 
-    const reviewId = reviewData.id
     if (media.length > 0) {
       const mediaRows = media.map((media) => ({
         review_id: reviewId,
@@ -111,6 +145,10 @@ export default function ReviewEditPage() {
     setLoading(false)
     alert('수정 완료!')
     router.push('/')
+  }
+
+  const handleCancel = () => {
+    router.back()
   }
 
   return (
@@ -170,10 +208,16 @@ export default function ReviewEditPage() {
         </div>
 
         <button
-          className="w-full bg-black text-white py-3 rounded-lg mb-6 cursor-pointer"
+          className="w-1/2 bg-black text-white py-3 rounded-lg mb-6 cursor-pointer"
           onClick={handleSubmit}
         >
-          {loading ? '등록 중...' : '리뷰 등록'}
+          {loading ? '등록 중...' : '수정'}
+        </button>
+        <button
+          className="w-1/2 bg-white text-black py-3 border rounded-lg mb-6 cursor-pointer"
+          onClick={handleCancel}
+        >
+          취소
         </button>
       </div>
     </div>
