@@ -6,7 +6,7 @@ type ProfileProps = {
 };
 
 export default function ProfileHeader({ nickname, avatar_url }: ProfileProps) {
-  const displayNickname = nickname || "김뚜벅";
+  const displayNickname = nickname || "뚜벅이";
 
   return (
     <section className="flex flex-col items-center pt-8 pb-6 text-center">
