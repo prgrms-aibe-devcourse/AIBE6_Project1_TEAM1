@@ -16,6 +16,7 @@ interface PlaceSearchModalProps {
   onClose: () => void
   // 선택했을 때 부모(PlanPage)로 보낼 데이터 구조
   onSelect: (
+    kakao_place_id: string,
     lat: number,
     lng: number,
     name: string,
@@ -115,6 +116,7 @@ export default function PlaceSearchModal({
                   // 클릭 시 부모(PlanPage)로 장소 정보를 통째로 쏴줌
                   onClick={() =>
                     onSelect(
+                      place.id,
                       parseFloat(place.y),
                       parseFloat(place.x),
                       place.place_name,

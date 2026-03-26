@@ -4,6 +4,7 @@ import CommonButton from "@/components/domain/plan/CommonButton";
 import FilterBadge from "@/components/domain/plan/FilterBadge";
 import ItineraryMap from "@/components/domain/plan/ItineraryMap";
 import PlaceSearchModal from "@/components/domain/plan/PlaceSearchModal";
+import SaveTripModal from "@/components/domain/plan/SaveTripModal";
 import TimelineList from "@/components/domain/plan/TimelineList";
 import GlobalHeader from "@/components/layout/GlobalHeader";
 import PageContainer from "@/components/layout/PageContainer";
@@ -15,6 +16,7 @@ import { createClient } from "@/utils/supabase/client";
 // 글로벌 공통 장소 데이터 구조
 export interface Place {
   id: string;      
+  kakao_place_id?: string; // DB(places)와 연결하기 위한 필수 식별 고유키
   name: string;    
   category: string;
   address: string; 
@@ -34,6 +36,7 @@ export default function PlanPage() {
   
   // 모달창 on/off 상태 관리
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false); // 저장 모달 관리를 위해 신규 추가
 
   // 인증 검사 로직 (마운트 시점 1회 실행)
   useEffect(() => {
@@ -55,9 +58,10 @@ export default function PlanPage() {
   }, [router]);
 
   // 모달창에서 장소를 선택했을 때 새 장소를 추가하는 함수
-  const handleAddPlace = (lat: number, lng: number, name: string, category: string, address: string) => {
+  const handleAddPlace = (kakao_place_id: string, lat: number, lng: number, name: string, category: string, address: string) => {
     const newPlace: Place = {
       id: Date.now().toString(), 
+      kakao_place_id,
       name, 
       category, 
       address,
@@ -78,6 +82,102 @@ export default function PlanPage() {
     setPlaces((prev) => prev.filter((p) => p.id !== id));
   };
 
+  const [isSaving, setIsSaving] = useState(false);
+
+  // 하드코딩 정보 대신 모달에서 쏴준 데이터(title, startDate, endDate, isPublic)를 파라미터로 받음
+  const handleSaveTrip = async (title: string, startDate: string, endDate: string, isPublic: boolean) => {
+    if (!userId) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    
+    if (places.length === 0) {
+      alert("여행 장소를 1개 이상 추가해주세요!");
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      const supabase = createClient();
+      
+      // 1. trips 테이블에 플랜(여행) 껍데기 생성 (Insert)
+      // 모달창으로부터 받은 유저의 고유한 여행 메타데이터를 매핑
+      const { data: tripData, error: tripError } = await supabase
+        .from('trips')
+        .insert({
+          user_id: userId,
+          title: title, 
+          start_date: startDate, 
+          end_date: endDate,
+          is_public: isPublic
+        })
+        .select()
+        .single();
+        
+      if (tripError || !tripData) {
+        throw new Error(tripError?.message || "플랜 생성 실패");
+      }
+      const tripId = tripData.id;
+      
+      // 2. places 테이블 업데이트(Upsert 성격) 후 trip_items 연결
+      for (let i = 0; i < places.length; i++) {
+        const place = places[i];
+        let dbPlaceId: number | null = null;
+        
+        // 검색을 통해 추가된 정상적인 장소(kakao_place_id 보장)만 처리
+        if (place.kakao_place_id) {
+          // 2-1 DB에 이미 이 카카오 장소가 들어있는지 검색 (중복 방지)
+          const { data: existingPlace } = await supabase
+            .from('places')
+            .select('id')
+            .eq('kakao_place_id', place.kakao_place_id)
+            .maybeSingle();
+            
+          if (existingPlace) {
+            dbPlaceId = existingPlace.id;
+          } else {
+            // 없다면 새로 places 테이블에 Insert
+            const { data: newPlace, error: placeError } = await supabase
+              .from('places')
+              .insert({
+                kakao_place_id: place.kakao_place_id,
+                place_name: place.name,
+                category: place.category,
+                latitude: place.lat,
+                longitude: place.lng,
+                is_near_station: false 
+              })
+              .select('id')
+              .single();
+              
+            if (newPlace) dbPlaceId = newPlace.id;
+          }
+        } else {
+          // (더미용 데이터 건너뛰기)
+          console.warn(`장소 [${place.name}]는 카카오 ID가 없어 제외되었습니다.`);
+        }
+        
+        // 2-2 trip_items(교차 테이블)에 일정 순서 정보를 연결지어 Insert (memo 제외)
+        if (dbPlaceId) {
+          await supabase.from('trip_items').insert({
+            trip_id: tripId,
+            place_id: dbPlaceId,
+            visit_order: i + 1, // 카드 순서대로 1번부터 매핑
+            transport_type: "bus", // 이동수단 기본값
+            travel_time: 15 // 소요시간 기본값
+          });
+        }
+      }
+      
+      alert("플랜이 성공적으로 데이터베이스에 저장되었습니다!");
+    } catch (error) {
+      console.error(error);
+      alert("저장 중 오류가 발생했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // 모든 훅 선언이 끝난 뒤에 로딩 방어화면을 렌더링해야 React 훅 에러가 나지 않습니다.
   if (isAuthChecking) {
     return (
@@ -95,13 +195,21 @@ export default function PlanPage() {
       {isSearchOpen && (
         <PlaceSearchModal 
           onClose={() => setIsSearchOpen(false)} 
-          onSelect={(lat, lng, name, category, addr) => {
-            handleAddPlace(lat, lng, name, category, addr);
+          onSelect={(kakaoId, lat, lng, name, category, addr) => {
+            handleAddPlace(kakaoId, lat, lng, name, category, addr);
             setIsSearchOpen(false); // 완추가 후 모달 자동 닫기
           }} 
         />
       )}
       <GlobalHeader />
+
+      {/* 저장 전 필수 정보 입력 팝업창 띄우기 (Save Modal) */}
+      {isSaveModalOpen && (
+        <SaveTripModal 
+          onClose={() => setIsSaveModalOpen(false)} 
+          onSave={handleSaveTrip} 
+        />
+      )}
 
       <PageContainer className="flex-1 py-8">
         {/* 상단 헤더 영역 */}
@@ -125,6 +233,14 @@ export default function PlanPage() {
             <div className="flex items-center gap-3 text-gray-400">
               <button className="p-1 hover:text-gray-900 transition-colors"><Share2 className="w-5 h-5" /></button>
               <button className="p-1 hover:text-gray-900 transition-colors"><MoreHorizontal className="w-5 h-5" /></button>
+              {/* 곧바로 저장(handleSaveTrip)을 호출하지 않고 팝업(Modal) 상태를 켭니다. */}
+              <CommonButton 
+                onClick={() => setIsSaveModalOpen(true)} 
+                disabled={isSaving || isSaveModalOpen}
+                className="!bg-purple-600 !text-white hover:!bg-purple-700 !rounded-lg px-4 py-2 flex items-center gap-2 text-[13px] font-semibold border-none ml-2 shadow-sm transition-all"
+              >
+                {isSaving ? "저장 중..." : "일정 저장하기"}
+              </CommonButton>
             </div>
           </div>
           
