@@ -32,7 +32,7 @@ export default function PlaceSearchModal({
   const [results, setResults] = useState<PlaceSearchResult[]>([])
 
   // 카카오 장소 검색 로직
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!keyword.trim()) return
 
