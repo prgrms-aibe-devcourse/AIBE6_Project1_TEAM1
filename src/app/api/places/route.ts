@@ -3,9 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get('query')
 <<<<<<< HEAD
+<<<<<<< HEAD
   const categoryGroupCode = req.nextUrl.searchParams.get('categoryGroupCode')
 =======
 >>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
+=======
+  const categoryGroupCode = req.nextUrl.searchParams.get('categoryGroupCode')
+>>>>>>> 4986e65 (카테고리 수정)
 
   if (!query || !query.trim()) {
     return NextResponse.json(
@@ -25,6 +29,9 @@ export async function GET(req: NextRequest) {
 
   try {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4986e65 (카테고리 수정)
     const kakaoParams = new URLSearchParams({
       query: query.trim(),
     })
@@ -34,11 +41,14 @@ export async function GET(req: NextRequest) {
     }
 
     const kakaoUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?${kakaoParams.toString()}`
+<<<<<<< HEAD
 =======
     const kakaoUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(
       query,
     )}`
 >>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
+=======
+>>>>>>> 4986e65 (카테고리 수정)
 
     const response = await fetch(kakaoUrl, {
       method: 'GET',

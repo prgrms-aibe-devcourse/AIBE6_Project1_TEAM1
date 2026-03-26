@@ -28,12 +28,16 @@ interface Place {
   category: string
   rating?: number
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4986e65 (카테고리 수정)
   categoryGroupCode?: string
   categoryGroupName?: string
   placeUrl?: string
   phone?: string
   latitude?: number
   longitude?: number
+<<<<<<< HEAD
 }
 
 interface KakaoPlaceDocument {
@@ -71,6 +75,8 @@ const trendingPlaces: Place[] = [
     address: '전북 전주시',
     category: '관광명소',
 =======
+=======
+>>>>>>> 4986e65 (카테고리 수정)
 }
 
 interface KakaoPlaceDocument {
@@ -79,6 +85,12 @@ interface KakaoPlaceDocument {
   road_address_name: string
   address_name: string
   category_name: string
+  category_group_code: string
+  category_group_name: string
+  place_url: string
+  phone: string
+  x: string
+  y: string
 }
 
 const trendingPlaces: Place[] = [
@@ -86,14 +98,14 @@ const trendingPlaces: Place[] = [
     id: '101',
     name: '제주 올레길 7코스',
     address: '제주 서귀포시',
-    category: '자연/힐링',
+    category: '관광명소',
     rating: 4.8,
   },
   {
     id: '102',
     name: '경주 역사 탐방',
     address: '경북 경주시',
-    category: '문화/역사',
+    category: '문화시설',
     rating: 4.6,
   },
   {
@@ -114,13 +126,20 @@ const trendingPlaces: Place[] = [
     id: '103',
     name: '전주 한옥마을',
     address: '전북 전주시',
+<<<<<<< HEAD
     category: '맛집 투어',
 >>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
+=======
+    category: '관광명소',
+>>>>>>> 4986e65 (카테고리 수정)
     rating: 4.7,
   },
 ]
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4986e65 (카테고리 수정)
 const CATEGORY_CODE_MAP: Record<string, string> = {
   전체: '',
   관광명소: 'AT4',
@@ -132,8 +151,11 @@ const CATEGORY_CODE_MAP: Record<string, string> = {
   주차장: 'PK6',
 }
 
+<<<<<<< HEAD
 =======
 >>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
+=======
+>>>>>>> 4986e65 (카테고리 수정)
 export default function PlaceSearchSection() {
   const searchParams = useSearchParams()
   const queryFromUrl = searchParams.get('query') ?? ''
@@ -160,8 +182,15 @@ export default function PlaceSearchSection() {
 >>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
 =======
 
+<<<<<<< HEAD
   const handleSearch = async (searchKeyword: string) => {
 >>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
+=======
+  const handleSearch = async (
+    searchKeyword: string,
+    categoryName: string = selectedCategory,
+  ) => {
+>>>>>>> 4986e65 (카테고리 수정)
     const trimmedKeyword = searchKeyword.trim()
 
     if (!trimmedKeyword) {
@@ -189,6 +218,7 @@ export default function PlaceSearchSection() {
         method: 'GET',
         cache: 'no-store',
       })
+<<<<<<< HEAD
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null)
@@ -246,6 +276,8 @@ export default function PlaceSearchSection() {
           cache: 'no-store',
         },
       )
+=======
+>>>>>>> 4986e65 (카테고리 수정)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null)
@@ -260,6 +292,12 @@ export default function PlaceSearchSection() {
           name: place.place_name,
           address: place.road_address_name || place.address_name,
           category: place.category_name,
+          categoryGroupCode: place.category_group_code,
+          categoryGroupName: place.category_group_name,
+          placeUrl: place.place_url,
+          phone: place.phone,
+          latitude: Number(place.y),
+          longitude: Number(place.x),
         }),
       )
 
@@ -267,7 +305,11 @@ export default function PlaceSearchSection() {
     } catch (error) {
       console.error(error)
       setPlaces([])
-      setErrorMessage('장소 검색 중 오류가 발생했습니다.')
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : '장소 검색 중 오류가 발생했습니다.',
+      )
     } finally {
       setIsLoading(false)
     }
@@ -284,8 +326,12 @@ export default function PlaceSearchSection() {
 =======
 
     if (queryFromUrl) {
+<<<<<<< HEAD
       handleSearch(queryFromUrl)
 >>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
+=======
+      handleSearch(queryFromUrl, selectedCategory)
+>>>>>>> 4986e65 (카테고리 수정)
     } else {
       setPlaces([])
       setErrorMessage('')
@@ -316,6 +362,7 @@ export default function PlaceSearchSection() {
       <PlaceResultSection
         keyword={keyword}
         places={hasKeyword ? places : trendingPlaces}
+<<<<<<< HEAD
         errorMessage={errorMessage}
         isLoading={isLoading}
       />
@@ -345,6 +392,8 @@ export default function PlaceSearchSection() {
         keyword={keyword}
         places={places}
         trendingPlaces={trendingPlaces}
+=======
+>>>>>>> 4986e65 (카테고리 수정)
         errorMessage={errorMessage}
         isLoading={isLoading}
       />
