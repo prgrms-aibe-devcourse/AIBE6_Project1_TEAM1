@@ -11,6 +11,10 @@ interface Place {
 interface PlaceResultSectionProps {
   keyword: string
   places: Place[]
+<<<<<<< HEAD
+=======
+  trendingPlaces: Place[]
+>>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
   isLoading?: boolean
   errorMessage?: string
 }
@@ -18,6 +22,10 @@ interface PlaceResultSectionProps {
 export default function PlaceResultSection({
   keyword,
   places,
+<<<<<<< HEAD
+=======
+  trendingPlaces,
+>>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
   isLoading = false,
   errorMessage = '',
 }: PlaceResultSectionProps) {
@@ -42,7 +50,13 @@ export default function PlaceResultSection({
 
       {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
 
+<<<<<<< HEAD
       {!isLoading && <PlaceList places={places} />}
+=======
+      {!isLoading && (
+        <PlaceList places={hasKeyword ? places : trendingPlaces} />
+      )}
+>>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
     </section>
   )
 }
