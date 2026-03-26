@@ -56,6 +56,13 @@ const trendingPlaces: Place[] = [
     category: '관광명소',
     rating: 4.7,
   },
+  {
+    id: '4',
+    name: '강남2',
+    address: '서울 성동구 뚝섬ㅇㅇ로',
+    category: '공원',
+    rating: 4.7,
+  },
 ]
 
 const CATEGORY_CODE_MAP: Record<string, string> = {
