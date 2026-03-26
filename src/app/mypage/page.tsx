@@ -32,6 +32,11 @@ export default async function MyPage() {
           <MenuList />
           <LevelProgressBar />
         </div>
+        <div className="mt-12 flex justify-center pb-8">
+          <button className="text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors border-b border-transparent hover:border-gray-600 pb-0.5">
+            로그아웃
+          </button>
+        </div>
       </main>
     </div>
   )
