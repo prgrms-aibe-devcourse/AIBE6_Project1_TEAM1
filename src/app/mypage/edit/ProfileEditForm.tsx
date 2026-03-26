@@ -103,7 +103,6 @@ export default function ProfileEditForm({ user, profile }: any) {
     router.refresh(); // 최신 프로필 사진과 닉네임이 반영되도록 전체 리프레시를 한 번 시켜줍니다.
   };
 
-  // 화면에 보여줄 사진을 결정합니다: 방금 막 선택한 미리보기용(previewUrl)이 있다면 그걸 먼저 보여주고, 없다면 DB에 저장되어있던 사진(avatarUrl)을 보여줍니다.
   const currentDisplayAvatar = previewUrl || avatarUrl;
 
   return (
