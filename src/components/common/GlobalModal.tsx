@@ -1,10 +1,10 @@
 "use client";
 
+import CommonButton from "@/components/domain/plan/CommonButton";
+import { useModalStore } from "@/store/useModalStore";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, CheckCircle } from "lucide-react";
-import { useModalStore } from "@/store/useModalStore";
-import CommonButton from "@/components/domain/plan/CommonButton";
 
 export default function GlobalModal() {
   const {

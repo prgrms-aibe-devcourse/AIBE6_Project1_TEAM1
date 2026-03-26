@@ -18,5 +18,20 @@ export const handleEmailSignUp = async (email: string, password: string, nicknam
     }
   });
 
+  if (!error && data?.user) {
+    const { error: profileError } = await supabase.from('profiles').insert({
+      id: data.user.id,
+      nickname: nickname,
+      avatar_url: defaultProfile,
+      email: email,
+      created_at: new Date().toISOString()
+    });
+    
+    if (profileError) {
+      console.error('Profile table insert error:', profileError);
+      // 필요한 경우 에러 처리를 추가할 수 있습니다.
+    }
+  }
+
   return { error };
 };
