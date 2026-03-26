@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 
 interface ItineraryMapProps {
   places: Place[]
-  focusPlace?: { lat: number; lng: number } | null
+  focusPlace: { lat: number; lng: number } | null // 추가
 }
 
 export default function ItineraryMap({
@@ -31,10 +31,10 @@ export default function ItineraryMap({
       try {
         if (!mapContainer.current) return
 
-        // 성수억 부근 좌표 및 확대 레벨 설정
+        // 성수역 부근 좌표 및 확대 레벨 설정
         const options = {
-          center: new window.kakao.maps.LatLng(37.544641605, 127.055896738),
-          level: 4,
+          center: new window.kakao.maps.LatLng(37.5435, 127.0555),
+          level: 3,
         }
 
         // 빈 컨테이너에 카카오 지도 객체 생성 및 부착
@@ -107,14 +107,14 @@ export default function ItineraryMap({
     drawMarkersAndLines()
   }, [places])
 
-  // ✅ 특정 장소 선택 시(TimelineList 클릭) 지도 시점을 해당 좌표로 옮기는 로직
+  // ✅ 특정 장소가 선택(Focus)되었을 때 지도의 중심을 해당 좌표로 부드럽게 이동
   useEffect(() => {
-    if (focusPlace && mapInstance.current && window.kakao) {
-      const position = new window.kakao.maps.LatLng(
+    if (mapInstance.current && focusPlace && window.kakao) {
+      const moveLatLon = new window.kakao.maps.LatLng(
         focusPlace.lat,
         focusPlace.lng,
       )
-      mapInstance.current.panTo(position)
+      mapInstance.current.panTo(moveLatLon)
     }
   }, [focusPlace])
 

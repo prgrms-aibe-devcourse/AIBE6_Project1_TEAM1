@@ -95,9 +95,14 @@ export default function TimelineList({
                           </div>
 
                           {/* 카드 본체 */}
-                          <div 
-                            onClick={() => onSelectPlace?.({ lat: place.lat, lng: place.lng })}
-                            className="flex-1 ml-4 bg-white rounded-xl border border-gray-200 p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)] group hover:border-purple-200 hover:shadow-md transition-all cursor-pointer"
+                          <div
+                            onClick={() =>
+                              onSelectPlace?.({
+                                lat: place.lat,
+                                lng: place.lng,
+                              })
+                            }
+                            className="flex-1 ml-4 bg-white rounded-xl border border-gray-200 p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)] group hover:border-purple-300 hover:shadow-md transition-all cursor-pointer overflow-hidden"
                           >
                             <div className="flex justify-between items-start">
                               <div className="flex flex-col">
