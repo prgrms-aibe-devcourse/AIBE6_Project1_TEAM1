@@ -90,7 +90,12 @@ export default function ReviewWritePage() {
     <div className="min-h-screen flex flex-col items-center justify-center">
       <div className="flex-col w-1/3 self-center">
         <div className="py-4">
-          <button className="text-2xl p-2 cursor-pointer">←</button>
+          <button
+            className="text-2xl p-2 cursor-pointer"
+            onClick={() => router.back()}
+          >
+            ←
+          </button>
           <h1 className="inline text-2xl p-4 font-bold">리뷰작성</h1>
         </div>
 
@@ -130,9 +135,7 @@ export default function ReviewWritePage() {
         <div className="mb-6">
           <MediaUploader
             supabase={supabase}
-            onUpload={(urls: string[]) =>
-              setMedia((prev) => [...prev, ...urls])
-            }
+            onUpload={() => setMedia((prev) => [...prev, ...urls])}
             onRemove={(urls: string[]) => setMedia(urls)}
           />
         </div>
