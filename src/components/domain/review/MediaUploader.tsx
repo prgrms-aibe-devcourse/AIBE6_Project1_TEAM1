@@ -23,7 +23,6 @@ export default function MediaUploader({ supabase, onUpload, onRemove }: any) {
       const { error } = await supabase.storage
         .from('media-storage')
         .upload(fileName, file)
-
       if (error) {
         console.log(error)
         alert('파일 형식 및 용량을 확인해주세요')

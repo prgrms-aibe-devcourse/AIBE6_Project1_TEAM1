@@ -6,10 +6,10 @@ import RatingSelector from '@/components/domain/review/RatingSelector'
 import { createClient } from '@/utils/supabase/client'
 
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
-export default function ReviewWritePage(placeId: number) {
+export default function ReviewWritePage() {
   const [rating, setRating] = useState(0)
   const [content, setContent] = useState('')
   const [media, setMedia] = useState<{ url: string; path: string }[]>([])
@@ -24,6 +24,10 @@ export default function ReviewWritePage(placeId: number) {
   const supabase = createClient()
   const router = useRouter()
 
+  // url 형식 : /review/write?placeId=2
+  const searchParams = useSearchParams()
+  const placeId = searchParams.get('placeId')
+
   // 유저 정보 가져오기
   useEffect(() => {
     const getUser = async () => {
@@ -36,8 +40,6 @@ export default function ReviewWritePage(placeId: number) {
     getUser()
   }, [])
 
-  console.log('userid: ', userId)
-
   // 리뷰 등록
   const handleSubmit = async () => {
     if (loading) return
@@ -48,10 +50,9 @@ export default function ReviewWritePage(placeId: number) {
     const { data: reviewData, error: reviewError } = await supabase
       .from('reviews')
       .insert({
-        user_id: userId,
-        //user_id: '0ba3c127-607e-4644-96fd-a186c7096422',
-        // place_id: placeId,
-        place_id: 2,
+        //user_id: userId,
+        user_id: '0ba3c127-607e-4644-96fd-a186c7096422',
+        place_id: Number(placeId),
         rating,
         content,
         slope: options.slope,
