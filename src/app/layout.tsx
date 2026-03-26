@@ -29,8 +29,8 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-white`}>
-        {children}
         <GlobalModal />
+        {children}
       </body>    
     </html>
   );
