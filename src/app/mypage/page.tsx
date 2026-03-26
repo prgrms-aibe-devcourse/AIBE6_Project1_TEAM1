@@ -2,7 +2,6 @@ import LevelProgressBar from "@/components/domain/my-page/LevelProgressBar";
 import MenuList from "@/components/domain/my-page/MenuList";
 import ProfileHeader from "@/components/domain/my-page/ProfileHeader";
 import StatCardGroup from "@/components/domain/my-page/StatCardGroup";
-import GlobalHeader from "@/components/layout/GlobalHeader";
 import { createClient } from "@/utils/supabase/server";
 
 export default async function MyPage() {
@@ -17,18 +16,12 @@ export default async function MyPage() {
 
   return (
     <div className="min-h-screen bg-white md:bg-gray-50 pb-20">
-      <GlobalHeader />
       <main className="mx-auto max-w-4xl px-4 py-6 md:py-10 flex flex-col">
         <ProfileHeader nickname={profile?.nickname} avatar_url={profile?.avatar_url} />
         <StatCardGroup />
         <div className="mt-8 md:mt-10">
           <MenuList />
           <LevelProgressBar />
-        </div>
-        <div className="mt-12 flex justify-center pb-8">
-          <button className="text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors border-b border-transparent hover:border-gray-600 pb-0.5">
-            로그아웃
-          </button>
         </div>
       </main>
     </div>
