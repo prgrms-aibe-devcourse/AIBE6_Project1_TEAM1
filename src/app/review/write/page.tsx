@@ -135,8 +135,10 @@ export default function ReviewWritePage() {
         <div className="mb-6">
           <MediaUploader
             supabase={supabase}
-            onUpload={() => setMedia((prev) => [...prev, ...urls])}
-            onRemove={(urls: string[]) => setMedia(urls)}
+            onUpload={(urls: { url: string; path: string }[]) =>
+              setMedia((prev) => [...prev, ...urls])
+            }
+            onRemove={(urls: { url: string; path: string }[]) => setMedia(urls)}
           />
         </div>
 
