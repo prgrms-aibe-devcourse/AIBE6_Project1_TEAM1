@@ -2,7 +2,7 @@ import PlaceSearchSection from '@/components/domain/place-search/PlaceSearchSect
 
 export default function SearchPage() {
   return (
-    <main className="py-4">
+    <main className="min-h-screen bg-[#fafafa] py-8">
       <PlaceSearchSection />
     </main>
   )

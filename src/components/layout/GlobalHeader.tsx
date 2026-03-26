@@ -2,19 +2,34 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import GNBMenu from './GNBMenu'
 import SearchBox from './SearchBox'
 
 export default function GlobalHeader() {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const queryFromUrl = searchParams.get('query') ?? ''
   const [keyword, setKeyword] = useState('')
+
+  useEffect(() => {
+    if (pathname === '/search') {
+      setKeyword(queryFromUrl)
+    } else {
+      setKeyword('')
+    }
+  }, [pathname, queryFromUrl])
 
   const handleSearch = () => {
     const trimmedKeyword = keyword.trim()
 
-    if (!trimmedKeyword) return
+    if (!trimmedKeyword) {
+      router.push('/search')
+      return
+    }
 
     router.push(`/search?query=${encodeURIComponent(trimmedKeyword)}`)
   }
