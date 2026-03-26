@@ -6,9 +6,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { handleEmailSignUp } from "./signupLogics";
+import { useModalStore } from "@/store/useModalStore";
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { openModal } = useModalStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -41,8 +43,14 @@ export default function SignUpPage() {
     if (error) {
       setErrorMsg(error.message || "회원가입 중 오류가 발생했습니다.");
     } else {
-      alert("회원가입이 완료되었습니다. 로그인해주세요.");
-      router.push("/login");
+      openModal({
+        type: "alert",
+        variant: "primary",
+        title: "가입 완료 🎉",
+        description: "성공적으로 회원가입 되었습니다.\n확인 버튼을 누르면 로그인 페이지로 이동합니다.",
+        onConfirm: () => router.push("/login"),
+        onCloseCallback: () => router.push("/login"),
+      });
     }
   };
 
