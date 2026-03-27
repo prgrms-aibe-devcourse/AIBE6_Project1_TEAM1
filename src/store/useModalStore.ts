@@ -36,13 +36,16 @@ const initialState: ModalState = {
   description: '',
   confirmText: '확인',
   cancelText: '취소',
+  inputPlaceholder: undefined,
+  requiredInputText: undefined,
 };
 
 /** 모달의 상태를 전역적으로 관리하는 '저장소(Store)' 생성 */
 export const useModalStore = create<ModalStore>((set) => ({
+  /** 모달을 열고 닫을 때 이전 데이터가 남지 않도록 항상 initialState로 초기화(Reset)합니다. */
   ...initialState,
   /** 외부에서 모달을 열 때 필요한 정보를 받아와서 isOpen을 true로 변경 */
-  openModal: (config) => set({ ...config, isOpen: true }),
+  openModal: (config) => set({ ...initialState, ...config, isOpen: true }),
   /** 모달을 닫을 때 초기 상태로 되돌리되, isOpen만 false로 설정 */
-  closeModal: () => set((state) => ({ ...initialState, isOpen: false })),
+  closeModal: () => set({ ...initialState, isOpen: false }),
 }));
