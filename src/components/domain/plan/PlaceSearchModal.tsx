@@ -22,6 +22,7 @@ interface PlaceSearchModalProps {
     name: string,
     category: string,
     address: string,
+    isNearStation: boolean,
   ) => void
 }
 
@@ -113,17 +114,38 @@ export default function PlaceSearchModal({
               {results.map((place) => (
                 <div
                   key={place.id}
-                  // 클릭 시 부모(PlanPage)로 장소 정보를 통째로 쏴줌
-                  onClick={() =>
-                    onSelect(
-                      place.id,
-                      parseFloat(place.y),
-                      parseFloat(place.x),
-                      place.place_name,
-                      place.category_group_name.split(' > ').pop() || '기타', // 가장 마지막 카테고리만 깔끔하게 빼냄 (ex: 한식)
-                      place.address_name,
+                  // 클릭 시 넘겨주기 직전에 역세권(SW8) 여부를 추가로 체크합니다
+                  onClick={() => {
+                    const ps = new window.kakao.maps.services.Places()
+                    const options = {
+                      location: new window.kakao.maps.LatLng(
+                        parseFloat(place.y),
+                        parseFloat(place.x),
+                      ),
+                      radius: 500, // 500m 이내
+                    }
+
+                    // SW8: 지하철역 코드
+                    ps.categorySearch(
+                      'SW8',
+                      (data: any, status: any) => {
+                        const isNear =
+                          status === window.kakao.maps.services.Status.OK &&
+                          data.length > 0
+                        onSelect(
+                          place.id,
+                          parseFloat(place.y),
+                          parseFloat(place.x),
+                          place.place_name,
+                          place.category_group_name.split(' > ').pop() ||
+                            '기타',
+                          place.address_name,
+                          isNear,
+                        )
+                      },
+                      options,
                     )
-                  }
+                  }}
                   className="flex justify-between items-center p-4 hover:bg-gray-50 rounded-xl cursor-pointer border border-transparent hover:border-gray-200 transition-all group"
                 >
                   <div className="flex flex-col gap-1.5 overflow-hidden pr-4">

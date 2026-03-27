@@ -31,6 +31,7 @@ export interface Place {
   address: string
   lat: number
   lng: number
+  isNearStation?: boolean
 }
 
 function PlanPageContent() {
@@ -150,7 +151,7 @@ function PlanPageContent() {
               visit_day,
               visit_order,
               places (
-                id, kakao_place_id, place_name, category, address, latitude, longitude
+                id, kakao_place_id, place_name, category, address, latitude, longitude, is_near_station
               )
             )
           `,
@@ -199,6 +200,7 @@ function PlanPageContent() {
               address: item.places.address || '주소 없음', // DB에서 긁어온 실제 주소 맵핑
               lat: item.places.latitude,
               lng: item.places.longitude,
+              isNearStation: item.places.is_near_station,
             })
           }
         })
@@ -228,6 +230,7 @@ function PlanPageContent() {
     name: string,
     category: string,
     address: string,
+    isNearStation: boolean, // 역세권 여부 파라미터 추가
   ) => {
     const newPlace: Place = {
       id: Date.now().toString(),
@@ -237,6 +240,7 @@ function PlanPageContent() {
       address,
       lat,
       lng,
+      isNearStation,
     }
     setPlacesByDay((prev) => ({
       ...prev,
@@ -397,7 +401,7 @@ function PlanPageContent() {
                   address: place.address, // 새롭게 추가된 주소 필드 저장 연결!
                   latitude: place.lat,
                   longitude: place.lng,
-                  is_near_station: false,
+                  is_near_station: place.isNearStation ?? false,
                 })
                 .select('id')
                 .single()
@@ -464,8 +468,8 @@ function PlanPageContent() {
       {isSearchOpen && (
         <PlaceSearchModal
           onClose={() => setIsSearchOpen(false)}
-          onSelect={(kakaoId, lat, lng, name, category, addr) => {
-            handleAddPlace(kakaoId, lat, lng, name, category, addr)
+          onSelect={(kakaoId, lat, lng, name, category, addr, isNear) => {
+            handleAddPlace(kakaoId, lat, lng, name, category, addr, isNear)
             setIsSearchOpen(false) // 완추가 후 모달 자동 닫기
           }}
         />

@@ -113,6 +113,11 @@ export default function TimelineList({
                                   <FilterBadge className="!px-1.5 !py-0.5 !text-[10px] !bg-gray-100 !text-gray-600 !border-gray-100 !rounded-md leading-none h-fit">
                                     {place.category}
                                   </FilterBadge>
+                                  {place.isNearStation && (
+                                    <FilterBadge className="!px-1.5 !py-0.5 !text-[10px] !bg-purple-100 !text-purple-600 !border-purple-100 !rounded-md leading-none h-fit font-bold">
+                                      역세권
+                                    </FilterBadge>
+                                  )}
                                 </div>
                                 <p className="text-[11px] text-gray-500 flex items-center gap-1.5 mb-0.5">
                                   <span className="w-1 h-1 bg-gray-300 rounded-full inline-block"></span>
