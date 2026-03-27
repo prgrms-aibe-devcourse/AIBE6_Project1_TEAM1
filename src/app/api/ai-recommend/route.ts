@@ -1,0 +1,91 @@
+import { GoogleGenerativeAI } from '@google/generative-ai'
+import { NextResponse } from 'next/server'
+
+// ─── 타입 정의 (프론트에서도 import 가능) ───
+export interface AIPlace {
+  order: number
+  name: string
+  category: string
+  desc: string
+  duration: string
+  walkInfo: string | null
+}
+
+export interface AIRecommendResponse {
+  course: AIPlace[]
+  totalWalkDistance: string
+  totalPlaces: number
+}
+
+// ─── Gemini 클라이언트 ───
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+
+export async function POST(request: Request) {
+  // 1. 입력값 파싱
+  const { station, themes, totalMinutes, includeMeal } = await request.json()
+
+  // 2. 입력값 검증
+  if (!station || !themes || themes.length === 0) {
+    return NextResponse.json(
+      { error: '출발지와 테마를 선택해주세요.' },
+      { status: 400 },
+    )
+  }
+
+  // 3. 시간 포맷 변환
+  const h = Math.floor(totalMinutes / 60)
+  const m = totalMinutes % 60
+  const timeLabel = m > 0 ? `${h}시간 ${m}분` : `${h}시간`
+
+  // 4. 프롬프트 생성
+  const prompt = `너는 서울 도보 여행 코스 추천 전문가다.
+아래 조건에 맞는 도보 여행 코스를 추천하고, 반드시 순수 JSON만 응답해라.
+마크다운 코드블록(\`\`\`json)을 절대 사용하지 마라.
+
+조건:
+- 출발지: ${station}
+- 선호 테마: ${themes.join(', ')}
+- 총 가용 시간: ${timeLabel}
+- 식사 포함: ${includeMeal ? '예 (맛집 1곳 포함)' : '아니오'}
+
+규칙:
+- 첫 번째 장소는 반드시 출발역이고 walkInfo는 null
+- 이후 장소들은 이전 장소에서 도보 1km 이내의 실제 존재하는 장소
+- 총 ${timeLabel} 안에 소화 가능한 수 (보통 4~6곳)
+- 각 장소 머무는 시간 + 도보 이동 시간 합계가 총 가용 시간에 맞게
+- 선호 테마(${themes.join(', ')})에 부합하는 장소 위주
+- 한국어로만 응답
+
+JSON 형식:
+{
+  "course": [
+    { "order": 1, "name": "장소명", "category": "카테고리", "desc": "한두 문장 설명", "duration": "XX분", "walkInfo": null },
+    { "order": 2, "name": "장소명", "category": "카테고리", "desc": "한두 문장 설명", "duration": "XX분", "walkInfo": "도보 X분 (X.Xkm)" }
+  ],
+  "totalWalkDistance": "X.Xkm",
+  "totalPlaces": 5
+}`
+
+  // 5. Gemini API 호출
+  try {
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash',
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 1500,
+        responseMimeType: 'application/json',
+      },
+    })
+
+    const result = await model.generateContent(prompt)
+    const raw = result.response.text()
+
+    // 6. JSON 파싱
+    const data: AIRecommendResponse = JSON.parse(raw)
+    return NextResponse.json(data)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[ai-recommend] Gemini error:', message)
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}

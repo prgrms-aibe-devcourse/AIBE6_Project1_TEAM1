@@ -3,6 +3,9 @@
 // ─── Import: React ───
 import { useState } from 'react'
 
+// ─── Import: AI API 타입 ───
+import type { AIPlace, AIRecommendResponse } from '@/app/api/ai-recommend/route'
+
 // ─── Import: Layout 컴포넌트 ───
 import GlobalHeader from '@/components/layout/GlobalHeader'
 import PageContainer from '@/components/layout/PageContainer'
@@ -107,6 +110,8 @@ export default function AIPage() {
   const [totalMinutes, setTotalMinutes] = useState(150)
   const [includeMeal, setIncludeMeal] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [aiResult, setAiResult] = useState<AIRecommendResponse | null>(null)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   const handleThemeToggle = (label: string) => {
     setSelectedThemes((prev) =>
@@ -120,10 +125,34 @@ export default function AIPage() {
 
   const handleAIRecommend = async () => {
     setIsLoading(true)
-    // TODO: 실제 OpenAI API 연동 시 fetch('/api/ai-recommend', ...) 로 교체
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setIsLoading(false)
-    setStep(4)
+    setAiError(null)
+    try {
+      const res = await fetch('/api/ai-recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          station,
+          themes: selectedThemes,
+          totalMinutes,
+          includeMeal,
+        }),
+      })
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}))
+        throw new Error(errBody?.error ?? 'API 오류: ' + res.status)
+      }
+      const data: AIRecommendResponse = await res.json()
+      setAiResult(data)
+      setStep(4)
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : 'AI 추천 중 오류가 발생했습니다.'
+      setAiError(msg)
+      setStep(4)
+      console.error(err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const formatTime = (min: number) => {
@@ -320,6 +349,13 @@ export default function AIPage() {
               <Sparkles className="w-5 h-5" /> AI 추천 코스
             </h2>
 
+            {/* API 에러 표시 */}
+            {aiError && (
+              <div className="border border-red-200 bg-red-50 text-red-700 rounded-xl p-4 mb-4 text-sm">
+                {aiError}
+              </div>
+            )}
+
             {/* 조건 요약 */}
             <div className="border border-gray-200 rounded-xl p-4 mb-4 bg-white">
               <p className="text-sm text-gray-700">
@@ -335,12 +371,14 @@ export default function AIPage() {
               </p>
             </div>
 
-            {/* 결과 미리보기 */}
+            {/* 결과 요약 통계 */}
             <div className="grid grid-cols-3 gap-3 mb-6">
               <div className="border border-gray-200 rounded-xl p-4 bg-white">
                 <Footprints className="w-4 h-4 text-gray-500 mb-1" />
                 <p className="text-xs text-gray-400">총 도보 거리</p>
-                <p className="text-sm font-bold text-gray-900">3.2km</p>
+                <p className="text-sm font-bold text-gray-900">
+                  {aiResult?.totalWalkDistance ?? '...'}
+                </p>
               </div>
               <div className="border border-gray-200 rounded-xl p-4 bg-white">
                 <Clock className="w-4 h-4 text-gray-500 mb-1" />
@@ -353,7 +391,7 @@ export default function AIPage() {
                 <MapPin className="w-4 h-4 text-gray-500 mb-1" />
                 <p className="text-xs text-gray-400">주요 장소</p>
                 <p className="text-sm font-bold text-gray-900">
-                  {DUMMY_RESULTS.length}곳
+                  {aiResult?.totalPlaces ?? DUMMY_RESULTS.length}곳
                 </p>
               </div>
             </div>
@@ -363,7 +401,7 @@ export default function AIPage() {
               추천 코스 리스트
             </p>
             <div className="space-y-0">
-              {DUMMY_RESULTS.map((place) => (
+              {(aiResult?.course ?? DUMMY_RESULTS).map((place: AIPlace) => (
                 <AIResultCard key={place.order} {...place} />
               ))}
             </div>
@@ -379,6 +417,8 @@ export default function AIPage() {
                   setStation('')
                   setSelectedThemes([])
                   setTotalMinutes(150)
+                  setAiResult(null)
+                  setAiError(null)
                 }}
                 className="py-3.5 px-5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer flex items-center gap-2"
               >
