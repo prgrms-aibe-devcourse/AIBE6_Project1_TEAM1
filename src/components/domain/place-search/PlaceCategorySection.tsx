@@ -5,6 +5,7 @@ interface PlaceCategorySectionProps {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -17,11 +18,16 @@ const categories = [
 =======
   '관광명소',
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
+=======
+const categories = [
+  '전체',
+>>>>>>> fffbf31 (Refactor: UI변경, 디렉토리 이동)
   '음식점',
   '카페',
   '숙박',
   '관광명소',
   '문화시설',
+<<<<<<< HEAD
 <<<<<<< HEAD
   '당일치기',
 =======
@@ -38,6 +44,10 @@ const categories = ['전체', '음식점', '카페', '숙박', '관광명소', '
 =======
 const categories = ['전체', '음식점', '카페', '숙박', '관광명소', '문화시설']
 >>>>>>> 4948500 (Fix: 충돌수정)
+=======
+  '당일치기',
+]
+>>>>>>> fffbf31 (Refactor: UI변경, 디렉토리 이동)
 
 export default function PlaceCategorySection({
   selectedCategory,
