@@ -5,14 +5,22 @@ interface Place {
   name: string
   address: string
   category: string
-  rating?: number
+  categoryGroupName?: string
+  phone?: string
+  imageUrl?: string
 }
 
 interface PlaceListProps {
   places: Place[]
+  selectedPlaceId?: string
+  onSelectPlace?: (place: Place) => void
 }
 
-export default function PlaceList({ places }: PlaceListProps) {
+export default function PlaceList({
+  places,
+  selectedPlaceId,
+  onSelectPlace,
+}: PlaceListProps) {
   if (places.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
@@ -22,9 +30,14 @@ export default function PlaceList({ places }: PlaceListProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {places.map((place) => (
-        <PlaceCard key={place.id} place={place} />
+        <PlaceCard
+          key={place.id}
+          place={place}
+          isSelected={selectedPlaceId === place.id}
+          onClick={() => onSelectPlace?.(place)}
+        />
       ))}
     </div>
   )
