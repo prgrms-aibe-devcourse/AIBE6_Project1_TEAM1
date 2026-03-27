@@ -11,12 +11,14 @@ import {
   User,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 const supabase = createClient()
 
 export default function GNBMenu() {
   const [isLogin, setIsLogin] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     // 초기 세션 확인
@@ -36,6 +38,7 @@ export default function GNBMenu() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
+    router.push('/login')
   }
 
   return (
