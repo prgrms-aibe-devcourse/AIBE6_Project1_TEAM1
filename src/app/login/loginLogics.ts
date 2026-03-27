@@ -32,5 +32,11 @@ export const handleEmailLogin = async (email: string, password: string): Promise
     password,
   });
 
+  if (error) {
+    console.error('Email Login Error:', error.message, error);
+  } else {
+    console.log('Email Login Success:', data.user?.email);
+  }
+
   return { error };
 };

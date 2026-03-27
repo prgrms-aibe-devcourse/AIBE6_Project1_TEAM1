@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getAuthErrorMessage } from "@/utils/supabase/authErrors";
 import { handleSocialLogin, handleEmailLogin } from "./loginLogics";
 
 export default function LoginPage() {
@@ -28,7 +29,7 @@ export default function LoginPage() {
     setIsLoading(false);
 
     if (error) {
-      setErrorMsg("이메일 또는 비밀번호가 일치하지 않습니다.");
+      setErrorMsg(getAuthErrorMessage(error)); 
     } else {
       router.push("/");
     }
