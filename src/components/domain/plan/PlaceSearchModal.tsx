@@ -2,6 +2,7 @@
 
 import { MapPin, Search, X } from 'lucide-react'
 import { useState } from 'react'
+import { useModalStore } from '@/store/useModalStore'
 
 interface PlaceSearchResult {
   id: string
@@ -30,6 +31,7 @@ export default function PlaceSearchModal({
   onClose,
   onSelect,
 }: PlaceSearchModalProps) {
+  const { openModal } = useModalStore()
   const [keyword, setKeyword] = useState('')
   const [results, setResults] = useState<PlaceSearchResult[]>([])
 
@@ -40,9 +42,12 @@ export default function PlaceSearchModal({
 
     // API 검증
     if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
-      alert(
-        '카카오 장소 검색 API가 준비되지 않았습니다. 잠시 후 다시 시도해주세요.',
-      )
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: 'API 오류',
+        description: '카카오 장소 검색 API가 준비되지 않았습니다. 잠시 후 다시 시도해주세요.',
+      })
       return
     }
 
@@ -54,9 +59,19 @@ export default function PlaceSearchModal({
         setResults(data)
       } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
         setResults([])
-        alert('관련된 장소를 찾을 수 없습니다.')
+        openModal({
+          type: 'alert',
+          variant: 'primary',
+          title: '검색 결과 없음',
+          description: '관련된 장소를 찾을 수 없습니다.',
+        })
       } else {
-        alert('검색 중 오류가 발생했습니다.')
+        openModal({
+          type: 'alert',
+          variant: 'danger',
+          title: '검색 오류',
+          description: '검색 중 오류가 발생했습니다.',
+        })
       }
     })
   }

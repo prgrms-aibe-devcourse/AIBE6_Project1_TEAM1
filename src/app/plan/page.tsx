@@ -457,7 +457,7 @@ function PlanPageContent() {
         type: 'alert',
         variant: 'primary',
         title: '저장 완료',
-        description: '플랜이 성공적으로 데이터베이스에 저장되었습니다!',
+        description: '플랜이 내 보관함에 저장되었습니다!',
       })
 
       // 저장 성공 후 화면 상부의 Badge 정보들도 동기화해줍니다.
