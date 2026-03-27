@@ -578,20 +578,24 @@ function PlanPageContent() {
               {/* 곧바로 저장(handleSaveTrip)을 호출하지 않고 팝업(Modal) 상태를 켭니다. */}
               <CommonButton
                 onClick={() => setIsSaveModalOpen(true)}
-                disabled={isSaving || isSaveModalOpen || (!editTripId ? false : !isModified)}
+                disabled={
+                  isSaving ||
+                  isSaveModalOpen ||
+                  (!editTripId ? false : !isModified)
+                }
                 className={`!rounded-lg px-4 py-2 flex items-center gap-2 text-[13px] font-semibold border-none ml-2 shadow-sm transition-all ${
-                  !editTripId || isModified 
-                    ? '!bg-purple-600 !text-white hover:!bg-purple-700' 
+                  !editTripId || isModified
+                    ? '!bg-purple-600 !text-white hover:!bg-purple-700'
                     : '!bg-gray-200 !text-gray-400 cursor-not-allowed'
                 }`}
               >
-                {isSaving ? (
-                  '저장 중...'
-                ) : editTripId ? (
-                  isModified ? '일정 수정하기' : '수정사항 없음'
-                ) : (
-                  '일정 저장하기'
-                )}
+                {isSaving
+                  ? '저장 중...'
+                  : editTripId
+                    ? isModified
+                      ? '일정 수정하기'
+                      : '일정 수정하기'
+                    : '일정 저장하기'}
               </CommonButton>
             </div>
           </div>
