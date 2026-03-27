@@ -92,15 +92,18 @@ export async function POST(request: Request) {
       },
     })
 
+    console.log('[Prompt]:\n', prompt)
+
     const result = await model.generateContent(prompt)
     const raw = result.response.text()
 
-    console.log(
-      '[ai-recommend] Response (length:',
-      raw.length,
-      '):',
-      raw.substring(0, 200),
-    )
+    const usage = result.response.usageMetadata
+    console.log('[Token Usage]', {
+      입력토큰: usage?.promptTokenCount,
+      출력토큰: usage?.candidatesTokenCount,
+      총토큰: usage?.totalTokenCount,
+    })
+    console.log('[Gemini Response]:\n', raw)
 
     // JSON 파싱
     const data: AIRecommendResponse = JSON.parse(raw)
