@@ -51,8 +51,12 @@ export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
 =======
     <section className="space-y-6">
+<<<<<<< HEAD
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
 >>>>>>> 2e4a410 (Refactor: UI변경)
+=======
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+>>>>>>> cc29114 (Refactor: UI변경)
         {currentTrips.map((trip) => (
           <PlaceCard
             key={trip.id}
