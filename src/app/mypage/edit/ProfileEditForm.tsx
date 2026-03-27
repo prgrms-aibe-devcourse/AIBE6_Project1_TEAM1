@@ -27,6 +27,9 @@ export default function ProfileEditForm({ user, profile }: any) {
   const [newPassword, setNewPassword] = useState(""); // 바꿀 새 비밀번호
   const [confirmPassword, setConfirmPassword] = useState(""); // 새 비밀번호 한 번 더 확인
 
+  // 이메일로 가입한 유저인지 확인하는 상태
+  const isEmailUser = user?.app_metadata?.provider === "email";
+
   // 사용자가 새로운 프로필 사진을 앨범에서 선택했을 때 실행되는 함수입니다.
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // 파일이 정상적으로 선택되었는지 확인합니다
@@ -171,6 +174,7 @@ export default function ProfileEditForm({ user, profile }: any) {
 
           {/* Password Security Section */}
           {/* 비유: 세 개의 튼튼한 금고 다이얼이 있는 패스워드 폼 */}
+          {isEmailUser && (   
           <div>
             <label className="block text-[13px] font-bold text-gray-700 mb-2">보안 설정 (비밀번호 변경)</label>
             <p className="mb-4 text-[11px] text-gray-400">안전한 로그인을 위해 주기적으로 비밀번호를 변경해 주세요.</p>
@@ -201,13 +205,14 @@ export default function ProfileEditForm({ user, profile }: any) {
                 />
               </div>
             </div>
-          </div>
+          </div>)}
         </div>
+        
 
         {/* Action Bottom */}
         <div className="mt-16 mb-8 text-center w-full">
           <button className="text-[13px] font-medium text-gray-400 hover:text-red-500 transition-colors border-b border-gray-400 hover:border-red-500 pb-0.5">
-            뚜벅 로그아웃 및 회원 탈퇴
+              회원 탈퇴
           </button>
         </div>
       </main>
