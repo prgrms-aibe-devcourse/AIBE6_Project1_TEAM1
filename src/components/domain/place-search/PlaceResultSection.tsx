@@ -1,6 +1,7 @@
 import PlaceCategorySection from './PlaceCategorySection'
 import PlaceList from './PlaceList'
 <<<<<<< HEAD
+<<<<<<< HEAD
 import type { Trip, TripDetailItem } from './PlaceSearchSection'
 =======
 
@@ -35,6 +36,13 @@ interface PlaceResultSectionProps {
   selectedPlace?: Place | null
   onSelectPlace?: (place: Place) => void
 >>>>>>> 64d8b82 (Feat: 검색결과 정렬)
+=======
+import type { Trip, TripDetailItem } from './PlaceSearchSection'
+
+interface PlaceResultSectionProps {
+  trips: Trip[]
+  tripDetailsMap: Record<number, TripDetailItem[]>
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
   isLoading?: boolean
   errorMessage?: string
   selectedCategory: string
@@ -42,6 +50,7 @@ interface PlaceResultSectionProps {
 }
 
 export default function PlaceResultSection({
+<<<<<<< HEAD
 <<<<<<< HEAD
   trips,
   tripDetailsMap,
@@ -61,6 +70,10 @@ export default function PlaceResultSection({
   selectedPlace,
   onSelectPlace,
 >>>>>>> 64d8b82 (Feat: 검색결과 정렬)
+=======
+  trips,
+  tripDetailsMap,
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
   isLoading = false,
   errorMessage = '',
   selectedCategory,
@@ -81,6 +94,7 @@ export default function PlaceResultSection({
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
       {!isLoading && !errorMessage && (
         <PlaceList trips={trips} tripDetailsMap={tripDetailsMap} />
       )}
@@ -97,6 +111,10 @@ export default function PlaceResultSection({
           selectedPlaceId={selectedPlace?.id}
           onSelectPlace={onSelectPlace}
         />
+=======
+      {!isLoading && !errorMessage && (
+        <PlaceList trips={trips} tripDetailsMap={tripDetailsMap} />
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
       )}
 <<<<<<< HEAD
 >>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)

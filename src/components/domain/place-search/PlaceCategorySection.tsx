@@ -4,6 +4,7 @@ interface PlaceCategorySectionProps {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 const categories = ['전체', '음식점', '카페', '숙박', '관광명소', '문화시설']
 =======
 const categories = [
@@ -16,6 +17,9 @@ const categories = [
   '지하철역',
 ]
 >>>>>>> 56c7bc4 (카테고리 수정)
+=======
+const categories = ['전체', '음식점', '카페', '숙박', '관광명소', '문화시설']
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
 
 export default function PlaceCategorySection({
   selectedCategory,
@@ -28,6 +32,9 @@ export default function PlaceCategorySection({
           const isActive = selectedCategory === category
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
           return (
             <button
               key={category}
@@ -44,6 +51,7 @@ export default function PlaceCategorySection({
           )
         })}
       </div>
+<<<<<<< HEAD
 =======
         return (
           <button
@@ -61,6 +69,8 @@ export default function PlaceCategorySection({
         )
       })}
 >>>>>>> 56c7bc4 (카테고리 수정)
+=======
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
     </div>
   )
 }
