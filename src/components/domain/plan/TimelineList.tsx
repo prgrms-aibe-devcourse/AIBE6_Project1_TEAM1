@@ -10,7 +10,7 @@ import {
   DropResult,
 } from '@hello-pangea/dnd'
 import { Clock, GripVertical, X } from 'lucide-react'
-import CommonButton from './CommonButton'
+import CommonButton from '@/components/common/CommonButton'
 import FilterBadge from './FilterBadge'
 import TransitIndicator from './TransitIndicator'
 

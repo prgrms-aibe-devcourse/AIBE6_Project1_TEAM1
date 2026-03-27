@@ -1,6 +1,6 @@
 "use client";
 
-import CommonButton from "@/components/domain/plan/CommonButton";
+import CommonButton from "@/components/common/CommonButton";
 import { useModalStore } from "@/store/useModalStore";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { AnimatePresence, motion } from "framer-motion";

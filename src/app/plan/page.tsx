@@ -1,6 +1,6 @@
 'use client'
 
-import CommonButton from '@/components/domain/plan/CommonButton'
+import CommonButton from '@/components/common/CommonButton'
 import FilterBadge from '@/components/domain/plan/FilterBadge'
 import ItineraryMap from '@/components/domain/plan/ItineraryMap'
 import MyTripsSidebar from '@/components/domain/plan/MyTripsSidebar'
