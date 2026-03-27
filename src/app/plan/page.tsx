@@ -67,6 +67,7 @@ function PlanPageContent() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false) // 사이드바 관리 추가
+  const [isModified, setIsModified] = useState(false) // 수정 여부 추적 추가
 
   const { openModal } = useModalStore()
 
@@ -95,8 +96,8 @@ function PlanPageContent() {
       }
     }
 
-    // 작성 중인 내용이 있다면 모달로 확인
-    if (hasContent) {
+    // 작성 중인 내용이 있고 수정된 사항이 있다면 모달로 확인
+    if (isModified) {
       openModal({
         type: 'confirm',
         variant: 'primary',
@@ -217,6 +218,8 @@ function PlanPageContent() {
         setPlacesByDay(fetchedPlacesByDay)
         // 불러올 땐 항상 Day 1 탭을 보여줍니다.
         setCurrentDay(1)
+        // 새로 불러왔으므로 수정 사항 없음으로 초기화
+        setIsModified(false)
       } catch (err) {
         console.error('플랜 로딩 중 문제 발생:', err)
       }
@@ -249,6 +252,7 @@ function PlanPageContent() {
       ...prev,
       [currentDay]: [...(prev[currentDay] || []), newPlace],
     }))
+    setIsModified(true)
   }
 
   const handleReorderPlaces = (startIndex: number, endIndex: number) => {
@@ -258,6 +262,7 @@ function PlanPageContent() {
       dayPlaces.splice(endIndex, 0, removed)
       return { ...prev, [currentDay]: dayPlaces }
     })
+    setIsModified(true)
   }
 
   const handleDeletePlace = (id: string) => {
@@ -265,6 +270,7 @@ function PlanPageContent() {
       ...prev,
       [currentDay]: (prev[currentDay] || []).filter((p) => p.id !== id),
     }))
+    setIsModified(true)
   }
 
   const handleDeleteDay = (dayToDelete: number) => {
@@ -309,7 +315,7 @@ function PlanPageContent() {
       } else if (currentDay > dayToDelete) {
         setCurrentDay(currentDay - 1)
       }
-
+      setIsModified(true)
       return newPlacesByDay
     })
   }
@@ -461,6 +467,8 @@ function PlanPageContent() {
         endDate,
         isPublic,
       })
+      // 저장 성공 후 수정 여부 초기화
+      setIsModified(false)
     } catch (error) {
       console.error(error)
       openModal({
@@ -570,10 +578,20 @@ function PlanPageContent() {
               {/* 곧바로 저장(handleSaveTrip)을 호출하지 않고 팝업(Modal) 상태를 켭니다. */}
               <CommonButton
                 onClick={() => setIsSaveModalOpen(true)}
-                disabled={isSaving || isSaveModalOpen}
-                className="!bg-purple-600 !text-white hover:!bg-purple-700 !rounded-lg px-4 py-2 flex items-center gap-2 text-[13px] font-semibold border-none ml-2 shadow-sm transition-all"
+                disabled={isSaving || isSaveModalOpen || (!editTripId ? false : !isModified)}
+                className={`!rounded-lg px-4 py-2 flex items-center gap-2 text-[13px] font-semibold border-none ml-2 shadow-sm transition-all ${
+                  !editTripId || isModified 
+                    ? '!bg-purple-600 !text-white hover:!bg-purple-700' 
+                    : '!bg-gray-200 !text-gray-400 cursor-not-allowed'
+                }`}
               >
-                {isSaving ? '저장 중...' : '일정 저장하기'}
+                {isSaving ? (
+                  '저장 중...'
+                ) : editTripId ? (
+                  isModified ? '일정 수정하기' : '수정사항 없음'
+                ) : (
+                  '일정 저장하기'
+                )}
               </CommonButton>
             </div>
           </div>
@@ -630,6 +648,7 @@ function PlanPageContent() {
                   setPlacesByDay((prev) => {
                     const nextDay =
                       Math.max(...Object.keys(prev).map(Number)) + 1
+                    setIsModified(true)
                     return { ...prev, [nextDay]: [] }
                   })
                 }
