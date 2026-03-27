@@ -48,7 +48,7 @@ export default function SignUpPage() {
         type: "alert",
         variant: "primary",
         title: "가입 완료 🎉",
-        description: "성공적으로 회원가입 되었습니다.\n확인 버튼을 누르면 로그인 페이지로 이동합니다.",
+        description: "성공적으로 회원가입 되었습니다.\n입력하신 이메일로 발송된 인증 메일을 확인해 주세요.\n확인 버튼을 누르면 로그인 페이지로 이동합니다.",
         onConfirm: () => router.push("/login"),
         onCloseCallback: () => router.push("/login"),
       });
