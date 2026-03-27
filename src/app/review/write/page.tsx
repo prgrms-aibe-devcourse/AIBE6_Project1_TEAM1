@@ -52,8 +52,7 @@ export default function ReviewWritePage() {
     const { data: reviewData, error: reviewError } = await supabase
       .from('reviews')
       .insert({
-        //user_id: userId,
-        user_id: '0ba3c127-607e-4644-96fd-a186c7096422',
+        user_id: userId,
         place_id: placeId,
         rating,
         content,

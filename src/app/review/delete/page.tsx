@@ -11,6 +11,8 @@ import { useEffect } from 'react'
 
 export default function ReviewDeletePage() {
   // url 형식 : /review/delete?reviewId="리뷰번호"
+
+  //////////////////// 다른 페이지에서 구현될 내용 + 디버깅용 코드 //////////////////////////
   const supabase = createClient()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -35,7 +37,9 @@ export default function ReviewDeletePage() {
     }
     checkReview()
   }, [reviewId])
+  ///////////////////////////////////////////////////////////////////////////////
 
+  /////////////////////////// DeleteReview 사용 예시 /////////////////////////////
   const handleClick = async () => {
     if (!reviewId) return
 
