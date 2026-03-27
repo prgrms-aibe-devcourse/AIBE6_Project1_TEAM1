@@ -2,32 +2,17 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-<<<<<<< HEAD
-<<<<<<< HEAD
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
-=======
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
->>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
-=======
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
->>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
 import GNBMenu from './GNBMenu'
 import SearchBox from './SearchBox'
 
 export default function GlobalHeader() {
   const router = useRouter()
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
   const queryFromUrl = searchParams.get('query') ?? ''
-<<<<<<< HEAD
   const [keyword, setKeyword] = useState('')
 
   useEffect(() => {
@@ -45,31 +30,6 @@ export default function GlobalHeader() {
       router.push('/search')
       return
     }
-=======
-=======
->>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
-  const [keyword, setKeyword] = useState('')
-
-  useEffect(() => {
-    if (pathname === '/search') {
-      setKeyword(queryFromUrl)
-    } else {
-      setKeyword('')
-    }
-  }, [pathname, queryFromUrl])
-
-  const handleSearch = () => {
-    const trimmedKeyword = keyword.trim()
-
-<<<<<<< HEAD
-    if (!trimmedKeyword) return
->>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
-=======
-    if (!trimmedKeyword) {
-      router.push('/search')
-      return
-    }
->>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
 
     router.push(`/search?query=${encodeURIComponent(trimmedKeyword)}`)
   }

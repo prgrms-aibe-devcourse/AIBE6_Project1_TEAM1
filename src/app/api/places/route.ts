@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get('query')
-<<<<<<< HEAD
-<<<<<<< HEAD
   const categoryGroupCode = req.nextUrl.searchParams.get('categoryGroupCode')
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
   const pageParam = req.nextUrl.searchParams.get('page')
@@ -28,6 +27,10 @@ export async function GET(req: NextRequest) {
   const sizeParam = req.nextUrl.searchParams.get('size')
 >>>>>>> 3380091 (Feat: 페이지기능 구현)
 >>>>>>> 6539aea (Feat: 페이지기능 구현)
+=======
+  const pageParam = req.nextUrl.searchParams.get('page')
+  const sizeParam = req.nextUrl.searchParams.get('size')
+>>>>>>> 64d8b82 (Feat: 검색결과 정렬)
 
   if (!query || !query.trim()) {
     return NextResponse.json(
@@ -47,16 +50,16 @@ export async function GET(req: NextRequest) {
 
   const page = Math.max(1, Number(pageParam) || 1)
 <<<<<<< HEAD
+<<<<<<< HEAD
   const size = Math.min(15, Math.max(1, Number(sizeParam) || 9))
 =======
   const size = Math.min(15, Math.max(1, Number(sizeParam) || 15))
 >>>>>>> 6539aea (Feat: 페이지기능 구현)
+=======
+  const size = Math.min(15, Math.max(1, Number(sizeParam) || 9))
+>>>>>>> 64d8b82 (Feat: 검색결과 정렬)
 
   try {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 4986e65 (카테고리 수정)
     const kakaoParams = new URLSearchParams({
       query: query.trim(),
       page: String(page),
@@ -68,14 +71,6 @@ export async function GET(req: NextRequest) {
     }
 
     const kakaoUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?${kakaoParams.toString()}`
-<<<<<<< HEAD
-=======
-    const kakaoUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(
-      query,
-    )}`
->>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
-=======
->>>>>>> 4986e65 (카테고리 수정)
 
     const response = await fetch(kakaoUrl, {
       method: 'GET',
