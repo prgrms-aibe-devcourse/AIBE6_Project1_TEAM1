@@ -84,10 +84,10 @@ export async function POST(request: Request) {
   // 5. Gemini API 호출
   try {
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite-preview',
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 4096,
+        maxOutputTokens: 6000,
         responseMimeType: 'application/json',
       },
     })
