@@ -36,13 +36,6 @@ export default function PlaceCard({ trip, detailItems }: PlaceCardProps) {
 
       {isOpen && (
         <div className="border-t border-gray-100 bg-gray-50 px-4 py-4">
-          <div className="rounded-lg bg-white p-3">
-            <p className="text-xs font-medium text-gray-500">일정 제목</p>
-            <p className="mt-1 text-sm text-gray-900">
-              {trip.title || '제목 없음'}
-            </p>
-          </div>
-
           <div className="mt-4 rounded-xl bg-white p-4">
             <h4 className="text-sm font-semibold text-gray-900">
               일정 장소 목록
