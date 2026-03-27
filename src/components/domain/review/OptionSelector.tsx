@@ -9,17 +9,20 @@ import {
   MoveHorizontal,
   TrendingUp,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
 
-export default function OptionSelector({ onChange }: any) {
-  const [slope, setSlope] = useState('완만')
-  const [width, setWidth] = useState('넓음')
-  const [stairs, setStairs] = useState('있음')
+type OptionSelectorProps = {
+  options: {
+    slope: string
+    width: string
+    stairs: string
+  }
+  onChange: (val: { slope: string; width: string; stairs: string }) => void
+}
 
-  useEffect(() => {
-    onChange({ slope, width, stairs })
-  }, [slope, width, stairs])
-
+export default function OptionSelector({
+  options,
+  onChange,
+}: OptionSelectorProps) {
   const Option = ({
     icon,
     label,
@@ -49,20 +52,20 @@ export default function OptionSelector({ onChange }: any) {
         <Option
           icon={<ArrowRight size={18} />}
           label="완만"
-          selected={slope === '완만'}
-          onClick={() => setSlope('완만')}
+          selected={options.slope === '완만'}
+          onClick={() => onChange({ ...options, slope: '완만' })}
         />
         <Option
           icon={<TrendingUp size={18} />}
           label="보통"
-          selected={slope === '보통'}
-          onClick={() => setSlope('보통')}
+          selected={options.slope === '보통'}
+          onClick={() => onChange({ ...options, slope: '보통' })}
         />
         <Option
           icon={<Mountain size={18} />}
           label="가파름"
-          selected={slope === '가파름'}
-          onClick={() => setSlope('가파름')}
+          selected={options.slope === '가파름'}
+          onClick={() => onChange({ ...options, slope: '가파름' })}
         />
       </div>
       <div>
@@ -71,14 +74,14 @@ export default function OptionSelector({ onChange }: any) {
           <Option
             icon={<MoveHorizontal size={18} />}
             label="넓음"
-            selected={width === '넓음'}
-            onClick={() => setWidth('넓음')}
+            selected={options.width === '넓음'}
+            onClick={() => onChange({ ...options, width: '넓음' })}
           />
           <Option
             icon={<AlignVerticalSpaceAround size={18} />}
             label="좁음"
-            selected={width === '좁음'}
-            onClick={() => setWidth('좁음')}
+            selected={options.width === '좁음'}
+            onClick={() => onChange({ ...options, width: '좁음' })}
           />
         </div>
       </div>
@@ -88,14 +91,14 @@ export default function OptionSelector({ onChange }: any) {
           <Option
             icon={<ArrowUpNarrowWide size={18} />}
             label="있음"
-            selected={stairs === '있음'}
-            onClick={() => setStairs('있음')}
+            selected={options.stairs === '있음'}
+            onClick={() => onChange({ ...options, stairs: '있음' })}
           />
           <Option
             icon={<Minus size={18} />}
             label="없음"
-            selected={stairs === '없음'}
-            onClick={() => setStairs('없음')}
+            selected={options.stairs === '없음'}
+            onClick={() => onChange({ ...options, stairs: '없음' })}
           />
         </div>
       </div>

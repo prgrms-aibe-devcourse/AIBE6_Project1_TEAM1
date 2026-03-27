@@ -24,9 +24,9 @@ export default function ReviewWritePage() {
   const supabase = createClient()
   const router = useRouter()
 
-  // url 형식 : /review/write?placeId=2
+  // url 형식 : /review/write?placeId="일정번호"
   const searchParams = useSearchParams()
-  const placeId = searchParams.get('placeId')
+  const placeId = Number(searchParams.get('placeId'))
 
   // 유저 정보 가져오기
   useEffect(() => {
@@ -44,15 +44,16 @@ export default function ReviewWritePage() {
   const handleSubmit = async () => {
     if (loading) return
     if (!rating) return alert('별점을 선택해주세요')
+    if (!options.slope || !options.width || !options.stairs)
+      return alert('보행 환경을 선택해주세요')
     if (!content) return alert('내용을 입력해주세요')
 
     setLoading(true)
     const { data: reviewData, error: reviewError } = await supabase
       .from('reviews')
       .insert({
-        //user_id: userId,
-        user_id: '0ba3c127-607e-4644-96fd-a186c7096422',
-        place_id: Number(placeId),
+        user_id: userId,
+        place_id: placeId,
         rating,
         content,
         slope: options.slope,
@@ -121,7 +122,7 @@ export default function ReviewWritePage() {
 
         <div className="text-xl font-bold py-4">보행 환경 체크</div>
         <div className="border rounded-xl mb-6 p-6 flex flex-col text-gray-400">
-          <OptionSelector onChange={setOptions} />
+          <OptionSelector options={options} onChange={setOptions} />
         </div>
 
         <div className="text-xl font-bold py-4">리뷰 내용</div>
