@@ -33,8 +33,18 @@ function getTripDurationLabel(
 ) {
   const days = getTripDurationDays(startDate, endDate)
 
+<<<<<<< HEAD
   if (!days) return '-'
   if (days === 1) return '당일치기'
+=======
+  if (!days) {
+    return '-'
+  }
+
+  if (days === 1) {
+    return '당일치기'
+  }
+>>>>>>> 2e4a410 (Refactor: UI변경)
 
   return `${days} Days`
 }
@@ -297,7 +307,7 @@ export default function PlaceCard({ trip, detailItems }: TripCardProps) {
               {trip.title || '제목 없는 일정'}
             </h3>
             <p className="mt-1 text-sm text-gray-600">
-              {trip.start_date || '-'} ~ {trip.end_date || '-'}
+              {getTripDurationLabel(trip.start_date, trip.end_date)}
             </p>
           </div>
 <<<<<<< HEAD

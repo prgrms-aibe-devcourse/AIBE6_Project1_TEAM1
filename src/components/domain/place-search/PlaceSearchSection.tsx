@@ -126,6 +126,7 @@ export interface TripDetailItem extends TripItem {
 
 const CATEGORY_OPTIONS = [
   '전체',
+  '당일치기',
   '음식점',
   '카페',
   '숙박',
@@ -218,6 +219,7 @@ interface KakaoPlaceMeta {
   total_count: number
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 >>>>>>> 6539aea (Feat: 페이지기능 구현)
 const trendingPlaces: Place[] = [
@@ -462,6 +464,27 @@ function includesKeyword(value: string | null | undefined, keyword: string) {
 }
 
 >>>>>>> 8c5d052 (Feat: 검색로직 추가)
+=======
+function getTripDurationDays(
+  startDate?: string | null,
+  endDate?: string | null,
+) {
+  if (!startDate || !endDate) return null
+
+  const start = new Date(`${startDate}T00:00:00`)
+  const end = new Date(`${endDate}T00:00:00`)
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return null
+  }
+
+  const diffMs = end.getTime() - start.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1
+
+  return diffDays > 0 ? diffDays : null
+}
+
+>>>>>>> 2e4a410 (Refactor: UI변경)
 export default function PlaceSearchSection() {
   const searchParams = useSearchParams()
   const queryFromUrl = searchParams.get('query') ?? ''
@@ -580,7 +603,6 @@ export default function PlaceSearchSection() {
         .select('id, title, start_date, end_date, is_public, user_id')
         .order('start_date', { ascending: true })
 
-      // 기존 제목 검색은 DB 쿼리에서 먼저 유지
       if (trimmedKeyword) {
         tripsQuery = tripsQuery.ilike('title', `%${trimmedKeyword}%`)
       }
@@ -616,7 +638,6 @@ export default function PlaceSearchSection() {
 
       if (titleTripsError) throw titleTripsError
 
-      // 장소명/주소 매칭을 위해 전체 trips도 한 번 가져옴
       const { data: allTripsRows, error: allTripsError } = await supabase
         .from('trips')
         .select('id, title, start_date, end_date, is_public, user_id')
@@ -633,7 +654,6 @@ export default function PlaceSearchSection() {
         return
       }
 
-      // 실제 테이블명이 trip_itemps면 여기만 바꿔
       const { data: tripItemsRows, error: tripItemsError } = await supabase
         .from('trip_items')
         .select(
@@ -687,7 +707,6 @@ export default function PlaceSearchSection() {
         })
       })
 
-      // 장소명/주소 기준 검색으로 걸리는 trip id 찾기
       const placeMatchedTripIds = new Set<number>()
 
       if (trimmedKeyword) {
@@ -707,7 +726,6 @@ export default function PlaceSearchSection() {
         })
       }
 
-      // 기존 제목 검색 결과 유지 + 장소명/주소 검색 결과 추가
       const titleMatchedIds = new Set(
         (titleMatchedTrips ?? []).map((trip) => trip.id),
       )
@@ -719,15 +737,20 @@ export default function PlaceSearchSection() {
           )
         : allTrips
 
-      // 카테고리 필터는 기존처럼 유지
       const categoryFilteredTrips =
         category === '전체'
           ? mergedTrips
-          : mergedTrips.filter((trip) =>
-              (nextTripDetailsMap[trip.id] ?? []).some(
-                (item) => inferPlaceCategory(item.place?.category) === category,
-              ),
-            )
+          : category === '당일치기'
+            ? mergedTrips.filter(
+                (trip) =>
+                  getTripDurationDays(trip.start_date, trip.end_date) === 1,
+              )
+            : mergedTrips.filter((trip) =>
+                (nextTripDetailsMap[trip.id] ?? []).some(
+                  (item) =>
+                    inferPlaceCategory(item.place?.category) === category,
+                ),
+              )
 
       setTrips(categoryFilteredTrips)
       setTripDetailsMap(nextTripDetailsMap)

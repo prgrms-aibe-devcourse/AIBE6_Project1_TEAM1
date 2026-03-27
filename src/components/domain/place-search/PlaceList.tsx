@@ -46,8 +46,13 @@ export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     <section className="space-y-6">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+=======
+    <section className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+>>>>>>> 2e4a410 (Refactor: UI변경)
         {currentTrips.map((trip) => (
           <PlaceCard
             key={trip.id}
@@ -81,6 +86,7 @@ export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
         </button>
       </div>
     </section>
+<<<<<<< HEAD
 =======
 =======
 >>>>>>> d603736 (Feat: 검색로직 전면 수정)
@@ -97,5 +103,7 @@ export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
       ))}
     </div>
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
+=======
+>>>>>>> 2e4a410 (Refactor: UI변경)
   )
 }
