@@ -1,5 +1,6 @@
 'use client'
 
+import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 import {
   AlignVerticalSpaceAround,
@@ -11,6 +12,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 
+import DeleteReview from '@/components/domain/review/DeleteReview'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -20,7 +22,7 @@ export default function ReviewPage() {
   const searchParams = useSearchParams()
   const reviewId = Number(searchParams.get('reviewId'))
   const router = useRouter()
-
+  const { openModal } = useModalStore()
   const [userId, setUserId] = useState<string | null>(null)
 
   // url 형식 : /review/view?reviewId="리뷰번호"
@@ -110,9 +112,12 @@ export default function ReviewPage() {
     router.push(`/review/edit?${reviewId}`)
   }
 
-  // 리뷰 삭제 페이지로 라우팅 -> 추후에 바로 삭제로 수정
-  const handleDelete = () => {
-    router.push(`/review/delete?reviewId=${reviewId}`)
+  // 리뷰 삭제 (모달 창 떠서 confirm 할 경우)
+  const handleDelete = async () => {
+    if (!reviewId) return
+    await DeleteReview(supabase, reviewId)
+    // 삭제 후 라우팅 어디로?
+    router.push('/')
   }
 
   // Option 표시용
@@ -246,7 +251,17 @@ export default function ReviewPage() {
             </button>
             <button
               className="w-1/2 bg-red-500 text-white py-3 border rounded-lg mb-6 cursor-pointer"
-              onClick={handleDelete}
+              onClick={() =>
+                openModal({
+                  type: 'confirm',
+                  variant: 'danger',
+                  title: '리뷰를 삭제하시겠습니까?',
+                  description: '삭제된 데이터는 복구할 수 없습니다.',
+                  confirmText: '삭제',
+                  cancelText: '취소',
+                  onConfirm: handleDelete,
+                })
+              }
             >
               삭제
             </button>
