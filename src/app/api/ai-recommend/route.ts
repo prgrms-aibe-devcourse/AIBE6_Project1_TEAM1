@@ -39,8 +39,8 @@ export async function POST(request: Request) {
 
   // 4. 프롬프트 생성
   const prompt = `너는 서울 도보 여행 코스 추천 전문가다.
-아래 조건에 맞는 도보 여행 코스를 추천하고, 반드시 순수 JSON만 응답해라.
-마크다운 코드블록(\`\`\`json)을 절대 사용하지 마라.
+아래 조건에 맞는 도보 여행 코스를 추천하고, 반드시 다음 JSON 형식의 순수 JSON만 응답해라.
+마크다운 코드블록, 설명, 추가 텍스트를 절대 사용하지 마라. JSON만 반환해라.
 
 조건:
 - 출발지: ${station}
@@ -56,23 +56,16 @@ export async function POST(request: Request) {
 - 선호 테마(${themes.join(', ')})에 부합하는 장소 위주
 - 한국어로만 응답
 
-JSON 형식:
-{
-  "course": [
-    { "order": 1, "name": "장소명", "category": "카테고리", "desc": "한두 문장 설명", "duration": "XX분", "walkInfo": null },
-    { "order": 2, "name": "장소명", "category": "카테고리", "desc": "한두 문장 설명", "duration": "XX분", "walkInfo": "도보 X분 (X.Xkm)" }
-  ],
-  "totalWalkDistance": "X.Xkm",
-  "totalPlaces": 5
-}`
+반드시 다음 형식으로만 응답하고 다른 텍스트는 절대 포함하지 마라:
+{"course":[{"order":1,"name":"출발역이름","category":"지하철역","desc":"출발지","duration":"5분","walkInfo":null},{"order":2,"name":"장소1","category":"카테고리","desc":"설명","duration":"XY분","walkInfo":"도보X분(X.Xkm)"}],"totalWalkDistance":"X.Xkm","totalPlaces":5}`
 
   // 5. Gemini API 호출
   try {
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 1500,
+        maxOutputTokens: 4096,
         responseMimeType: 'application/json',
       },
     })
@@ -80,12 +73,19 @@ JSON 형식:
     const result = await model.generateContent(prompt)
     const raw = result.response.text()
 
-    // 6. JSON 파싱
+    console.log(
+      '[ai-recommend] Response (length:',
+      raw.length,
+      '):',
+      raw.substring(0, 200),
+    )
+
+    // JSON 파싱
     const data: AIRecommendResponse = JSON.parse(raw)
     return NextResponse.json(data)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
-    console.error('[ai-recommend] Gemini error:', message)
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error('[ai-recommend] Error:', message)
+    return NextResponse.json({ error: `API 에러: ${message}` }, { status: 500 })
   }
 }
