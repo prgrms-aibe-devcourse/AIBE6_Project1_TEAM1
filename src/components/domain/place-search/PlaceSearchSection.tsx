@@ -2,7 +2,13 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { useSearchParams } from 'next/navigation'
+<<<<<<< HEAD
 import { useEffect, useMemo, useState } from 'react'
+=======
+import { useEffect, useRef, useState } from 'react'
+import PlaceCategorySection from './PlaceCategorySection'
+import PlaceFilterBar from './PlaceFilterBar'
+>>>>>>> 6539aea (Feat: 페이지기능 구현)
 import PlaceResultSection from './PlaceResultSection'
 
 export interface Trip {
@@ -24,6 +30,11 @@ export interface TripItem {
   visit_day: number | null
 }
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> faceb22 (Feat: 페이지기능 구현)
 export interface Place {
   id: number
   kakao_place_id: string | null
@@ -124,6 +135,41 @@ function inferPlaceCategory(
 function includesKeyword(value: string | null | undefined, keyword: string) {
   if (!value) return false
   return value.toLowerCase().includes(keyword.toLowerCase())
+<<<<<<< HEAD
+=======
+=======
+=======
+interface KakaoPlaceMeta {
+  is_end: boolean
+  pageable_count: number
+  total_count: number
+}
+
+>>>>>>> 6539aea (Feat: 페이지기능 구현)
+const trendingPlaces: Place[] = [
+  {
+    id: '101',
+    name: '제주 올레길 7코스',
+    address: '제주 서귀포시',
+    category: '관광명소',
+    rating: 4.8,
+  },
+  {
+    id: '102',
+    name: '경주 역사 탐방',
+    address: '경북 경주시',
+    category: '문화시설',
+    rating: 4.6,
+  },
+  {
+    id: '103',
+    name: '전주 한옥마을',
+    address: '전북 전주시',
+    category: '관광명소',
+=======
+=======
+>>>>>>> 4986e65 (카테고리 수정)
+>>>>>>> faceb22 (Feat: 페이지기능 구현)
 }
 
 <<<<<<< HEAD
@@ -205,14 +251,23 @@ const CATEGORY_CODE_MAP: Record<string, string> = {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
 =======
 >>>>>>> 4986e65 (카테고리 수정)
+<<<<<<< HEAD
 >>>>>>> 61b4c13 (업데이트  place search section)
+=======
+=======
+const PAGE_SIZE = 15
+
+>>>>>>> 3380091 (Feat: 페이지기능 구현)
+>>>>>>> faceb22 (Feat: 페이지기능 구현)
 export default function PlaceSearchSection() {
   const searchParams = useSearchParams()
   const queryFromUrl = searchParams.get('query') ?? ''
+  const resultTopRef = useRef<HTMLDivElement | null>(null)
 
   const [trips, setTrips] = useState<Trip[]>([])
   const [tripDetailsMap, setTripDetailsMap] = useState<
@@ -242,6 +297,72 @@ export default function PlaceSearchSection() {
       setTrips([])
       setTripDetailsMap({})
       setErrorMessage('Supabase 환경변수가 설정되지 않았습니다.')
+<<<<<<< HEAD
+=======
+=======
+  const [keyword, setKeyword] = useState('')
+  const [places, setPlaces] = useState<Place[]>([])
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
+  const [selectedFilter, setSelectedFilter] = useState('전체')
+  const [selectedCategory, setSelectedCategory] = useState('전체')
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+<<<<<<< HEAD
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageableCount, setPageableCount] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
+  const [isEnd, setIsEnd] = useState(true)
+
+  const scrollToResults = () => {
+    if (resultTopRef.current) {
+      resultTopRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    }
+  }
+
+  const handleSearch = async (
+    searchKeyword: string,
+    categoryName: string = selectedCategory,
+    page: number = 1,
+    shouldScroll: boolean = false,
+  ) => {
+=======
+
+  const handleSearch = (searchKeyword: string) => {
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
+=======
+
+<<<<<<< HEAD
+  const handleSearch = async (searchKeyword: string) => {
+>>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
+=======
+  const handleSearch = async (
+    searchKeyword: string,
+    categoryName: string = selectedCategory,
+  ) => {
+>>>>>>> 4986e65 (카테고리 수정)
+    const trimmedKeyword = searchKeyword.trim()
+
+    if (!trimmedKeyword) {
+      setPlaces([])
+<<<<<<< HEAD
+<<<<<<< HEAD
+      setErrorMessage('')
+<<<<<<< HEAD
+>>>>>>> 459ade2 (feat: 검색기능 구현  입력값 라우팅 연결)
+=======
+      setCurrentPage(1)
+      setPageableCount(0)
+      setTotalCount(0)
+      setIsEnd(true)
+>>>>>>> 6539aea (Feat: 페이지기능 구현)
+>>>>>>> faceb22 (Feat: 페이지기능 구현)
       return
     }
 
@@ -249,7 +370,16 @@ export default function PlaceSearchSection() {
       setIsLoading(true)
       setErrorMessage('')
 
+<<<<<<< HEAD
       const trimmedKeyword = searchKeyword.trim()
+=======
+      const categoryGroupCode = CATEGORY_CODE_MAP[categoryName] ?? ''
+      const query = new URLSearchParams({
+        query: trimmedKeyword,
+        page: String(page),
+        size: String(PAGE_SIZE),
+      })
+>>>>>>> 6539aea (Feat: 페이지기능 구현)
 
       let tripsQuery = supabase
         .from('trips')
@@ -283,6 +413,7 @@ export default function PlaceSearchSection() {
         return
       }
 
+<<<<<<< HEAD
       // 실제 테이블명이 trip_itemps면 여기만 바꿔
       const { data: tripItemsRows, error: tripItemsError } = await supabase
         .from('trip_items')
@@ -292,6 +423,10 @@ export default function PlaceSearchSection() {
         .in('trip_id', allTripIds)
         .order('visit_day', { ascending: true })
         .order('visit_order', { ascending: true })
+=======
+      const data: { documents?: KakaoPlaceDocument[]; meta?: KakaoPlaceMeta } =
+        await response.json()
+>>>>>>> 6539aea (Feat: 페이지기능 구현)
 
       if (tripItemsError) throw tripItemsError
 
@@ -362,6 +497,7 @@ export default function PlaceSearchSection() {
         (titleMatchedTrips ?? []).map((trip) => trip.id),
       )
 
+<<<<<<< HEAD
       const mergedTrips = trimmedKeyword
         ? allTrips.filter(
             (trip) =>
@@ -385,6 +521,26 @@ export default function PlaceSearchSection() {
       console.error(error)
       setTrips([])
       setTripDetailsMap({})
+=======
+      setPlaces(mappedPlaces)
+      setCurrentPage(page)
+      setPageableCount(data.meta?.pageable_count ?? 0)
+      setTotalCount(data.meta?.total_count ?? 0)
+      setIsEnd(data.meta?.is_end ?? true)
+
+      if (shouldScroll) {
+        requestAnimationFrame(() => {
+          scrollToResults()
+        })
+      }
+    } catch (error) {
+      console.error(error)
+      setPlaces([])
+      setCurrentPage(1)
+      setPageableCount(0)
+      setTotalCount(0)
+      setIsEnd(true)
+>>>>>>> 6539aea (Feat: 페이지기능 구현)
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -398,9 +554,101 @@ export default function PlaceSearchSection() {
   useEffect(() => {
     fetchTrips(queryFromUrl, selectedCategory)
   }, [queryFromUrl, selectedCategory])
+<<<<<<< HEAD
+=======
+=======
+    setKeyword(queryFromUrl)
+<<<<<<< HEAD
+<<<<<<< HEAD
+
+<<<<<<< HEAD
+    if (queryFromUrl) {
+      handleSearch(queryFromUrl, selectedCategory)
+=======
+
+    if (queryFromUrl) {
+<<<<<<< HEAD
+      handleSearch(queryFromUrl)
+>>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
+=======
+      handleSearch(queryFromUrl, selectedCategory)
+>>>>>>> 4986e65 (카테고리 수정)
+=======
+    if (queryFromUrl.trim()) {
+      handleSearch(queryFromUrl, selectedCategory, 1, false)
+>>>>>>> 3380091 (Feat: 페이지기능 구현)
+    } else {
+      setPlaces([])
+      setErrorMessage('')
+      setCurrentPage(1)
+      setPageableCount(0)
+      setTotalCount(0)
+      setIsEnd(true)
+    }
+<<<<<<< HEAD
+  }, [queryFromUrl])
+
+  useEffect(() => {
+    if (keyword.trim()) {
+      handleSearch(keyword, selectedCategory, 1, false)
+    }
+  }, [selectedCategory])
+
+  const hasKeyword = keyword.trim().length > 0
+<<<<<<< HEAD
+>>>>>>> 459ade2 (feat: 검색기능 구현  입력값 라우팅 연결)
+>>>>>>> faceb22 (Feat: 페이지기능 구현)
 
   return (
     <section className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+=======
+  const totalPages = Math.ceil(pageableCount / PAGE_SIZE)
+
+  const getVisiblePages = () => {
+    const maxVisiblePages = 5
+
+    if (totalPages <= maxVisiblePages) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1)
+    }
+
+    let startPage = Math.max(1, currentPage - 2)
+    let endPage = startPage + maxVisiblePages - 1
+
+    if (endPage > totalPages) {
+      endPage = totalPages
+      startPage = endPage - maxVisiblePages + 1
+    }
+
+    return Array.from(
+      { length: endPage - startPage + 1 },
+      (_, index) => startPage + index,
+    )
+  }
+
+  const visiblePages = getVisiblePages()
+
+  const handlePageChange = (page: number) => {
+    if (!keyword.trim()) return
+    if (page < 1 || page > totalPages) return
+    if (page === currentPage) return
+
+    handleSearch(keyword, selectedCategory, page, true)
+  }
+
+  return (
+    <section className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <PlaceFilterBar
+        selectedFilter={selectedFilter}
+        onSelectFilter={setSelectedFilter}
+      />
+
+      <PlaceCategorySection
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+      />
+
+<<<<<<< HEAD
+>>>>>>> 6539aea (Feat: 페이지기능 구현)
       <PlaceResultSection
         trips={trips}
         tripDetailsMap={tripDetailsMap}
@@ -411,6 +659,102 @@ export default function PlaceSearchSection() {
           setSelectedCategory(category as CategoryOption)
         }
       />
+<<<<<<< HEAD
+=======
+=======
+    handleSearch(queryFromUrl)
+=======
+>>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
+  }, [queryFromUrl])
+
+  return (
+    <section className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <PlaceFilterBar
+        selectedFilter={selectedFilter}
+        onSelectFilter={setSelectedFilter}
+      />
+
+<<<<<<< HEAD
+      <PlaceList places={places} />
+>>>>>>> 474a18a (feat: 검색기능 구현  입력값 라우팅 연결)
+=======
+      <PlaceCategorySection
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+      />
+
+      <PlaceResultSection
+        keyword={keyword}
+        places={places}
+        trendingPlaces={trendingPlaces}
+=======
+>>>>>>> 4986e65 (카테고리 수정)
+        errorMessage={errorMessage}
+        isLoading={isLoading}
+      />
+>>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
+=======
+      <div ref={resultTopRef} className="space-y-3">
+        {hasKeyword && !errorMessage && (
+          <div className="flex flex-col gap-1 rounded-xl bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-gray-700">
+              <span className="font-semibold text-black">{totalCount}</span>개의
+              검색 결과
+            </p>
+            <p className="text-sm text-gray-600">
+              {totalPages > 0
+                ? `${currentPage} / ${totalPages} 페이지`
+                : '1 / 1 페이지'}
+            </p>
+          </div>
+        )}
+
+        <PlaceResultSection
+          keyword={keyword}
+          places={hasKeyword ? places : trendingPlaces}
+          errorMessage={errorMessage}
+          isLoading={isLoading}
+        />
+      </div>
+
+      {hasKeyword && !isLoading && !errorMessage && totalPages > 1 && (
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+          <button
+            type="button"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            이전
+          </button>
+
+          {visiblePages.map((pageNumber) => (
+            <button
+              key={pageNumber}
+              type="button"
+              onClick={() => handlePageChange(pageNumber)}
+              className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                currentPage === pageNumber
+                  ? 'bg-black text-white'
+                  : 'border border-gray-300 text-gray-700'
+              }`}
+            >
+              {pageNumber}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={isEnd || currentPage === totalPages}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            다음
+          </button>
+        </div>
+      )}
+>>>>>>> 3380091 (Feat: 페이지기능 구현)
+>>>>>>> faceb22 (Feat: 페이지기능 구현)
     </section>
   )
 }
