@@ -1,50 +1,75 @@
-import { createClient } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
+'use client'
 
-export default function DeleteReview(reviewId: Number) {
-  const supabase = createClient()
-  const router = useRouter()
-
-  //  삭제 버튼 눌렀을 때 (참고용)
-  //   const onDeleteClick = () => {
-  //     if (window.confirm('리뷰를 삭제하시겠습니까?')) {
-  //       // 삭제 함수 ex) dispatch(delete(data.id));
-  //       ()
-  //       alert('삭제완료!')
-  //     } else {
-  //       alert('삭제 취소')
-  //     }
-  //   }
-
-  // Storage에서 첨부한 파일 제거
-  const deleteStorage = async () => {
-    // media 테이블에서 첨부한 파일 url 불러오기
-    // 파일 url에서 path 추출
-    // 추출한 path 사용해서 storage에서 파일 삭제
+export default async function DeleteReview(
+  supabase: any,
+  reviewId: number,
+): Promise<void> {
+  //
+  // Storage path 추출 함수
+  function extractPathFromUrl(url: string, bucketName: string): string {
+    const parts = url.split(`/storage/v1/object/public/${bucketName}/`)
+    if (parts.length < 2) return ''
+    return parts[1]
   }
 
-  const deleteMedia = async () => {
-    // media 테이블에서 파일 첨부 기록 제거
-    const { data, error } = await supabase
+  // 1. media 테이블 조회
+  const { data: mediaData, error: fetchError } = await supabase
+    .from('media')
+    .select('file_url')
+    .eq('review_id', reviewId)
+
+  if (fetchError) {
+    console.error('파일 정보 조회 실패:', fetchError)
+    alert('파일 정보 조회 실패')
+    return
+  }
+
+  // 2. media가 있을 때만 Storage 삭제 & media 레코드 삭제
+  if (mediaData && mediaData.length > 0) {
+    // 3-1 Storage 삭제
+    const paths: string[] = mediaData
+      .map((item: { file_url: string }) =>
+        extractPathFromUrl(item.file_url, 'media-storage'),
+      )
+      .filter((path: string) => path !== '')
+
+    if (paths.length > 0) {
+      const { error: storageError } = await supabase.storage
+        .from('media-storage')
+        .remove(paths)
+
+      if (storageError) {
+        console.error('Storage 삭제 실패:', storageError)
+        alert('첨부파일 삭제 실패')
+        return
+      }
+    }
+
+    // 3-2 media 레코드 삭제
+    const { error: mediaError } = await supabase
       .from('media')
       .delete()
-      .match({ review_id: reviewId })
-    if (error) {
+      .eq('review_id', reviewId)
+
+    if (mediaError) {
+      console.error('Media 레코드 삭제 실패:', mediaError)
       alert('첨부기록 삭제 실패')
+      return
     }
   }
 
-  // reviews 테이블에서 리뷰 제거
-  const deleteReview = async () => {
-    const { data, error } = await supabase
-      .from('reviews')
-      .delete()
-      .match({ id: reviewId })
-    if (error) {
-      alert('리뷰 삭제 실패')
-    }
+  // 4. 리뷰 삭제
+  const { error: reviewError } = await supabase
+    .from('reviews')
+    .delete()
+    .eq('id', reviewId)
+
+  if (reviewError) {
+    console.error('리뷰 삭제 실패:', reviewError)
+    alert('리뷰 삭제 실패')
+    return
   }
 
-  alert('삭제되었습니다.')
-  router.push('/') // 삭제 후 이동할 페이지로 변경하기
+  alert('삭제 완료!')
+  return
 }

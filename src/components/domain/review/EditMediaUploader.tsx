@@ -18,7 +18,7 @@ export default function MediaUploader({
   const [images, setImages] = useState<MediaItem[]>([])
   const [uploading, setUploading] = useState(false)
 
-  // 🔹 초기 데이터 세팅 (수정 화면)
+  // 초기 데이터 세팅 (수정 화면)
   useEffect(() => {
     const mapped = initialMedia.map((item: any) => ({
       id: item.id,
@@ -30,14 +30,14 @@ export default function MediaUploader({
     setImages(mapped)
   }, [initialMedia])
 
-  // 🔹 URL → path 추출
+  // URL → path 추출
   function extractPathFromUrl(url: string, bucket: string) {
     const parts = url.split(`/storage/v1/object/public/${bucket}/`)
     if (parts.length < 2) return null
     return parts[1].split('?')[0]
   }
 
-  // 🔹 업로드
+  // 업로드
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
@@ -80,19 +80,19 @@ export default function MediaUploader({
     e.target.value = ''
   }
 
-  // 🔹 삭제
+  // 삭제
   const handleRemove = async (index: number) => {
     const target = images[index]
 
     if (target.isNew) {
-      // 👉 새 파일 → 바로 storage 삭제
+      // 새 파일 → 바로 storage 삭제
       await supabase.storage.from('media-storage').remove([target.path])
 
       const updated = images.filter((_, i) => i !== index)
       setImages(updated)
       onChange?.(updated)
     } else {
-      // 👉 기존 파일 → 삭제 예약
+      // 기존 파일 → 삭제 예약
       const updated = images.map((item, i) =>
         i === index ? { ...item, toDelete: true } : item,
       )
@@ -102,7 +102,7 @@ export default function MediaUploader({
     }
   }
 
-  // 🔹 수정 취소 시 cleanup
+  // 수정 취소 시 cleanup
   const cleanupNewFiles = async () => {
     const newFiles = images.filter((item) => item.isNew)
 
@@ -111,7 +111,7 @@ export default function MediaUploader({
     }
   }
 
-  // 🔹 UI에서 보여줄 것만 필터
+  // UI에서 보여줄 것만 필터
   const visibleImages = images.filter((item) => !item.toDelete)
 
   return (

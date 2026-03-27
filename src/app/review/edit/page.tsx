@@ -10,6 +10,13 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 export default function ReviewEditPage() {
+  const supabase = createClient()
+  const router = useRouter()
+  // url 형식 : /review/edit?reviewId="리뷰번호"
+  const searchParams = useSearchParams()
+  const reviewId = Number(searchParams.get('reviewId'))
+
+  const [userId, setUserId] = useState<string | null>(null)
   const [placeId, setPlaceId] = useState(0)
   const [rating, setRating] = useState(3)
   const [content, setContent] = useState('불러오기테스트')
@@ -19,14 +26,19 @@ export default function ReviewEditPage() {
     width: '',
     stairs: '',
   })
-
   const [loading, setLoading] = useState(false)
-  const supabase = createClient()
-  const router = useRouter()
 
-  // url 형식 : /review/edit?reviewId="리뷰번호"
-  const searchParams = useSearchParams()
-  const reviewId = Number(searchParams.get('reviewId'))
+  // 유저 정보 불러오기
+  useEffect(() => {
+    const getUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      setUserId(user?.id ?? null)
+    }
+    getUser()
+  }, [])
 
   // 기존 리뷰 내용 불러오기
   const fetchReviewData = async (reviewId: Number) => {
@@ -40,8 +52,22 @@ export default function ReviewEditPage() {
       alert('리뷰 불러오기 실패')
       return
     }
+
+    if (data === null) {
+      alert('리뷰가 없습니다')
+      return
+    }
+
+    ////////////////// 디버깅시 주석처리하기 /////////////
+    // 해당 review를 쓴 유저가 아니면 수정불가
+    if (data.user_id !== userId) {
+      alert('권한이 없습니다')
+      router.push('/')
+    }
+
     return data || null
   }
+  //////////////////////////////////////////////////
 
   // 기존 첨부 이미지 불러오기
   const fetchMediaData = async (reviewId: Number) => {

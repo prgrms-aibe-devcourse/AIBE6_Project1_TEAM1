@@ -24,7 +24,7 @@ export default function ReviewWritePage() {
   const supabase = createClient()
   const router = useRouter()
 
-  // url 형식 : /review/write?placeId=2
+  // url 형식 : /review/write?placeId="일정번호"
   const searchParams = useSearchParams()
   const placeId = Number(searchParams.get('placeId'))
 
