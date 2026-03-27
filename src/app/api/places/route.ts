@@ -6,9 +6,12 @@ export async function GET(req: NextRequest) {
 <<<<<<< HEAD
   const categoryGroupCode = req.nextUrl.searchParams.get('categoryGroupCode')
 <<<<<<< HEAD
+<<<<<<< HEAD
   const pageParam = req.nextUrl.searchParams.get('page')
   const sizeParam = req.nextUrl.searchParams.get('size')
 =======
+=======
+>>>>>>> 6539aea (Feat: 페이지기능 구현)
 =======
 >>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
 <<<<<<< HEAD
@@ -17,7 +20,14 @@ export async function GET(req: NextRequest) {
 =======
   const categoryGroupCode = req.nextUrl.searchParams.get('categoryGroupCode')
 >>>>>>> 4986e65 (카테고리 수정)
+<<<<<<< HEAD
 >>>>>>> 56c7bc4 (카테고리 수정)
+=======
+=======
+  const pageParam = req.nextUrl.searchParams.get('page')
+  const sizeParam = req.nextUrl.searchParams.get('size')
+>>>>>>> 3380091 (Feat: 페이지기능 구현)
+>>>>>>> 6539aea (Feat: 페이지기능 구현)
 
   if (!query || !query.trim()) {
     return NextResponse.json(
@@ -36,7 +46,11 @@ export async function GET(req: NextRequest) {
   }
 
   const page = Math.max(1, Number(pageParam) || 1)
+<<<<<<< HEAD
   const size = Math.min(15, Math.max(1, Number(sizeParam) || 9))
+=======
+  const size = Math.min(15, Math.max(1, Number(sizeParam) || 15))
+>>>>>>> 6539aea (Feat: 페이지기능 구현)
 
   try {
 <<<<<<< HEAD
