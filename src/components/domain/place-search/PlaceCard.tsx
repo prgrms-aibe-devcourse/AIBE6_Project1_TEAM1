@@ -3,13 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { Trip, TripDetailItem } from './PlaceSearchSection'
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 interface PlaceCardProps {
-<<<<<<< HEAD
-=======
-interface PlaceCardProps {
->>>>>>> 5d856d0 (Feat: 검색로직 추가)
   trip: Trip
   detailItems: TripDetailItem[]
 }
@@ -267,6 +261,7 @@ export default function PlaceCard({ trip, detailItems }: PlaceCardProps) {
     </>
 =======
     </div>
+<<<<<<< HEAD
 =======
   place: {
     id: string
@@ -384,5 +379,7 @@ export default function PlaceCard({ trip, detailItems }: TripCardProps) {
     </div>
 >>>>>>> b807596 (Feat: 검색로직 전면 수정)
 >>>>>>> d603736 (Feat: 검색로직 전면 수정)
+=======
+>>>>>>> 4948500 (Fix: 충돌수정)
   )
 }

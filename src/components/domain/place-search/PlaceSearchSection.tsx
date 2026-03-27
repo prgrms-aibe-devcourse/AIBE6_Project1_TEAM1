@@ -1,6 +1,7 @@
 'use client'
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -33,11 +34,15 @@ import PlaceList from './PlaceList'
 =======
 import { createClient } from '@supabase/supabase-js'
 >>>>>>> b807596 (Feat: 검색로직 전면 수정)
+=======
+import { createClient } from '@supabase/supabase-js'
+>>>>>>> 4948500 (Fix: 충돌수정)
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import PlaceResultSection from './PlaceResultSection'
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 <<<<<<< HEAD
@@ -45,6 +50,8 @@ import PlaceResultSection from './PlaceResultSection'
 =======
 >>>>>>> b807596 (Feat: 검색로직 전면 수정)
 >>>>>>> d603736 (Feat: 검색로직 전면 수정)
+=======
+>>>>>>> 4948500 (Fix: 충돌수정)
 export interface Trip {
   id: number
   title: string | null
@@ -52,6 +59,7 @@ export interface Trip {
   end_date: string | null
   is_public: boolean | null
   user_id?: string | null
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
@@ -80,6 +88,8 @@ interface Place {
   imageUrl?: string
 >>>>>>> 64d8b82 (Feat: 검색결과 정렬)
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
+=======
+>>>>>>> 4948500 (Fix: 충돌수정)
 }
 
 export interface TripItem {
@@ -92,6 +102,7 @@ export interface TripItem {
   visit_day: number | null
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 <<<<<<< HEAD
@@ -309,6 +320,8 @@ const CATEGORY_CODE_MAP: Record<string, string> = {
 >>>>>>> 459ade2 (feat: 검색기능 구현  입력값 라우팅 연결)
 =======
 
+=======
+>>>>>>> 4948500 (Fix: 충돌수정)
 export interface Place {
   id: number
   kakao_place_id: string | null
@@ -352,8 +365,11 @@ function getCategoryEmoji(category: string, groupName?: string) {
 =======
 export interface TripDetailItem extends TripItem {
   place: Place | null
+<<<<<<< HEAD
 >>>>>>> b807596 (Feat: 검색로직 전면 수정)
 >>>>>>> d603736 (Feat: 검색로직 전면 수정)
+=======
+>>>>>>> 4948500 (Fix: 충돌수정)
 }
 
 const CATEGORY_OPTIONS = [
@@ -451,19 +467,21 @@ export default function PlaceSearchSection() {
   const queryFromUrl = searchParams.get('query') ?? ''
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
 >>>>>>> b807596 (Feat: 검색로직 전면 수정)
 >>>>>>> d603736 (Feat: 검색로직 전면 수정)
+=======
+>>>>>>> 4948500 (Fix: 충돌수정)
   const [trips, setTrips] = useState<Trip[]>([])
   const [tripDetailsMap, setTripDetailsMap] = useState<
     Record<number, TripDetailItem[]>
   >({})
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryOption>('전체')
-<<<<<<< HEAD
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -486,6 +504,7 @@ export default function PlaceSearchSection() {
       setTrips([])
       setTripDetailsMap({})
       setErrorMessage('Supabase 환경변수가 설정되지 않았습니다.')
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 =======
@@ -545,6 +564,8 @@ export default function PlaceSearchSection() {
       setErrorMessage('Supabase 환경변수가 설정되지 않았습니다.')
 >>>>>>> b807596 (Feat: 검색로직 전면 수정)
 >>>>>>> d603736 (Feat: 검색로직 전면 수정)
+=======
+>>>>>>> 4948500 (Fix: 충돌수정)
       return
     }
 
@@ -552,18 +573,7 @@ export default function PlaceSearchSection() {
       setIsLoading(true)
       setErrorMessage('')
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
       const trimmedKeyword = searchKeyword.trim()
-=======
-      const categoryGroupCode = CATEGORY_CODE_MAP[categoryName] ?? ''
-      const query = new URLSearchParams({
-        query: trimmedKeyword,
-        page: String(page),
-        size: String(PAGE_SIZE),
-      })
->>>>>>> 6539aea (Feat: 페이지기능 구현)
 
       let tripsQuery = supabase
         .from('trips')
@@ -571,27 +581,11 @@ export default function PlaceSearchSection() {
         .order('start_date', { ascending: true })
 
       // 기존 제목 검색은 DB 쿼리에서 먼저 유지
-=======
-=======
-      const trimmedKeyword = searchKeyword.trim()
-
->>>>>>> 5d856d0 (Feat: 검색로직 추가)
-      let tripsQuery = supabase
-        .from('trips')
-        .select('id, title, start_date, end_date, is_public, user_id')
-        .order('start_date', { ascending: true })
-
-<<<<<<< HEAD
-      const trimmedKeyword = searchKeyword.trim()
-
->>>>>>> b807596 (Feat: 검색로직 전면 수정)
-=======
-      // 기존 제목 검색은 DB 쿼리에서 먼저 유지
->>>>>>> 5d856d0 (Feat: 검색로직 추가)
       if (trimmedKeyword) {
         tripsQuery = tripsQuery.ilike('title', `%${trimmedKeyword}%`)
       }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 <<<<<<< HEAD
@@ -615,27 +609,10 @@ export default function PlaceSearchSection() {
 =======
 >>>>>>> 64d8b82 (Feat: 검색결과 정렬)
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
-
-      if (titleTripsError) throw titleTripsError
-
-      // 장소명/주소 매칭을 위해 전체 trips도 한 번 가져옴
-      const { data: allTripsRows, error: allTripsError } = await supabase
-        .from('trips')
-        .select('id, title, start_date, end_date, is_public, user_id')
-        .order('start_date', { ascending: true })
-
-      if (allTripsError) throw allTripsError
-
-      const allTrips = allTripsRows ?? []
-      const allTripIds = allTrips.map((trip) => trip.id)
-
-      if (allTripIds.length === 0) {
-=======
-      const { data: tripRows, error: tripsError } = await tripsQuery
 =======
       const { data: titleMatchedTrips, error: titleTripsError } =
         await tripsQuery
->>>>>>> 5d856d0 (Feat: 검색로직 추가)
+>>>>>>> 4948500 (Fix: 충돌수정)
 
       if (titleTripsError) throw titleTripsError
 
@@ -645,146 +622,17 @@ export default function PlaceSearchSection() {
         .select('id, title, start_date, end_date, is_public, user_id')
         .order('start_date', { ascending: true })
 
-<<<<<<< HEAD
-      if (fetchedTrips.length === 0) {
->>>>>>> b807596 (Feat: 검색로직 전면 수정)
-=======
       if (allTripsError) throw allTripsError
 
       const allTrips = allTripsRows ?? []
       const allTripIds = allTrips.map((trip) => trip.id)
 
       if (allTripIds.length === 0) {
->>>>>>> 5d856d0 (Feat: 검색로직 추가)
         setTrips([])
         setTripDetailsMap({})
         return
       }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-      // 실제 테이블명이 trip_itemps면 여기만 바꿔
-      const { data: tripItemsRows, error: tripItemsError } = await supabase
-        .from('trip_items')
-        .select(
-          'id, trip_id, place_id, visit_order, transport_type, travel_time, visit_day',
-        )
-        .in('trip_id', allTripIds)
-        .order('visit_day', { ascending: true })
-        .order('visit_order', { ascending: true })
-=======
-      const data: { documents?: KakaoPlaceDocument[]; meta?: KakaoPlaceMeta } =
-        await response.json()
->>>>>>> 6539aea (Feat: 페이지기능 구현)
-
-<<<<<<< HEAD
-      if (tripItemsError) throw tripItemsError
-
-      const tripItems = tripItemsRows ?? []
-      const placeIds = [...new Set(tripItems.map((item) => item.place_id))]
-
-      let placeMap = new Map<number, Place>()
-
-      if (placeIds.length > 0) {
-        const { data: placeRows, error: placesError } = await supabase
-          .from('places')
-          .select(
-            'id, kakao_place_id, place_name, category, latitude, longitude, is_near_station, address',
-          )
-          .in('id', placeIds)
-
-        if (placesError) throw placesError
-
-        placeMap = new Map(
-          (placeRows ?? []).map((place) => [
-            place.id,
-            {
-              ...place,
-              displayCategory:
-                inferPlaceCategory(place.category) ?? place.category,
-            },
-          ]),
-        )
-      }
-
-      const nextTripDetailsMap: Record<number, TripDetailItem[]> = {}
-
-      tripItems.forEach((item) => {
-        const place = placeMap.get(item.place_id) ?? null
-
-        if (!nextTripDetailsMap[item.trip_id]) {
-          nextTripDetailsMap[item.trip_id] = []
-        }
-
-        nextTripDetailsMap[item.trip_id].push({
-          ...item,
-          place,
-        })
-      })
-
-      // 장소명/주소 기준 검색으로 걸리는 trip id 찾기
-      const placeMatchedTripIds = new Set<number>()
-
-      if (trimmedKeyword) {
-        allTrips.forEach((trip) => {
-          const detailItems = nextTripDetailsMap[trip.id] ?? []
-
-          const hasPlaceMatch = detailItems.some((item) => {
-            return (
-              includesKeyword(item.place?.place_name, trimmedKeyword) ||
-              includesKeyword(item.place?.address, trimmedKeyword)
-            )
-          })
-
-          if (hasPlaceMatch) {
-            placeMatchedTripIds.add(trip.id)
-          }
-        })
-      }
-
-      // 기존 제목 검색 결과 유지 + 장소명/주소 검색 결과 추가
-      const titleMatchedIds = new Set(
-        (titleMatchedTrips ?? []).map((trip) => trip.id),
-=======
-      const mappedPlaces: Place[] = (data.documents ?? []).map(
-        (place: KakaoPlaceDocument) => ({
-          id: place.id,
-          name: place.place_name,
-          address: place.road_address_name || place.address_name,
-          category: place.category_name,
-          categoryGroupCode: place.category_group_code,
-          categoryGroupName: place.category_group_name,
-          placeUrl: place.place_url,
-          phone: place.phone,
-          latitude: Number(place.y),
-          longitude: Number(place.x),
-          imageUrl: createPlaceholderImage(
-            place.category_group_name || place.category_name,
-            getCategoryEmoji(place.category_name, place.category_group_name),
-          ),
-        }),
->>>>>>> 64d8b82 (Feat: 검색결과 정렬)
-      )
-
-<<<<<<< HEAD
-      const mergedTrips = trimmedKeyword
-        ? allTrips.filter(
-            (trip) =>
-              titleMatchedIds.has(trip.id) || placeMatchedTripIds.has(trip.id),
-          )
-        : allTrips
-
-      // 카테고리 필터는 기존처럼 유지
-      const categoryFilteredTrips =
-        category === '전체'
-          ? mergedTrips
-          : mergedTrips.filter((trip) =>
-=======
-      const tripIds = fetchedTrips.map((trip) => trip.id)
-
-=======
->>>>>>> 5d856d0 (Feat: 검색로직 추가)
       // 실제 테이블명이 trip_itemps면 여기만 바꿔
       const { data: tripItemsRows, error: tripItemsError } = await supabase
         .from('trip_items')
@@ -874,55 +722,19 @@ export default function PlaceSearchSection() {
       // 카테고리 필터는 기존처럼 유지
       const categoryFilteredTrips =
         category === '전체'
-<<<<<<< HEAD
-          ? fetchedTrips
-          : fetchedTrips.filter((trip) =>
->>>>>>> b807596 (Feat: 검색로직 전면 수정)
-=======
           ? mergedTrips
           : mergedTrips.filter((trip) =>
->>>>>>> 5d856d0 (Feat: 검색로직 추가)
               (nextTripDetailsMap[trip.id] ?? []).some(
                 (item) => inferPlaceCategory(item.place?.category) === category,
               ),
             )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
       setTrips(categoryFilteredTrips)
       setTripDetailsMap(nextTripDetailsMap)
     } catch (error) {
       console.error(error)
       setTrips([])
       setTripDetailsMap({})
-=======
-      setPlaces(mappedPlaces)
-      setSelectedPlace(null)
-      setCurrentPage(page)
-      setPageableCount(data.meta?.pageable_count ?? 0)
-    } catch (error) {
-      console.error(error)
-      setPlaces([])
-      setSelectedPlace(null)
-      setCurrentPage(1)
-      setPageableCount(0)
-<<<<<<< HEAD
-      setTotalCount(0)
-      setIsEnd(true)
->>>>>>> 6539aea (Feat: 페이지기능 구현)
-=======
->>>>>>> 64d8b82 (Feat: 검색결과 정렬)
-=======
-      setTrips(filteredTrips)
-=======
-      setTrips(categoryFilteredTrips)
->>>>>>> 5d856d0 (Feat: 검색로직 추가)
-      setTripDetailsMap(nextTripDetailsMap)
-    } catch (error) {
-      console.error(error)
-      setTrips([])
-      setTripDetailsMap({})
->>>>>>> b807596 (Feat: 검색로직 전면 수정)
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -934,6 +746,7 @@ export default function PlaceSearchSection() {
   }
 
   useEffect(() => {
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 <<<<<<< HEAD
@@ -1024,6 +837,8 @@ export default function PlaceSearchSection() {
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
 =======
 =======
+=======
+>>>>>>> 4948500 (Fix: 충돌수정)
     fetchTrips(queryFromUrl, selectedCategory)
   }, [queryFromUrl, selectedCategory])
 
@@ -1032,8 +847,11 @@ export default function PlaceSearchSection() {
       <PlaceResultSection
         trips={trips}
         tripDetailsMap={tripDetailsMap}
+<<<<<<< HEAD
 >>>>>>> b807596 (Feat: 검색로직 전면 수정)
 >>>>>>> d603736 (Feat: 검색로직 전면 수정)
+=======
+>>>>>>> 4948500 (Fix: 충돌수정)
         errorMessage={errorMessage}
         isLoading={isLoading}
         selectedCategory={selectedCategory}

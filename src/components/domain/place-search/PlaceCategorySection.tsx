@@ -4,6 +4,7 @@ interface PlaceCategorySectionProps {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -34,6 +35,9 @@ const categories = [
 const categories = ['전체', '음식점', '카페', '숙박', '관광명소', '문화시설']
 >>>>>>> b807596 (Feat: 검색로직 전면 수정)
 >>>>>>> d603736 (Feat: 검색로직 전면 수정)
+=======
+const categories = ['전체', '음식점', '카페', '숙박', '관광명소', '문화시설']
+>>>>>>> 4948500 (Fix: 충돌수정)
 
 export default function PlaceCategorySection({
   selectedCategory,
@@ -46,12 +50,15 @@ export default function PlaceCategorySection({
           const isActive = selectedCategory === category
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
 >>>>>>> b807596 (Feat: 검색로직 전면 수정)
 >>>>>>> d603736 (Feat: 검색로직 전면 수정)
+=======
+>>>>>>> 4948500 (Fix: 충돌수정)
           return (
             <button
               key={category}
@@ -68,6 +75,7 @@ export default function PlaceCategorySection({
           )
         })}
       </div>
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
@@ -96,6 +104,8 @@ export default function PlaceCategorySection({
 =======
 >>>>>>> b807596 (Feat: 검색로직 전면 수정)
 >>>>>>> d603736 (Feat: 검색로직 전면 수정)
+=======
+>>>>>>> 4948500 (Fix: 충돌수정)
     </div>
   )
 }

@@ -2,6 +2,7 @@ import PlaceCategorySection from './PlaceCategorySection'
 import PlaceList from './PlaceList'
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import type { Trip, TripDetailItem } from './PlaceSearchSection'
 =======
 
@@ -41,13 +42,18 @@ interface PlaceResultSectionProps {
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
 =======
 =======
+=======
+>>>>>>> 4948500 (Fix: 충돌수정)
 import type { Trip, TripDetailItem } from './PlaceSearchSection'
 
 interface PlaceResultSectionProps {
   trips: Trip[]
   tripDetailsMap: Record<number, TripDetailItem[]>
+<<<<<<< HEAD
 >>>>>>> b807596 (Feat: 검색로직 전면 수정)
 >>>>>>> d603736 (Feat: 검색로직 전면 수정)
+=======
+>>>>>>> 4948500 (Fix: 충돌수정)
   isLoading?: boolean
   errorMessage?: string
   selectedCategory: string
@@ -55,6 +61,7 @@ interface PlaceResultSectionProps {
 }
 
 export default function PlaceResultSection({
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 <<<<<<< HEAD
@@ -88,6 +95,10 @@ export default function PlaceResultSection({
   tripDetailsMap,
 >>>>>>> b807596 (Feat: 검색로직 전면 수정)
 >>>>>>> d603736 (Feat: 검색로직 전면 수정)
+=======
+  trips,
+  tripDetailsMap,
+>>>>>>> 4948500 (Fix: 충돌수정)
   isLoading = false,
   errorMessage = '',
   selectedCategory,
@@ -106,6 +117,7 @@ export default function PlaceResultSection({
 
       {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
 
+<<<<<<< HEAD
 <<<<<<< HEAD
       {!isLoading && !errorMessage && (
         <PlaceList trips={trips} tripDetailsMap={tripDetailsMap} />
@@ -144,6 +156,11 @@ export default function PlaceResultSection({
 =======
 >>>>>>> 64d8b82 (Feat: 검색결과 정렬)
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
+=======
+      {!isLoading && !errorMessage && (
+        <PlaceList trips={trips} tripDetailsMap={tripDetailsMap} />
+      )}
+>>>>>>> 4948500 (Fix: 충돌수정)
     </section>
   )
 }

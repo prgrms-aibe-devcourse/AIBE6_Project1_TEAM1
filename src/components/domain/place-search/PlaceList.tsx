@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import PlaceCard from './PlaceCard'
-<<<<<<< HEAD
-<<<<<<< HEAD
 import type { Trip, TripDetailItem } from './PlaceSearchSection'
 
 interface PlaceListProps {
@@ -37,38 +35,6 @@ export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
   }
 
   if (trips.length === 0) {
-=======
-
-interface Place {
-  id: string
-  name: string
-  address: string
-  category: string
-  categoryGroupName?: string
-  phone?: string
-  imageUrl?: string
-}
-=======
-import type { Trip, TripDetailItem } from './PlaceSearchSection'
->>>>>>> b807596 (Feat: 검색로직 전면 수정)
-
-interface PlaceListProps {
-  trips: Trip[]
-  tripDetailsMap: Record<number, TripDetailItem[]>
-}
-
-<<<<<<< HEAD
-export default function PlaceList({
-  places,
-  selectedPlaceId,
-  onSelectPlace,
-}: PlaceListProps) {
-  if (places.length === 0) {
->>>>>>> 64d8b82 (Feat: 검색결과 정렬)
-=======
-export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
-  if (trips.length === 0) {
->>>>>>> b807596 (Feat: 검색로직 전면 수정)
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
         검색 결과가 없습니다.
@@ -77,6 +43,7 @@ export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
   }
 
   return (
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     <section className="space-y-6">
@@ -118,29 +85,14 @@ export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
 =======
 >>>>>>> d603736 (Feat: 검색로직 전면 수정)
 <<<<<<< HEAD
+=======
+>>>>>>> 4948500 (Fix: 충돌수정)
     <div className="space-y-3">
       {trips.map((trip) => (
         <PlaceCard
           key={trip.id}
           trip={trip}
           detailItems={tripDetailsMap[trip.id] ?? []}
-=======
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {places.map((place) => (
-        <PlaceCard
-          key={place.id}
-          place={place}
-          isSelected={selectedPlaceId === place.id}
-          onClick={() => onSelectPlace?.(place)}
->>>>>>> 64d8b82 (Feat: 검색결과 정렬)
-=======
-    <div className="space-y-3">
-      {trips.map((trip) => (
-        <PlaceCard
-          key={trip.id}
-          trip={trip}
-          detailItems={tripDetailsMap[trip.id] ?? []}
->>>>>>> b807596 (Feat: 검색로직 전면 수정)
         />
       ))}
     </div>
