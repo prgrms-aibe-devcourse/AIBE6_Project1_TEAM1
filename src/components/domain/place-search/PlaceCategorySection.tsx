@@ -5,12 +5,20 @@ interface PlaceCategorySectionProps {
 
 const categories = [
   '전체',
+<<<<<<< HEAD
+=======
+  '관광명소',
+>>>>>>> 908f1f0 (Feat: 검색결과 정렬)
   '음식점',
   '카페',
   '숙박',
   '관광명소',
   '문화시설',
+<<<<<<< HEAD
   '당일치기',
+=======
+  '지하철역',
+>>>>>>> 908f1f0 (Feat: 검색결과 정렬)
 ]
 
 export default function PlaceCategorySection({
@@ -39,6 +47,26 @@ export default function PlaceCategorySection({
           )
         })}
       </div>
+<<<<<<< HEAD
+=======
+=======
+        return (
+          <button
+            key={category}
+            type="button"
+            onClick={() => onSelectCategory(category)}
+            className={`rounded-2xl border px-4 py-4 text-sm font-medium text-left transition ${
+              isActive
+                ? 'border-gray-900 bg-gray-900 text-white'
+                : 'border-gray-200 bg-white text-gray-800 hover:border-gray-300'
+            }`}
+          >
+            {category}
+          </button>
+        )
+      })}
+>>>>>>> 56c7bc4 (카테고리 수정)
+>>>>>>> 908f1f0 (Feat: 검색결과 정렬)
     </div>
   )
 }
