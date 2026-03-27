@@ -32,3 +32,21 @@ export async function createClient() {
     }
   );
 }
+// 어드민 전용 고유 키(Service Role Key)를 사용하여, 보안 제약을 넘어서는 작업을 할 때 사용합니다.
+// 예: 회원 탈퇴 시 auth.users에서 사용자 직접 삭제
+export async function createAdminClient() {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_SECRET_KEY!, // 사용자 요청에 따라 .env의 secretkey(SUPABASE_SECRET_KEY)를 사용합니다.
+    {
+      cookies: {
+        getAll() {
+          return [];
+        },
+        setAll() {
+          // 어드민 클라이언트는 보통 쿠키를 설정할 일이 없습니다.
+        },
+      },
+    }
+  );
+}

@@ -3,6 +3,7 @@
 import { removeMediaFile, uploadSingleImage } from "@/utils/mediaUploader";
 import { createClient } from "@/utils/supabase/client";
 import { ArrowLeft, Camera, User } from "lucide-react";
+import { useModalStore } from "@/store/useModalStore";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
@@ -109,6 +110,41 @@ export default function ProfileEditForm({ user, profile }: any) {
   // 화면에 보여줄 사진을 결정합니다: 방금 막 선택한 미리보기용(previewUrl)이 있다면 그걸 먼저 보여주고, 없다면 DB에 저장되어있던 사진(avatarUrl)을 보여줍니다.
   const currentDisplayAvatar = previewUrl || avatarUrl;
 
+  // 회원 탈퇴 처리를 수행하는 함수입니다.
+  const handleWithdraw = () => {
+    // 실수 방지를 위해 전역 모달을 띄워 한 번 더 물어봅니다.
+    useModalStore.getState().openModal({
+      type: "confirm",
+      variant: "danger",
+      title: "정말로 탈퇴하시겠습니까? 😢",
+      description: `탈퇴하시면 모든 데이터가 삭제되며 복구할 수 없습니다.\n확인을 위해 본인의 이메일 뒤에 /delete를 붙여 입력해 주세요.\n(예: ${user.email}/delete)`,
+      inputPlaceholder: "이메일/delete 를 입력하세요",
+      requiredInputText: `${user.email}/delete`, // 이 텍스트와 똑같이 입력해야 버튼이 활성화됩니다.
+      confirmText: "탈퇴하기",
+      cancelText: "취소",
+      onConfirm: async () => {
+        setIsLoading(true);
+        try {
+          const res = await fetch("/api/auth/withdraw", { method: "POST" });
+          if (res.ok) {
+            alert("그동안 뚜벅을 이용해 주셔서 감사합니다. 안녕히 가세요!");
+            // 로그아웃 처리 후 홈으로 이동
+            await supabase.auth.signOut();
+            router.push("/");
+            router.refresh();
+          } else {
+            const data = await res.json();
+            alert("탈퇴 처리 중 오류가 발생했습니다: " + data.error);
+          }
+        } catch (error) {
+          alert("네트워크 오류로 탈퇴 처리에 실패했습니다.");
+        } finally {
+          setIsLoading(false);
+        }
+      },
+    });
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -211,7 +247,11 @@ export default function ProfileEditForm({ user, profile }: any) {
 
         {/* Action Bottom */}
         <div className="mt-16 mb-8 text-center w-full">
-          <button className="text-[13px] font-medium text-gray-400 hover:text-red-500 transition-colors border-b border-gray-400 hover:border-red-500 pb-0.5">
+          <button 
+            type="button"
+            onClick={handleWithdraw}
+            className="text-[13px] font-medium text-gray-400 hover:text-red-500 transition-colors border-b border-gray-400 hover:border-red-500 pb-0.5"
+          >
               회원 탈퇴
           </button>
         </div>

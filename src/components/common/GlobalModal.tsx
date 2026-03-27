@@ -5,6 +5,7 @@ import { useModalStore } from "@/store/useModalStore";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
 
 /** 
  * 앱 전체에서 사용되는 전역 모달 컴포넌트입니다.
@@ -22,8 +23,20 @@ export default function GlobalModal() {
     cancelText,
     onConfirm,
     onCloseCallback,
+    inputPlaceholder,
+    requiredInputText,
     closeModal,
   } = useModalStore();
+
+  // 입력 필드의 값을 관리하는 로컬 상태입니다.
+  const [inputValue, setInputValue] = useState("");
+
+  // 모달이 열릴 때마다 입력값을 초기화합니다.
+  useEffect(() => {
+    if (isOpen) {
+      setInputValue("");
+    }
+  }, [isOpen]);
 
   /** 모달을 닫을 때 실행되는 함수 */
   const handleClose = () => {
@@ -83,7 +96,7 @@ export default function GlobalModal() {
                     )}
                   </div>
 
-                  {/* 텍스트 내용 영역 (제목과 설명) */}
+                {/* 텍스트 내용 영역 (제목과 설명) */}
                   <div className="flex-1 mt-2 md:mt-0">
                     <DialogTitle
                       as="h3"
@@ -96,6 +109,19 @@ export default function GlobalModal() {
                         <p className="text-sm text-gray-500 whitespace-pre-line">
                           {description}
                         </p>
+                      </div>
+                    )}
+
+                    {/* 추가: 입력 필드가 필요한 경우 (예: 회원 탈퇴 확인용) */}
+                    {inputPlaceholder && (
+                      <div className="mt-4">
+                        <input
+                          type="text"
+                          value={inputValue}
+                          placeholder={inputPlaceholder}
+                          className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 outline-none focus:ring-2 focus:ring-gray-900 transition-all text-[15px]"
+                          onChange={(e) => setInputValue(e.target.value)}
+                        />
                       </div>
                     )}
                   </div>
@@ -117,6 +143,7 @@ export default function GlobalModal() {
                   <CommonButton
                     variant={variant === "danger" ? "danger" : "primary"}
                     onClick={handleConfirm}
+                    disabled={requiredInputText ? inputValue !== requiredInputText : false}
                     className="w-full sm:w-auto"
                   >
                     {confirmText}

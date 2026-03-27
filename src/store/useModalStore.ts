@@ -17,6 +17,8 @@ export interface ModalState {
   cancelText?: string;        // 취소 버튼에 들어갈 글자
   onConfirm?: () => void;     // 확인 버튼을 눌렀을 때 실행할 함수
   onCloseCallback?: () => void; // 모달이 닫힐 때 추가로 실행할 함수 (선택사항)
+  inputPlaceholder?: string;  // 입력창을 보여주고 싶을 때 사용하는 힌트 텍스트
+  requiredInputText?: string; // 확인 버튼을 활성화하기 위해 입력을 강제하고 싶은 텍스트
 }
 
 /** 스토어에서 사용할 함수(액션) 정의 */
