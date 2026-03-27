@@ -14,6 +14,34 @@ import CommonButton from '@/components/common/CommonButton'
 import FilterBadge from './FilterBadge'
 import TransitIndicator from './TransitIndicator'
 
+// 두 좌표 사이의 직선 거리를 계산하고 이동 시간을 추정하는 헬퍼 함수
+const getEstimatedTransit = (p1: Place, p2: Place) => {
+  const R = 6371 // 지구 반지름 (km)
+  const dLat = (p2.lat - p1.lat) * (Math.PI / 180)
+  const dLon = (p2.lng - p1.lng) * (Math.PI / 180)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(p1.lat * (Math.PI / 180)) *
+      Math.cos(p2.lat * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  const distanceKm = R * c
+
+  // 실제 도로의 굴곡을 고려해 직선 거리에 보정치(1.4배) 적용
+  const realDist = distanceKm * 1.4
+
+  if (realDist < 1.0) {
+    // 1km 미만은 도보 (시속 4.5km 기준)
+    const minutes = Math.max(1, Math.round((realDist / 4.5) * 60))
+    return { type: 'walk' as const, duration: `${minutes}분` }
+  } else {
+    // 1km 이상은 대중교통 (시속 15km + 대기/도보시간 5분)
+    const minutes = Math.round((realDist / 15) * 60 + 5)
+    return { type: 'bus' as const, duration: `약 ${minutes}분` }
+  }
+}
+
 interface TimelineListProps {
   places: Place[]
   onReorder: (startIndex: number, endIndex: number) => void
@@ -150,8 +178,25 @@ export default function TimelineList({
                         {/* 카드와 카드 사이를 이어주는 연결 표시 (마지막 아이템이 아닐 때만 렌더링) */}
                         <div className="h-10 flex flex-col justify-center">
                           {index < places.length - 1 && (
-                            <div className="ml-1 relative z-10 w-full pointer-events-none">
-                              <TransitIndicator type="bus" duration="15분" />
+                            <div className="ml-1 relative z-10 w-full">
+                              {(() => {
+                                const info = getEstimatedTransit(
+                                  place,
+                                  places[index + 1],
+                                )
+                                return (
+                                  <TransitIndicator
+                                    type={info.type}
+                                    duration={info.duration}
+                                    onClick={() => {
+                                      const from = place
+                                      const to = places[index + 1]
+                                      const url = `https://map.kakao.com/link/from/${from.name},${from.lat},${from.lng}/to/${to.name},${to.lat},${to.lng}`
+                                      window.open(url, '_blank')
+                                    }}
+                                  />
+                                )
+                              })()}
                             </div>
                           )}
                         </div>
