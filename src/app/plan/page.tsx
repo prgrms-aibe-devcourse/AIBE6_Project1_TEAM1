@@ -11,7 +11,6 @@ import GlobalHeader from '@/components/layout/GlobalHeader'
 import PageContainer from '@/components/layout/PageContainer'
 import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
-import { useModalStore } from '@/store/useModalStore'
 import {
   Calendar,
   FolderOpen,
