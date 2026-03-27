@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getAuthErrorMessage } from "@/utils/supabase/authErrors";
 import { handleEmailSignUp } from "./signupLogics";
 import { useModalStore } from "@/store/useModalStore";
 
@@ -41,7 +42,7 @@ export default function SignUpPage() {
     setIsLoading(false);
 
     if (error) {
-      setErrorMsg(error.message || "회원가입 중 오류가 발생했습니다.");
+      setErrorMsg(getAuthErrorMessage(error));
     } else {
       openModal({
         type: "alert",
