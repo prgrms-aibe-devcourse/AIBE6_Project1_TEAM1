@@ -5,11 +5,16 @@ export async function GET(req: NextRequest) {
 <<<<<<< HEAD
 <<<<<<< HEAD
   const categoryGroupCode = req.nextUrl.searchParams.get('categoryGroupCode')
+<<<<<<< HEAD
 =======
 >>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
 =======
   const categoryGroupCode = req.nextUrl.searchParams.get('categoryGroupCode')
 >>>>>>> 4986e65 (카테고리 수정)
+=======
+  const pageParam = req.nextUrl.searchParams.get('page')
+  const sizeParam = req.nextUrl.searchParams.get('size')
+>>>>>>> 3380091 (Feat: 페이지기능 구현)
 
   if (!query || !query.trim()) {
     return NextResponse.json(
@@ -27,6 +32,9 @@ export async function GET(req: NextRequest) {
     )
   }
 
+  const page = Math.max(1, Number(pageParam) || 1)
+  const size = Math.min(15, Math.max(1, Number(sizeParam) || 15))
+
   try {
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -34,6 +42,8 @@ export async function GET(req: NextRequest) {
 >>>>>>> 4986e65 (카테고리 수정)
     const kakaoParams = new URLSearchParams({
       query: query.trim(),
+      page: String(page),
+      size: String(size),
     })
 
     if (categoryGroupCode) {
@@ -71,7 +81,15 @@ export async function GET(req: NextRequest) {
     }
 
     const data = await response.json()
-    return NextResponse.json(data)
+
+    return NextResponse.json({
+      documents: data.documents ?? [],
+      meta: data.meta ?? {
+        is_end: true,
+        pageable_count: 0,
+        total_count: 0,
+      },
+    })
   } catch (error) {
     console.error('카카오 장소 검색 오류:', error)
 
