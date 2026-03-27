@@ -44,7 +44,7 @@ export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
 
   return (
     <section className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {currentTrips.map((trip) => (
           <PlaceCard
             key={trip.id}

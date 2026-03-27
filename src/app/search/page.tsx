@@ -5,7 +5,7 @@ export default function SearchPage() {
   return (
     <div className="min-h-screen bg-[#fafafa]">
       <GlobalHeader />
-      <main className="mx-auto max-w-7xl px-4 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-4">
         <PlaceSearchSection />
       </main>
     </div>
