@@ -74,7 +74,7 @@ export default function ReviewWritePage() {
       const mediaRows = media.map((media) => ({
         review_id: reviewId,
         file_url: media.url,
-        file_type: 'image', // 필요하면 분기
+        file_type: media.url.split('.').pop(), // 필요하면 분기
       }))
 
       const { error: mediaError } = await supabase

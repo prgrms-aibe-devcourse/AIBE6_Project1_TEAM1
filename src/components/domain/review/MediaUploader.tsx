@@ -8,16 +8,30 @@ export default function MediaUploader({ supabase, onUpload, onRemove }: any) {
   const [images, setImages] = useState<{ url: string; path: string }[]>([])
   const [uploading, setUploading] = useState(false)
 
+  const MAX_SIZE = 20 * 1024 * 1024 // 20MB
+  const MAX_COUNT = 5
+
   // 사진 첨부
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
+    if (images.length + files.length > MAX_COUNT) {
+      alert(`파일은 최대 ${MAX_COUNT}개까지 업로드 가능합니다.`)
+      return
+    }
+    const validFiles = Array.from(files).filter((file) => {
+      if (file.size > MAX_SIZE) {
+        alert(`${file.name} 용량 초과`)
+        return false
+      }
+      return true
+    })
 
     setUploading(true)
     const uploadedUrls: { url: string; path: string }[] = []
 
-    for (const file of Array.from(files)) {
-      const fileExt = file.name.split('.').pop()
+    for (const file of Array.from(validFiles)) {
+      //const fileExt = file.name.split('.').pop()
       const fileName = `${crypto.randomUUID()}.${file.name.split('.').pop()}`
 
       const { error } = await supabase.storage
@@ -75,7 +89,7 @@ export default function MediaUploader({ supabase, onUpload, onRemove }: any) {
         <Camera />
         {uploading
           ? '업로드 중...'
-          : '사진을 업로드하세요(jpg, png / 30MB까지)'}
+          : '사진을 업로드하세요(jpg, png / 20MB까지)'}
       </div>
 
       <input

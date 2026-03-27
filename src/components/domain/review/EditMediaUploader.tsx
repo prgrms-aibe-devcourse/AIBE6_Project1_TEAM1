@@ -18,6 +18,9 @@ export default function MediaUploader({
   const [images, setImages] = useState<MediaItem[]>([])
   const [uploading, setUploading] = useState(false)
 
+  const MAX_SIZE = 20 * 1024 * 1024 // 20MB
+  const MAX_COUNT = 5
+
   // 초기 데이터 세팅 (수정 화면)
   useEffect(() => {
     const mapped = initialMedia.map((item: any) => ({
@@ -41,12 +44,21 @@ export default function MediaUploader({
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
+    if (images.length + files.length > MAX_COUNT) {
+      alert(`파일은 최대 ${MAX_COUNT}개까지 업로드 가능합니다.`)
+      return
+    }
+    const validFiles = Array.from(files).filter((file) => {
+      if (file.size > MAX_SIZE) {
+        alert(`${file.name} 용량 초과`)
+        return false
+      }
+      return true
+    })
 
     setUploading(true)
-
     const uploaded: MediaItem[] = []
-
-    for (const file of Array.from(files)) {
+    for (const file of Array.from(validFiles)) {
       const fileName = `${crypto.randomUUID()}.${file.name.split('.').pop()}`
 
       const { error } = await supabase.storage
@@ -121,7 +133,9 @@ export default function MediaUploader({
         onClick={() => !uploading && inputRef.current?.click()}
         className="w-full border rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer text-gray-500"
       >
-        {uploading ? '업로드 중...' : '사진을 업로드하세요'}
+        {uploading
+          ? '업로드 중...'
+          : '사진을 업로드하세요(jpg, png / 20MB까지)'}
       </div>
 
       <input
