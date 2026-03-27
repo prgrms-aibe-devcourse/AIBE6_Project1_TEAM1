@@ -1,73 +1,93 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { removeMediaFile, uploadSingleImage } from "@/utils/mediaUploader";
 import { createClient } from "@/utils/supabase/client";
-import { ArrowLeft, User, Camera } from "lucide-react";
+import { ArrowLeft, Camera, User } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 
 export default function ProfileEditForm({ user, profile }: any) {
   const router = useRouter();
   const supabase = createClient();
+  
+  // 파일 입력창을 가려두고, 프로필 이미지를 클릭했을 때 파일 창이 뜨도록 연결해주는 리액트 참조(Ref)입니다.
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [nickname, setNickname] = useState(profile?.nickname || "");
-  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  
+  const [isLoading, setIsLoading] = useState(false); 
+  
+  // ---- 프로필 정보 관련된 상태들 ----
+  const [nickname, setNickname] = useState(profile?.nickname || ""); // 입력된 닉네임 (처음엔 DB값으로 채움)
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || ""); // 기존 DB에 저장된 아바타 사진 주소
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null); // 스마트폰 앨범에서 선택한 사진의 미리보기 주소
+  const [avatarFile, setAvatarFile] = useState<File | null>(null); // 실제로 업로드할 이미지 파일 자체
+  
+  // ---- 비밀번호 변경 관련된 상태들 ----
+  const [currentPassword, setCurrentPassword] = useState(""); // 현재 비밀번호 
+  const [newPassword, setNewPassword] = useState(""); // 바꿀 새 비밀번호
+  const [confirmPassword, setConfirmPassword] = useState(""); // 새 비밀번호 한 번 더 확인
 
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-
+  // 사용자가 새로운 프로필 사진을 앨범에서 선택했을 때 실행되는 함수입니다.
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 파일이 정상적으로 선택되었는지 확인합니다
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setAvatarFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      setAvatarFile(file); // 실제 파일을 상태에 저장합니다 (나중에 DB 저장 버튼을 누를 때 진짜로 올리기 위해)
+      setPreviewUrl(URL.createObjectURL(file)); // 화면에 즉시 보여주기 위한 가짜 주소(미리보기용)를 만듭니다.
     }
   };
 
+  // 우측 상단 '저장' 버튼을 눌렀을 때 실행되는 핵심 함수입니다!
   const handeSubmit = async () => {
-    setIsLoading(true);
-    let finalAvatarUrl = avatarUrl;
+    setIsLoading(true); // 우선 뱅글뱅글 로딩부터 켜줍니다 (여러 번 클릭하는 것 방지)
     
-    // 1. Upload new image if selected
+    let finalAvatarUrl = avatarUrl; // 최종적으로 DB에 저장할 이미지 주소 (일단 기존 주로소 세팅)
+    
+    // 1단계: 만약 사용자가 새로운 앨범 사진(avatarFile)을 선택했다면?
     if (avatarFile) {
-      const fileExt = avatarFile.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, avatarFile, { upsert: true });
+      // 👉 기존 프로필 사진이 있었다면, 스토리지 용량 낭비를 막기 위해 예전 사진을 먼저 지워줍니다.
+      if (avatarUrl) {
+        // "https://.../avatars/아무이름.png" 주소에서 맨 뒤의 파일명만 딱 잘라옵니다.
+        const oldFileName = avatarUrl.split('/').pop(); 
+        if (oldFileName) {
+          // 아까 만들어둔 삭제 함수 재활용!
+          await removeMediaFile(oldFileName, 'profileImages'); 
+        }
+      }
 
-      if (uploadError) {
-        alert("이미지 업로드에 실패했습니다. (버킷 설정을 확인해주세요)");
-        console.error(uploadError);
+      // mediaUploader.ts 의 단일 이미지 업로드 함수 사용하기!
+      const uploadResult = await uploadSingleImage(avatarFile, user.id, 'profileImages');
+      
+      if (uploadResult) {
+        finalAvatarUrl = uploadResult.url; // 성공 시 받아온 URL을 최종 URL로 설정
       } else {
-        const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(uploadData.path);
-        finalAvatarUrl = publicUrl;
+        setIsLoading(false);
+        return; // 실패 시 함수 멈춤
       }
     }
 
-    // 2. Update nickname & avatar_url in profiles table
+    // 2단계: 'profiles' 데이터베이스 테이블에 변경된 닉네임과 새 이미지 주소를 업데이트합니다.
     if (nickname || finalAvatarUrl !== avatarUrl) {
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ nickname, avatar_url: finalAvatarUrl })
-        .eq('id', user.id);
+        .update({ nickname, avatar_url: finalAvatarUrl }) // 변경된 정보 전송
+        .eq('id', user.id); // 조건: "지금 로그인한 내(user.id) 정보만 바꿔줘!"
         
       if (profileError) {
         console.error(profileError);
       }
     }
 
-    // 3. Update password if requested
+    // 3단계: 비밀번호 입력창에 무언가를 적었다면, 비밀번호 변경을 시도합니다.
     if (newPassword && confirmPassword) {
+      // 새 비밀번호 두 개가 똑같은지 비교
       if (newPassword !== confirmPassword) {
         alert("새 비밀번호와 확인 비밀번호가 일치하지 않습니다.");
         setIsLoading(false);
-        return;
+        return; // 일치하지 않으면 바로 함수를 멈춥니다 (저장 실패)
       }
+      
+      // 일치한다면 Supabase Auth 쪽에 내 비밀번호를 새걸로 바꿔달라고 요청합니다.
       const { error: passwordError } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -76,12 +96,14 @@ export default function ProfileEditForm({ user, profile }: any) {
       }
     }
 
+    // 위 1,2,3 단계 작업이 모두 성공적으로 끝났다면, 로딩을 끄고 마이페이지 화면으로 돌아갑니다.
     setIsLoading(false);
     alert("소중한 프로필 정보가 성공적으로 업데이트 되었습니다! 🎉");
-    router.push("/mypage");
-    router.refresh();
+    router.push("/mypage"); // 마이페이지 홈으로 강제 이동
+    router.refresh(); // 최신 프로필 사진과 닉네임이 반영되도록 전체 리프레시를 한 번 시켜줍니다.
   };
 
+  // 화면에 보여줄 사진을 결정합니다: 방금 막 선택한 미리보기용(previewUrl)이 있다면 그걸 먼저 보여주고, 없다면 DB에 저장되어있던 사진(avatarUrl)을 보여줍니다.
   const currentDisplayAvatar = previewUrl || avatarUrl;
 
   return (
@@ -102,7 +124,8 @@ export default function ProfileEditForm({ user, profile }: any) {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8 flex flex-col items-center">
-        {/* Avatar Edit Section */}
+        {/* 1️⃣ 프로필 사진 수정(Avatar Edit) 섹션 */}
+        {/* 설명: 사용자가 동그란 프로필 사진 영역을 클릭(onClick)하면 숨겨져 있는 파일 입력창(fileInputRef)이 대신 클릭된 것처럼 이벤트를 전달합니다. */}
         <div className="relative mb-8 group cursor-pointer hover:scale-105 transition-transform" onClick={() => fileInputRef.current?.click()}>
           <div className="w-[100px] h-[100px] rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
             {currentDisplayAvatar ? (
@@ -119,17 +142,18 @@ export default function ProfileEditForm({ user, profile }: any) {
           <div className="absolute bottom-0 right-0 bg-white border border-gray-200 rounded-full p-2 shadow-sm">
             <Camera className="w-4 h-4 text-gray-700" />
           </div>
+          {/* 진짜로 파일을 입력받는 창입니다. className="hidden" 이라 화면에는 안보이지만, onClick 등으로 연결되어 몰래 열립니다. */}
           <input 
             type="file" 
             ref={fileInputRef} 
             onChange={handleAvatarChange} 
-            accept="image/*" 
+            accept="image/*" // 스마트폰 앨범에서 이미지만 고를 수 있게 제한
             className="hidden" 
           />
         </div>
 
         <div className="w-full space-y-8">
-          {/* Nickname Section */}
+          {/* 2️⃣ 닉네임(Nickname) 섹션 */}
           <div>
             <label className="block text-[13px] font-bold text-gray-700 mb-2">닉네임</label>
             <input 
