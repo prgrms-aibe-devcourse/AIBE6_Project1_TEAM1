@@ -8,6 +8,42 @@ interface PlaceCardProps {
   detailItems: TripDetailItem[]
 }
 
+function getTripDurationDays(
+  startDate?: string | null,
+  endDate?: string | null,
+) {
+  if (!startDate || !endDate) return null
+
+  const start = new Date(`${startDate}T00:00:00`)
+  const end = new Date(`${endDate}T00:00:00`)
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return null
+  }
+
+  const diffMs = end.getTime() - start.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1
+
+  return diffDays > 0 ? diffDays : null
+}
+
+function getTripDurationLabel(
+  startDate?: string | null,
+  endDate?: string | null,
+) {
+  const days = getTripDurationDays(startDate, endDate)
+
+  if (!days) {
+    return '-'
+  }
+
+  if (days === 1) {
+    return '당일치기'
+  }
+
+  return `${days} Days`
+}
+
 export default function PlaceCard({ trip, detailItems }: PlaceCardProps) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -24,7 +60,7 @@ export default function PlaceCard({ trip, detailItems }: PlaceCardProps) {
               {trip.title || '제목 없는 일정'}
             </h3>
             <p className="mt-1 text-sm text-gray-600">
-              {trip.start_date || '-'} ~ {trip.end_date || '-'}
+              {getTripDurationLabel(trip.start_date, trip.end_date)}
             </p>
           </div>
 
