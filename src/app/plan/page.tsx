@@ -163,9 +163,12 @@ function PlanPageContent() {
         if (error || !tripData) {
           console.error('여행 불러오기 에러 상세:', error?.message || error)
           // location 컬럼이 아직 DB에 없을 때 42703 에러가 날 수 있습니다.
-          alert(
-            `여행 정보를 불러올 수 없습니다. (${error?.message || '알 수 없는 에러'})`,
-          )
+          openModal({
+            type: 'alert',
+            variant: 'danger',
+            title: '여행 불러오기 실패',
+            description: `여행 정보를 불러올 수 없습니다.\n(${error?.message || '알 수 없는 에러'})`,
+          })
           return
         }
 
@@ -268,7 +271,12 @@ function PlanPageContent() {
     const dayPlaces = placesByDay[dayToDelete] || []
 
     if (Object.keys(placesByDay).length <= 1) {
-      alert('최소 한 개의 날짜는 유지해야 합니다.')
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '날짜 삭제 불가',
+        description: '최소 한 개의 날짜는 유지해야 합니다.',
+      })
       return
     }
 
@@ -316,14 +324,24 @@ function PlanPageContent() {
     isPublic: boolean,
   ) => {
     if (!userId) {
-      alert('로그인이 필요합니다.')
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '로그인 필요',
+        description: '일정을 저장하시려면 로그인이 필요합니다.',
+      })
       return
     }
 
     const totalPlacesCount = Object.values(placesByDay).flat().length
 
     if (totalPlacesCount === 0) {
-      alert('여행 장소를 전체 Day 통틀어 1개 이상 추가해주세요!')
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '장소 부족',
+        description: '여행 장소를 전체 Day 통틀어 1개 이상 추가해주세요!',
+      })
       return
     }
 
@@ -429,7 +447,12 @@ function PlanPageContent() {
         }
       }
 
-      alert('플랜이 성공적으로 데이터베이스에 저장되었습니다!')
+      openModal({
+        type: 'alert',
+        variant: 'primary',
+        title: '저장 완료',
+        description: '플랜이 성공적으로 데이터베이스에 저장되었습니다!',
+      })
 
       // 저장 성공 후 화면 상부의 Badge 정보들도 동기화해줍니다.
       setTripMetadata({
@@ -440,7 +463,12 @@ function PlanPageContent() {
       })
     } catch (error) {
       console.error(error)
-      alert('저장 중 오류가 발생했습니다.')
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '저장 실패',
+        description: '일정을 저장하는 도중 오류가 발생했습니다.',
+      })
     } finally {
       setIsSaving(false)
     }
