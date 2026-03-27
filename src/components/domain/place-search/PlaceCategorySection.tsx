@@ -3,6 +3,13 @@ interface PlaceCategorySectionProps {
   onSelectCategory: (category: string) => void
 }
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+const categories = ['전체', '음식점', '카페', '숙박', '관광명소', '문화시설']
+=======
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
 const categories = [
   '전체',
 <<<<<<< HEAD
@@ -20,6 +27,13 @@ const categories = [
   '지하철역',
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
 ]
+<<<<<<< HEAD
+=======
+>>>>>>> 56c7bc4 (카테고리 수정)
+=======
+const categories = ['전체', '음식점', '카페', '숙박', '관광명소', '문화시설']
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
 
 export default function PlaceCategorySection({
   selectedCategory,
@@ -31,6 +45,13 @@ export default function PlaceCategorySection({
         {categories.map((category) => {
           const isActive = selectedCategory === category
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
           return (
             <button
               key={category}
@@ -48,7 +69,10 @@ export default function PlaceCategorySection({
         })}
       </div>
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
 =======
         return (
           <button
@@ -66,7 +90,12 @@ export default function PlaceCategorySection({
         )
       })}
 >>>>>>> 56c7bc4 (카테고리 수정)
+<<<<<<< HEAD
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
+=======
+=======
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
     </div>
   )
 }

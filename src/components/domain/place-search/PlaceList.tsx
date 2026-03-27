@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import PlaceCard from './PlaceCard'
 <<<<<<< HEAD
+<<<<<<< HEAD
 import type { Trip, TripDetailItem } from './PlaceSearchSection'
 
 interface PlaceListProps {
@@ -47,13 +48,16 @@ interface Place {
   phone?: string
   imageUrl?: string
 }
+=======
+import type { Trip, TripDetailItem } from './PlaceSearchSection'
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
 
 interface PlaceListProps {
-  places: Place[]
-  selectedPlaceId?: string
-  onSelectPlace?: (place: Place) => void
+  trips: Trip[]
+  tripDetailsMap: Record<number, TripDetailItem[]>
 }
 
+<<<<<<< HEAD
 export default function PlaceList({
   places,
   selectedPlaceId,
@@ -61,6 +65,10 @@ export default function PlaceList({
 }: PlaceListProps) {
   if (places.length === 0) {
 >>>>>>> 64d8b82 (Feat: 검색결과 정렬)
+=======
+export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
+  if (trips.length === 0) {
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
         검색 결과가 없습니다.
@@ -69,6 +77,7 @@ export default function PlaceList({
   }
 
   return (
+<<<<<<< HEAD
 <<<<<<< HEAD
     <section className="space-y-6">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -106,6 +115,8 @@ export default function PlaceList({
       </div>
     </section>
 =======
+=======
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
 <<<<<<< HEAD
     <div className="space-y-3">
       {trips.map((trip) => (
@@ -122,6 +133,14 @@ export default function PlaceList({
           isSelected={selectedPlaceId === place.id}
           onClick={() => onSelectPlace?.(place)}
 >>>>>>> 64d8b82 (Feat: 검색결과 정렬)
+=======
+    <div className="space-y-3">
+      {trips.map((trip) => (
+        <PlaceCard
+          key={trip.id}
+          trip={trip}
+          detailItems={tripDetailsMap[trip.id] ?? []}
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
         />
       ))}
     </div>

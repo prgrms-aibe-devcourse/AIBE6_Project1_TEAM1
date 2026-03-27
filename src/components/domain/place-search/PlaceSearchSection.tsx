@@ -5,7 +5,10 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
+=======
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
 import { createClient } from '@supabase/supabase-js'
 import { useSearchParams } from 'next/navigation'
 <<<<<<< HEAD
@@ -27,13 +30,21 @@ import PlaceList from './PlaceList'
 =======
 =======
 >>>>>>> 64d8b82 (Feat: 검색결과 정렬)
+=======
+import { createClient } from '@supabase/supabase-js'
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import PlaceCategorySection from './PlaceCategorySection'
-import PlaceFilterBar from './PlaceFilterBar'
+import { useEffect, useMemo, useState } from 'react'
 import PlaceResultSection from './PlaceResultSection'
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
 export interface Trip {
   id: number
   title: string | null
@@ -42,7 +53,10 @@ export interface Trip {
   is_public: boolean | null
   user_id?: string | null
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
 =======
 interface Place {
   id: string
@@ -218,6 +232,7 @@ const trendingPlaces: Place[] = [
 =======
 =======
 >>>>>>> 4986e65 (카테고리 수정)
+<<<<<<< HEAD
 >>>>>>> faceb22 (Feat: 페이지기능 구현)
 }
 
@@ -235,7 +250,22 @@ interface KakaoPlaceDocument {
   phone: string
   x: string
   y: string
+=======
+=======
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
 }
+
+export interface TripItem {
+  id: number
+  trip_id: number
+  place_id: number
+  visit_order: number | null
+  transport_type: string | null
+  travel_time: number | null
+  visit_day: number | null
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
+}
+<<<<<<< HEAD
 =======
 const PAGE_SIZE = 9
 >>>>>>> 64d8b82 (Feat: 검색결과 정렬)
@@ -277,8 +307,21 @@ const CATEGORY_CODE_MAP: Record<string, string> = {
   지하철역: 'SW8',
   주차장: 'PK6',
 >>>>>>> 459ade2 (feat: 검색기능 구현  입력값 라우팅 연결)
+=======
+
+export interface Place {
+  id: number
+  kakao_place_id: string | null
+  place_name: string | null
+  category: string | null
+  latitude: number | null
+  longitude: number | null
+  is_near_station: boolean | null
+  address: string | null
+  displayCategory?: string
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -306,18 +349,104 @@ function getCategoryEmoji(category: string, groupName?: string) {
   if (source.includes('지하철')) return '🚇'
   if (source.includes('주차장')) return '🅿️'
   return '📍'
+=======
+export interface TripDetailItem extends TripItem {
+  place: Place | null
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
 }
 
-function createPlaceholderImage(label: string, emoji: string) {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
-      <rect width="400" height="300" fill="#f3f4f6" />
-      <text x="50%" y="42%" text-anchor="middle" font-size="56">${emoji}</text>
-      <text x="50%" y="62%" text-anchor="middle" font-size="24" fill="#111827" font-family="Arial, sans-serif">${label}</text>
-    </svg>
-  `
+const CATEGORY_OPTIONS = [
+  '전체',
+  '음식점',
+  '카페',
+  '숙박',
+  '관광명소',
+  '문화시설',
+  '교통',
+] as const
 
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
+type CategoryOption = (typeof CATEGORY_OPTIONS)[number]
+
+function inferPlaceCategory(
+  rawCategory?: string | null,
+): CategoryOption | null {
+  const category = (rawCategory ?? '').toLowerCase()
+
+  if (!category) return null
+
+  if (
+    category.includes('카페') ||
+    category.includes('커피') ||
+    category.includes('디저트') ||
+    category.includes('베이커리')
+  ) {
+    return '카페'
+  }
+
+  if (
+    category.includes('음식점') ||
+    category.includes('식당') ||
+    category.includes('맛집') ||
+    category.includes('한식') ||
+    category.includes('중식') ||
+    category.includes('일식') ||
+    category.includes('양식') ||
+    category.includes('분식') ||
+    category.includes('치킨') ||
+    category.includes('피자') ||
+    category.includes('햄버거')
+  ) {
+    return '음식점'
+  }
+
+  if (
+    category.includes('호텔') ||
+    category.includes('모텔') ||
+    category.includes('펜션') ||
+    category.includes('게스트하우스') ||
+    category.includes('리조트') ||
+    category.includes('숙박')
+  ) {
+    return '숙박'
+  }
+
+  if (
+    category.includes('박물관') ||
+    category.includes('미술관') ||
+    category.includes('공연') ||
+    category.includes('전시') ||
+    category.includes('문화시설') ||
+    category.includes('도서관')
+  ) {
+    return '문화시설'
+  }
+
+  if (
+    category.includes('지하철') ||
+    category.includes('역') ||
+    category.includes('버스') ||
+    category.includes('터미널') ||
+    category.includes('공항') ||
+    category.includes('교통')
+  ) {
+    return '교통'
+  }
+
+  if (
+    category.includes('관광') ||
+    category.includes('공원') ||
+    category.includes('해수욕장') ||
+    category.includes('산') ||
+    category.includes('전망대') ||
+    category.includes('테마파크') ||
+    category.includes('랜드마크') ||
+    category.includes('명소')
+  ) {
+    return '관광명소'
+  }
+
+  return null
 }
 
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
@@ -325,12 +454,20 @@ export default function PlaceSearchSection() {
   const searchParams = useSearchParams()
   const queryFromUrl = searchParams.get('query') ?? ''
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
   const [trips, setTrips] = useState<Trip[]>([])
   const [tripDetailsMap, setTripDetailsMap] = useState<
     Record<number, TripDetailItem[]>
   >({})
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryOption>('전체')
+<<<<<<< HEAD
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -361,17 +498,27 @@ export default function PlaceSearchSection() {
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null)
   const [selectedFilter, setSelectedFilter] = useState('전체')
   const [selectedCategory, setSelectedCategory] = useState('전체')
+=======
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageableCount, setPageableCount] = useState(0)
+  const supabase = useMemo(() => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  const handleSearch = async (
-    searchKeyword: string,
-    categoryName: string = selectedCategory,
-    page: number = 1,
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return null
+    }
+
+    return createClient(supabaseUrl, supabaseAnonKey)
+  }, [])
+
+  const fetchTrips = async (
+    searchKeyword = '',
+    category: CategoryOption = selectedCategory,
   ) => {
+<<<<<<< HEAD
     const trimmedKeyword = searchKeyword.trim()
 
     if (!trimmedKeyword) {
@@ -392,7 +539,16 @@ export default function PlaceSearchSection() {
 =======
 =======
 >>>>>>> 64d8b82 (Feat: 검색결과 정렬)
+<<<<<<< HEAD
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
+=======
+=======
+    if (!supabase) {
+      setTrips([])
+      setTripDetailsMap({})
+      setErrorMessage('Supabase 환경변수가 설정되지 않았습니다.')
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
       return
     }
 
@@ -400,6 +556,7 @@ export default function PlaceSearchSection() {
       setIsLoading(true)
       setErrorMessage('')
 
+<<<<<<< HEAD
 <<<<<<< HEAD
       const trimmedKeyword = searchKeyword.trim()
 =======
@@ -417,10 +574,24 @@ export default function PlaceSearchSection() {
         .order('start_date', { ascending: true })
 
       // 기존 제목 검색은 DB 쿼리에서 먼저 유지
+=======
+      let tripsQuery = supabase
+        .from('trips')
+        .select('id, title, start_date, end_date, is_public, user_id')
+        .order('start_date', { ascending: true })
+
+      const trimmedKeyword = searchKeyword.trim()
+
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
       if (trimmedKeyword) {
         tripsQuery = tripsQuery.ilike('title', `%${trimmedKeyword}%`)
       }
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
       const { data: titleMatchedTrips, error: titleTripsError } =
         await tripsQuery
 <<<<<<< HEAD
@@ -451,11 +622,21 @@ export default function PlaceSearchSection() {
       const allTripIds = allTrips.map((trip) => trip.id)
 
       if (allTripIds.length === 0) {
+=======
+      const { data: tripRows, error: tripsError } = await tripsQuery
+
+      if (tripsError) throw tripsError
+
+      const fetchedTrips = tripRows ?? []
+
+      if (fetchedTrips.length === 0) {
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
         setTrips([])
         setTripDetailsMap({})
         return
       }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
       // 실제 테이블명이 trip_itemps면 여기만 바꿔
       const { data: tripItemsRows, error: tripItemsError } = await supabase
@@ -573,11 +754,74 @@ export default function PlaceSearchSection() {
         category === '전체'
           ? mergedTrips
           : mergedTrips.filter((trip) =>
+=======
+      const tripIds = fetchedTrips.map((trip) => trip.id)
+
+      // 실제 테이블명이 trip_itemps면 여기만 바꿔
+      const { data: tripItemsRows, error: tripItemsError } = await supabase
+        .from('trip_items')
+        .select(
+          'id, trip_id, place_id, visit_order, transport_type, travel_time, visit_day',
+        )
+        .in('trip_id', tripIds)
+        .order('visit_day', { ascending: true })
+        .order('visit_order', { ascending: true })
+
+      if (tripItemsError) throw tripItemsError
+
+      const tripItems = tripItemsRows ?? []
+      const placeIds = [...new Set(tripItems.map((item) => item.place_id))]
+
+      let placeMap = new Map<number, Place>()
+
+      if (placeIds.length > 0) {
+        const { data: placeRows, error: placesError } = await supabase
+          .from('places')
+          .select(
+            'id, kakao_place_id, place_name, category, latitude, longitude, is_near_station, address',
+          )
+          .in('id', placeIds)
+
+        if (placesError) throw placesError
+
+        placeMap = new Map(
+          (placeRows ?? []).map((place) => [
+            place.id,
+            {
+              ...place,
+              displayCategory:
+                inferPlaceCategory(place.category) ?? place.category,
+            },
+          ]),
+        )
+      }
+
+      const nextTripDetailsMap: Record<number, TripDetailItem[]> = {}
+
+      tripItems.forEach((item) => {
+        const place = placeMap.get(item.place_id) ?? null
+
+        if (!nextTripDetailsMap[item.trip_id]) {
+          nextTripDetailsMap[item.trip_id] = []
+        }
+
+        nextTripDetailsMap[item.trip_id].push({
+          ...item,
+          place,
+        })
+      })
+
+      const filteredTrips =
+        category === '전체'
+          ? fetchedTrips
+          : fetchedTrips.filter((trip) =>
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
               (nextTripDetailsMap[trip.id] ?? []).some(
                 (item) => inferPlaceCategory(item.place?.category) === category,
               ),
             )
 
+<<<<<<< HEAD
       setTrips(categoryFilteredTrips)
       setTripDetailsMap(nextTripDetailsMap)
     } catch (error) {
@@ -601,6 +845,14 @@ export default function PlaceSearchSection() {
 >>>>>>> 6539aea (Feat: 페이지기능 구현)
 =======
 >>>>>>> 64d8b82 (Feat: 검색결과 정렬)
+=======
+      setTrips(filteredTrips)
+      setTripDetailsMap(nextTripDetailsMap)
+    } catch (error) {
+      console.error(error)
+      setTrips([])
+      setTripDetailsMap({})
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -612,6 +864,11 @@ export default function PlaceSearchSection() {
   }
 
   useEffect(() => {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
     fetchTrips(queryFromUrl, selectedCategory)
   }, [queryFromUrl, selectedCategory])
 <<<<<<< HEAD
@@ -693,7 +950,20 @@ export default function PlaceSearchSection() {
           setSelectedPlace((prev) => (prev?.id === place.id ? null : place))
         }
 >>>>>>> 64d8b82 (Feat: 검색결과 정렬)
+<<<<<<< HEAD
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
+=======
+=======
+    fetchTrips(queryFromUrl, selectedCategory)
+  }, [queryFromUrl, selectedCategory])
+
+  return (
+    <section className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <PlaceResultSection
+        trips={trips}
+        tripDetailsMap={tripDetailsMap}
+>>>>>>> b807596 (Feat: 검색로직 전면 수정)
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
         errorMessage={errorMessage}
         isLoading={isLoading}
         selectedCategory={selectedCategory}
@@ -701,6 +971,7 @@ export default function PlaceSearchSection() {
           setSelectedCategory(category as CategoryOption)
         }
       />
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
@@ -803,6 +1074,8 @@ export default function PlaceSearchSection() {
 >>>>>>> faceb22 (Feat: 페이지기능 구현)
 =======
 >>>>>>> 908f1f0 (Feat: 검색결과 정렬)
+=======
+>>>>>>> d603736 (Feat: 검색로직 전면 수정)
     </section>
   )
 }
