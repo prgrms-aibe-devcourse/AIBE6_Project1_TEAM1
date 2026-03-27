@@ -1,25 +1,31 @@
 import { create } from 'zustand';
 
+/** 모달의 종류: 단순 알림(alert)인지, 확인/취소 선택(confirm)인지 구분 */
 export type ModalType = 'alert' | 'confirm';
+
+/** 모달의 스타일: 기본(primary)인지, 위험/경고(danger)인지 구분 */
 export type ModalVariant = 'primary' | 'danger';
 
+/** 모달 하나가 가질 수 있는 모든 정보(상태) 정의 */
 export interface ModalState {
-  isOpen: boolean;
-  type: ModalType;
-  variant: ModalVariant;
-  title: string;
-  description?: string;
-  confirmText?: string;
-  cancelText?: string;
-  onConfirm?: () => void;
-  onCloseCallback?: () => void;
+  isOpen: boolean;           // 모달이 화면에 보이는지 여부
+  type: ModalType;           // 모달의 타입 (alert 또는 confirm)
+  variant: ModalVariant;     // 모달의 색상 테마 (primary 또는 danger)
+  title: string;              // 모달 제목
+  description?: string;       // 모달 본문 내용 (선택사항)
+  confirmText?: string;       // 확인 버튼에 들어갈 글자
+  cancelText?: string;        // 취소 버튼에 들어갈 글자
+  onConfirm?: () => void;     // 확인 버튼을 눌렀을 때 실행할 함수
+  onCloseCallback?: () => void; // 모달이 닫힐 때 추가로 실행할 함수 (선택사항)
 }
 
+/** 스토어에서 사용할 함수(액션) 정의 */
 interface ModalStore extends ModalState {
-  openModal: (config: Omit<ModalState, 'isOpen'>) => void;
-  closeModal: () => void;
+  openModal: (config: Omit<ModalState, 'isOpen'>) => void; // 모달을 열 때 사용하는 함수
+  closeModal: () => void;                                  // 모달을 닫을 때 사용하는 함수
 }
 
+/** 처음 앱이 켜졌을 때의 모달 초기 상태 */
 const initialState: ModalState = {
   isOpen: false,
   type: 'alert',
@@ -30,8 +36,11 @@ const initialState: ModalState = {
   cancelText: '취소',
 };
 
+/** 모달의 상태를 전역적으로 관리하는 '저장소(Store)' 생성 */
 export const useModalStore = create<ModalStore>((set) => ({
   ...initialState,
+  /** 외부에서 모달을 열 때 필요한 정보를 받아와서 isOpen을 true로 변경 */
   openModal: (config) => set({ ...config, isOpen: true }),
+  /** 모달을 닫을 때 초기 상태로 되돌리되, isOpen만 false로 설정 */
   closeModal: () => set((state) => ({ ...initialState, isOpen: false })),
 }));
