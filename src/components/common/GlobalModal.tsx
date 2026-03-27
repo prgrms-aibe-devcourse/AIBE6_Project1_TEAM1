@@ -5,7 +5,7 @@ import { useModalStore } from "@/store/useModalStore";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, CheckCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 /** 
  * 앱 전체에서 사용되는 전역 모달 컴포넌트입니다.
