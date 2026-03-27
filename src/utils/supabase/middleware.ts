@@ -35,9 +35,21 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // 이 코드를 실행하는 순간, Supabase가 "어? 토큰 유효기간이 다 되어가네?" 하면
-  // 자동으로 토큰을 최신화(연장)하고 위에서 설정한 setAll 을 통해 새 쿠키를 브라우저에 구워줍니다.
-  await supabase.auth.getUser();
+  // 세션 정보(사용자 정보)를 가져옵니다. 
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // --- 보호된 경로 처리 (로그인이 필요한 페이지들) ---
+  const protectedPaths = ["/mypage", "/plan", "/review"];
+  const isProtectedPath = protectedPaths.some((path) => 
+    request.nextUrl.pathname.startsWith(path)
+  );
+
+  // 만약 보호된 경로에 접근 중인데 유저 정보가 없다면? 로그인 페이지로 보냅니다.
+  if (isProtectedPath && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
 
   return supabaseResponse;
 }
