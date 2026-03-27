@@ -31,7 +31,6 @@ export default function MediaUploader({ supabase, onUpload, onRemove }: any) {
     const uploadedUrls: { url: string; path: string }[] = []
 
     for (const file of Array.from(validFiles)) {
-      //const fileExt = file.name.split('.').pop()
       const fileName = `${crypto.randomUUID()}.${file.name.split('.').pop()}`
 
       const { error } = await supabase.storage

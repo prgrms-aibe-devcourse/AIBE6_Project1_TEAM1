@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 
 import DeleteReview from '@/components/domain/review/DeleteReview'
+import { useReviewStore } from '@/components/domain/review/useReviewStore'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -42,6 +43,7 @@ export default function ReviewPage() {
   const [reviewData, setReviewData] = useState(null)
   const [mediaData, setMediaData] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+  const { setReview } = useReviewStore()
 
   useEffect(() => {
     const fetchReview = async () => {
@@ -107,8 +109,26 @@ export default function ReviewPage() {
   } = reviewData
   const options = { slope, width, stairs }
 
+  // URL → path 추출
+  function extractPathFromUrl(url: string, bucket: string) {
+    const parts = url.split(`/storage/v1/object/public/${bucket}/`)
+    return parts[1] ?? ''
+  }
+
   // 리뷰 수정페이지로 라우팅
   const handleEdit = () => {
+    setReview({
+      id: reviewId,
+      content,
+      rating,
+      place_id,
+      options,
+      images: mediaData.map((url) => ({
+        url,
+        path: extractPathFromUrl(url, 'media-storage'),
+        isNew: false,
+      })),
+    })
     router.push(`/review/edit?${reviewId}`)
   }
 

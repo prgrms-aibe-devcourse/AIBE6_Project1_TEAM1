@@ -13,10 +13,10 @@ import {
 type OptionSelectorProps = {
   options: {
     slope: string
-    width: string
     stairs: string
+    shade: string
   }
-  onChange: (val: { slope: string; width: string; stairs: string }) => void
+  onChange: (val: { slope: string; stairs: string; shade: string }) => void
 }
 
 export default function OptionSelector({
@@ -51,15 +51,15 @@ export default function OptionSelector({
       <div className="grid grid-cols-3 gap-3 mb-3">
         <Option
           icon={<ArrowRight size={18} />}
-          label="완만"
-          selected={options.slope === '완만'}
-          onClick={() => onChange({ ...options, slope: '완만' })}
+          label="평지"
+          selected={options.slope === '평지'}
+          onClick={() => onChange({ ...options, slope: '평지' })}
         />
         <Option
           icon={<TrendingUp size={18} />}
-          label="보통"
-          selected={options.slope === '보통'}
-          onClick={() => onChange({ ...options, slope: '보통' })}
+          label="약간 경사"
+          selected={options.slope === '약간 경사'}
+          onClick={() => onChange({ ...options, slope: '약간 경사' })}
         />
         <Option
           icon={<Mountain size={18} />}
@@ -69,24 +69,24 @@ export default function OptionSelector({
         />
       </div>
       <div>
-        <p className="text-sm mb-3 text-gray-600">인도 폭</p>
+        <p className="text-sm mb-3 text-gray-600">계단 유무</p>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <Option
             icon={<MoveHorizontal size={18} />}
-            label="넓음"
-            selected={options.width === '넓음'}
-            onClick={() => onChange({ ...options, width: '넓음' })}
+            label="있음"
+            selected={options.stairs === '있음'}
+            onClick={() => onChange({ ...options, stairs: '있음' })}
           />
           <Option
             icon={<AlignVerticalSpaceAround size={18} />}
-            label="좁음"
-            selected={options.width === '좁음'}
-            onClick={() => onChange({ ...options, width: '좁음' })}
+            label="없음"
+            selected={options.stairs === '없음'}
+            onClick={() => onChange({ ...options, stairs: '없음' })}
           />
         </div>
       </div>
       <div>
-        <p className="text-sm mb-3 text-gray-600">계단 유무</p>
+        <p className="text-sm mb-3 text-gray-600">그늘 유무</p>
         <div className="grid grid-cols-2 gap-3">
           <Option
             icon={<ArrowUpNarrowWide size={18} />}
