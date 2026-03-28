@@ -3,7 +3,6 @@ import {
   ArrowUpNarrowWide,
   Minus,
   Mountain,
-  Route,
   RouteIcon,
   TreeDeciduous,
   TreePine,
@@ -11,6 +10,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import CustomListbox from './CustomListBox'
 
 type Route = {
   from: number
@@ -27,6 +27,19 @@ type RouteOption = {
 type Place = {
   id: number
   place_name: string
+}
+
+const getTransportIcon = (transport: string) => {
+  switch (transport) {
+    case 'walk':
+      return '👟'
+    case 'bus':
+      return '🚌'
+    case 'subway':
+      return '🚇'
+    default:
+      return '❓'
+  }
 }
 
 const getSlopeIcon = (value: string) => {
@@ -145,75 +158,76 @@ export default function RouteOptionSelector({
       {routes.map((route, index) => {
         const fromName = placeMap[route.from] ?? route.from
         const toName = placeMap[route.to] ?? route.to
-
+        const transport = route.transport
         const opt = options[index] || {}
 
-        // 옵션 텍스트, 선택 없으면 '-' 표시
-        const slopeText = opt.slope || '-'
-        const stairsText = opt.stairs || '-'
-        const shadeText = opt.shade || '-'
+        // // 옵션 텍스트, 선택 없으면 '-' 표시
+        // const slopeText = opt.slope || '-'
+        // const stairsText = opt.stairs || '-'
+        // const shadeText = opt.shade || '-'
 
         return (
           <div
             key={index}
-            className="flex items-center justify-between border-b py-2"
+            className="flex items-center justify-between border-b py-2 text-center"
           >
             {/* 왼쪽: from → to */}
-            <div className="font-medium w-auto">
+            <div className="flex flex-col items-center justify-center w-32 font-medium">
               {fromName}
-              <br/>
-               → 
-               <br/>
-               {toName}
+              <br /> → <br />
+              {toName}
             </div>
-
-            {/* 오른쪽: 옵션 or walk 아닌 경우 빈 공간 */}
+            <div className="flex flex-col items-center justify-center w-20 text-2xl">
+              {getTransportIcon(transport)}
+            </div>
+            {/* ✅ 2. 오른쪽 영역: select 대신 CustomListbox 사용 */}
             {route.transport === 'walk' ? (
-              <div className="flex items-center gap-6 text-gray-700">
-                {/* 경사도 */}
-                {getSlopeIcon(opt.slope)}
-                <select
-                  value={opt.slope || ''}
-                  onChange={(e) => updateOption(index, 'slope', e.target.value)}
-                  className="border rounded px-2 py-1"
-                >
-                  <option value="">경사도</option>
-                  <option value="평지">평지</option>
-                  <option value="보통">보통</option>
-                  <option value="가파름">가파름</option>
-                </select>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="text-gray-700">{getSlopeIcon(opt.slope)}</div>
+                  <CustomListbox
+                    value={opt.slope}
+                    placeholder="경사도"
+                    onChange={(val) => updateOption(index, 'slope', val)}
+                    options={[
+                      { name: '평지', value: '평지' },
+                      { name: '보통', value: '보통' },
+                      { name: '가파름', value: '가파름' },
+                    ]}
+                  />
+                </div>
 
-                {/* 계단 */}
-                {getStairsIcon(opt.stairs)}
-                <select
-                  value={opt.stairs || ''}
-                  onChange={(e) =>
-                    updateOption(index, 'stairs', e.target.value)
-                  }
-                  className="border rounded px-2 py-1"
-                >
-                  <option value="">계단</option>
-                  <option value="없음">계단 없음</option>
-                  <option value="있음">계단 있음</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <div className="text-gray-700">
+                    {getStairsIcon(opt.stairs)}
+                  </div>
+                  <CustomListbox
+                    value={opt.stairs}
+                    placeholder="계단"
+                    onChange={(val) => updateOption(index, 'stairs', val)}
+                    options={[
+                      { name: '계단 없음', value: '없음' },
+                      { name: '계단 있음', value: '있음' },
+                    ]}
+                  />
+                </div>
 
-                {/* 그늘 */}
-                {getShadeIcon(opt.shade)}
-                <select
-                  value={opt.shade || ''}
-                  onChange={(e) => updateOption(index, 'shade', e.target.value)}
-                  className="border rounded px-2 py-1"
-                >
-                  <option value="">그늘</option>
-                  <option value="적음">그늘 적음</option>
-                  <option value="보통">그늘 보통</option>
-                  <option value="많음">그늘 많음</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <div className="text-gray-700">{getShadeIcon(opt.shade)}</div>
+                  <CustomListbox
+                    value={opt.shade}
+                    placeholder="그늘"
+                    onChange={(val) => updateOption(index, 'shade', val)}
+                    options={[
+                      { name: '그늘 적음', value: '적음' },
+                      { name: '그늘 보통', value: '보통' },
+                      { name: '그늘 많음', value: '많음' },
+                    ]}
+                  />
+                </div>
               </div>
             ) : (
-              <div className="text-gray-300 w-[220px] text-right">
-                {/* walk 아닐 때는 옵션 없이 빈 공간 유지 */}
-              </div>
+              <div className="w-[360px]" />
             )}
           </div>
         )
