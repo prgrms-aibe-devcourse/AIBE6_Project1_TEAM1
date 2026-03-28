@@ -393,6 +393,63 @@ function PlanPageContent() {
   }
 
   const [isSaving, setIsSaving] = useState(false)
+  const [isOptimizing, setIsOptimizing] = useState(false)
+
+  // Gemini AI 동선 최적화 핸들러
+  const handleAiOptimize = async () => {
+    if (currentPlaces.length < 2) {
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '장소 부족',
+        description: '동선 최적화를 위해 현재 Day에 2개 이상의 장소가 필요합니다.',
+      })
+      return
+    }
+
+    setIsOptimizing(true)
+    try {
+      const res = await fetch('/api/ai-optimize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          places: currentPlaces.map((p) => ({
+            id: p.id,
+            name: p.name,
+            category: p.category,
+            lat: p.lat,
+            lng: p.lng,
+            transportType: p.transportType,
+          })),
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      // order 배열 순서대로 places 재정렬
+      const reordered = (data.order as number[]).map((i: number) => currentPlaces[i])
+      setPlacesByDay((prev) => ({ ...prev, [currentDay]: reordered }))
+      setIsModified(true)
+
+      openModal({
+        type: 'alert',
+        variant: 'primary',
+        title: '✨ AI 동선 최적화 완료',
+        description: data.reason,
+      })
+    } catch (err) {
+      console.error(err)
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: 'AI 최적화 실패',
+        description: 'AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+      })
+    } finally {
+      setIsOptimizing(false)
+    }
+  }
 
   // 하드코딩 정보 대신 모달에서 쏴준 데이터(title, startDate, endDate, isPublic)를 파라미터로 받음
   const handleSaveTrip = async (
@@ -679,8 +736,19 @@ function PlanPageContent() {
           </div>
 
           <div className="mb-2">
-            <CommonButton className="!bg-gray-900 !text-white hover:!bg-gray-800 !rounded-lg px-4 py-2 flex items-center gap-2 text-xs border-none">
-              <Sparkles className="w-3.5 h-3.5" /> AI 동선 최적화
+            <CommonButton
+              onClick={handleAiOptimize}
+              disabled={isOptimizing || currentPlaces.length < 2}
+              className={`!rounded-lg px-4 py-2 flex items-center gap-2 text-xs border-none transition-all ${
+                isOptimizing
+                  ? '!bg-gray-600 !text-gray-300 cursor-not-allowed'
+                  : currentPlaces.length < 2
+                  ? '!bg-gray-300 !text-gray-500 cursor-not-allowed'
+                  : '!bg-gray-900 !text-white hover:!bg-purple-700'
+              }`}
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${isOptimizing ? 'animate-spin' : ''}`} />
+              {isOptimizing ? 'AI 분석 중...' : 'AI 동선 최적화'}
             </CommonButton>
           </div>
         </div>
