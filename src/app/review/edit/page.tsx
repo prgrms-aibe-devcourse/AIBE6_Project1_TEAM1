@@ -1,24 +1,46 @@
 'use client'
 
+type Route = {
+  from: number
+  to: number
+  transport: string
+}
+
+type RouteOption = {
+  slope: string
+  stairs: string
+  shade: string
+}
+
 import MediaUploader from '@/components/domain/review/MediaUploader'
-import OptionSelector from '@/components/domain/review/OptionSelector'
 import RatingSelector from '@/components/domain/review/RatingSelector'
+import RouteOptionSelector from '@/components/domain/review/RouteOptionSelector'
 import { createClient } from '@/utils/supabase/client'
 
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
-export default function ReviewEditPage() {
+export default function ReviewWritePage() {
+  const [rating, setRating] = useState(0)
+  const [content, setContent] = useState('')
+  const [images, setImages] = useState<{ url: string; path: string }[]>([])
+
+  const [userId, setUserId] = useState<string | null>(null)
+  const [tripId, setTripId] = useState(0)
+  const [tripTitle, setTriptitle] = useState<string | null>(null)
+  const [startDate, setStartDate] = useState<string | null>()
+  const [endDate, setEndDate] = useState<string | null>()
+  const [loading, setLoading] = useState(false)
   const supabase = createClient()
+  const router = useRouter()
+
+  // url 형식 : /review/edit?reviewId="리뷰번호"
   const searchParams = useSearchParams()
   const reviewId = Number(searchParams.get('reviewId'))
-  const router = useRouter()
-  const [userId, setUserId] = useState<string | null>(null)
+  const [routeOptions, setRouteOptions] = useState<RouteOption[]>([])
+  const [routes, setRoutes] = useState<Route[]>([])
 
-  // url 형식 : /review/view?reviewId="리뷰번호"
-
-  // 유저 정보 가져오기
   useEffect(() => {
     const getUser = async () => {
       const {
@@ -26,144 +48,178 @@ export default function ReviewEditPage() {
       } = await supabase.auth.getUser()
 
       setUserId(user?.id ?? null)
+      console.log(userId)
     }
     getUser()
   }, [])
 
-  const [reviewData, setReviewData] = useState(null)
-  const [mediaData, setMediaData] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
-  const [rating, setRating] = useState(0)
-  const [content, setContent] = useState('')
-  const [media, setMedia] = useState<{ url: string; path: string }[]>([])
-  const [options, setOptions] = useState({
-    slope: '',
-    width: '',
-    stairs: '',
-  })
-
   useEffect(() => {
+    if (!reviewId) return
+
     const fetchReview = async () => {
       setLoading(true)
-      const { data, error } = await supabase
+
+      // 1️⃣ 리뷰
+      const { data: reviewData, error: reviewError } = await supabase
         .from('reviews')
         .select('*')
         .eq('id', reviewId)
         .single()
 
-      if (error) {
-        alert('리뷰 불러오기 실패')
-        setLoading(false)
-        return
+      if (reviewError) {
+        console.error(reviewError)
+        return alert('리뷰 불러오기 실패')
       }
 
-      if (!data) {
-        alert('리뷰가 없습니다')
-        setLoading(false)
-        return
+      setRating(reviewData.rating)
+      setContent(reviewData.content)
+      setTripId(reviewData.trip_id)
+
+      // 2️⃣ routes
+      const { data: routeData, error: routeError } = await supabase
+        .from('routes')
+        .select('*')
+        .eq('trip_id', tripId)
+
+      if (routeError) {
+        console.error(routeError)
+        return alert('경로 불러오기 실패')
       }
 
-      setReviewData(data)
-      const placeId = reviewData.place_id
-      setLoading(false)
-    }
+      // routes 세팅
+      const formattedRoutes = routeData.map((r: any) => ({
+        from: r.start,
+        to: r.end,
+        transport: r.transport_type,
+      }))
+      setRoutes(formattedRoutes)
 
-    const fetchMedia = async () => {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('media')
-        .select('file_url')
+      // options 세팅
+      const formattedOptions = routeData.map((r: any) => ({
+        slope: r.slope || '',
+        stairs: r.stairs || '',
+        shade: r.shade || '',
+      }))
+      setRouteOptions(formattedOptions)
+
+      // 3️⃣ images
+      const { data: imageData } = await supabase
+        .from('images')
+        .select('*')
         .eq('review_id', reviewId)
-      if (error) {
-        alert('사진 불러오기 실패')
-        setLoading(false)
-        return
+
+      if (imageData) {
+        setImages(
+          imageData.map((img: any) => ({
+            url: img.file_url,
+            path: img.file_path,
+          })),
+        )
       }
 
-      if (!data) return
-      const urls = data
-        .map((item) => item.file_url)
-        .filter((url): url is string => url !== null)
-
-      setMediaData(urls)
       setLoading(false)
     }
 
     fetchReview()
-    fetchMedia()
-  }, [])
+  }, [reviewId])
 
-  if (loading) return <p>Loading...</p>
-  if (!reviewData) return <p>리뷰가 없습니다</p>
-
-  // const {
-  //   user_id: reviewUserId,
-  //   place_id: placeId,
-  //   rating,
-  //   content,
-  //   slope,
-  //   width,
-  //   stairs,
-  // } = reviewData
-  // const options = { slope, width, stairs }
-
-  // 리뷰 수정 내용 업데이트
+  // 리뷰 수정 등록
   const handleSubmit = async () => {
     if (loading) return
     if (!rating) return alert('별점을 선택해주세요')
-    if (!options.slope || !options.width || !options.stairs)
-      return alert('보행 환경을 선택해주세요')
+
+    if (routes.length !== routeOptions.length) {
+      return alert('경로 옵션이 모두 선택되지 않았습니다')
+    }
+
+    const hasEmpty = routes.some((route, index) => {
+      if (route.transport !== 'walk') return false
+      const opt = routeOptions[index]
+      return !opt?.slope || !opt?.stairs || !opt?.shade
+    })
+
+    if (hasEmpty) {
+      return alert('도보 경로의 보행 환경을 모두 선택해주세요')
+    }
+
     if (!content) return alert('내용을 입력해주세요')
 
     setLoading(true)
-    const { data: newReviewData, error: reviewError } = await supabase
+
+    // ✅ 1️⃣ reviews 업데이트
+    const { error: reviewError } = await supabase
       .from('reviews')
       .update({
-        user_id: userId,
-        place_id: reviewData.place_id,
         rating,
         content,
-        slope: options.slope,
-        width: options.width,
-        stairs: options.stairs,
       })
       .eq('id', reviewId)
 
     if (reviewError) {
-      setLoading(false)
       console.error(reviewError)
-      return alert('리뷰 저장 실패')
+      setLoading(false)
+      return alert('리뷰 수정 실패')
     }
 
-    if (mediaData.length > 0) {
-      const mediaRows = mediaData.map((media) => ({
+    // ✅ 2️⃣ 기존 routes 삭제 후 재삽입 (간단하고 안전)
+    await supabase.from('routes').delete().eq('trip_id', tripId)
+
+    const routeRows = routes.map((route, index) => {
+      const isWalk = route.transport === 'walk'
+      const option = routeOptions[index]
+
+      return {
+        user_id: userId,
+        trip_id: tripId,
+        // review_id: reviewId, // ⭐ 중요
+        start: route.from,
+        end: route.to,
+        transport_type: route.transport,
+        slope: isWalk ? option?.slope : null,
+        stairs: isWalk ? option?.stairs : null,
+        shade: isWalk ? option?.shade : null,
+      }
+    })
+
+    const { error: routeError } = await supabase
+      .from('routes')
+      .insert(routeRows)
+
+    if (routeError) {
+      console.error(routeError)
+      setLoading(false)
+      return alert('경로 수정 실패')
+    }
+
+    // ✅ 3️⃣ images (같은 방식)
+    await supabase.from('images').delete().eq('review_id', reviewId)
+
+    if (images.length > 0) {
+      const imageRows = images.map((image) => ({
         review_id: reviewId,
-        file_url: media,
-        file_type: 'image', // 필요하면 분기
+        file_url: image.url,
+        file_path: image.path,
       }))
 
-      const { error: mediaError } = await supabase
-        .from('media')
-        .insert(mediaRows)
-      if (mediaError) {
-        console.error(mediaError)
+      const { error: imageError } = await supabase
+        .from('images')
+        .insert(imageRows)
+
+      if (imageError) {
+        console.error(imageError)
         setLoading(false)
-        return alert('사진 저장 실패')
+        return alert('사진 수정 실패')
       }
     }
 
     setLoading(false)
     alert('수정 완료!')
-    router.push('/')
-  }
-
-  const handleCancel = () => {
-    router.back()
+    router.push(`/review/view?reviewId=${reviewId}`)
   }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
-      <div className="flex-col w-1/3 self-center">
+      <div className="flex-col w-auto self-center">
         <div className="py-4">
           <button
             className="text-2xl p-2 cursor-pointer"
@@ -174,13 +230,15 @@ export default function ReviewEditPage() {
           <h1 className="inline text-2xl p-4 font-bold">리뷰작성</h1>
         </div>
 
-        <div className="border rounded-xl mb-6 p-6 flex flex-row gap-4 text-gray-400">
+        <div className="border rounded-xl mb-6 p-6 flex flex-row gap-4 text-gray-700">
           <div>
             <Image src="/icon.svg" width={50} height={50} alt="card image" />
           </div>
           <div className="flex-col">
-            <div>장소명</div>
-            <div>주소</div>
+            <div>{tripTitle}</div>
+            <div>
+              {startDate} ~ {endDate}
+            </div>
           </div>
         </div>
 
@@ -189,9 +247,13 @@ export default function ReviewEditPage() {
           <RatingSelector rating={rating} setRating={setRating} />
         </div>
 
-        <div className="text-xl font-bold py-4">보행 환경 체크</div>
-        <div className="border rounded-xl mb-6 p-6 flex flex-col text-gray-400">
-          <OptionSelector options={options} onChange={setOptions} />
+        <div className="text-xl font-bold py-4">경로별 보행 환경</div>
+        <div className="border rounded-xl mb-6 p-6 flex flex-col text-gray-700">
+          <RouteOptionSelector
+            routes={routes}
+            supabase={supabase}
+            onChange={setRouteOptions}
+          />
         </div>
 
         <div className="text-xl font-bold py-4">리뷰 내용</div>
@@ -211,23 +273,19 @@ export default function ReviewEditPage() {
           <MediaUploader
             supabase={supabase}
             onUpload={(urls: { url: string; path: string }[]) =>
-              setMedia((prev) => [...prev, ...urls])
+              setImages((prev) => [...prev, ...urls])
             }
-            onRemove={(urls: { url: string; path: string }[]) => setMedia(urls)}
+            onRemove={(urls: { url: string; path: string }[]) =>
+              setImages(urls)
+            }
           />
         </div>
 
         <button
-          className="w-1/2 bg-black text-white py-3 rounded-lg mb-6 cursor-pointer"
+          className="w-full bg-black text-white py-3 rounded-lg mb-6 cursor-pointer"
           onClick={handleSubmit}
         >
-          {loading ? '등록 중...' : '수정'}
-        </button>
-        <button
-          className="w-1/2 bg-white text-black py-3 border rounded-lg mb-6 cursor-pointer"
-          onClick={handleCancel}
-        >
-          취소
+          {loading ? '수정 중...' : '리뷰 수정'}
         </button>
       </div>
     </div>

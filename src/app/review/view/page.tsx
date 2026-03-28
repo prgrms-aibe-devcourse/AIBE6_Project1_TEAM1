@@ -56,7 +56,7 @@ export default function ReviewViewPage() {
       const { data: routeData, error: routeError } = await supabase
         .from('routes')
         .select('*')
-        .eq('trip_id', reviewData.trip_id)
+        .eq('review_id', reviewId)
 
       if (routeError) {
         console.error(routeError)
