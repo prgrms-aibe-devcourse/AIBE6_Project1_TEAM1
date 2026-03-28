@@ -62,23 +62,26 @@ export async function POST(request: Request) {
   // 5. Gemini API 호출
   try {
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite-preview',
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 4096,
+        maxOutputTokens: 6000,
         responseMimeType: 'application/json',
       },
     })
 
+    console.log('[Prompt]:\n', prompt)
+
     const result = await model.generateContent(prompt)
     const raw = result.response.text()
 
-    console.log(
-      '[ai-recommend] Response (length:',
-      raw.length,
-      '):',
-      raw.substring(0, 200),
-    )
+    const usage = result.response.usageMetadata
+    console.log('[Token Usage]', {
+      입력토큰: usage?.promptTokenCount,
+      출력토큰: usage?.candidatesTokenCount,
+      총토큰: usage?.totalTokenCount,
+    })
+    console.log('[Gemini Response]:\n', raw)
 
     // JSON 파싱
     const data: AIRecommendResponse = JSON.parse(raw)
