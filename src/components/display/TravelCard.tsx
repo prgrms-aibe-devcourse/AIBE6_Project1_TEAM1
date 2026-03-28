@@ -1,259 +1,181 @@
 'use client'
 
-import { Bookmark, MapPin, Star } from 'lucide-react'
-import Image from 'next/image'
+import { Bookmark, Clock, CreditCard, Flame, MapPin, Route, Star } from 'lucide-react';
+import Image from 'next/image';
 
 export interface TravelCardProps {
-  /** 카드 메인 제목 */
-  title: string
-  /** 대표 이미지 URL */
-  imageUrl?: string
-  /** 이미지 대체 텍스트 */
-  imageAlt?: string
-  /** 간단한 설명이나 부제목 */
-  description?: string
-  /** 작성자 정보 */
-  author?: {
-    name: string
-    avatarUrl?: string
-  }
-  /** 별점 (예: 4.5) */
-  rating?: number
-  /** 리뷰 개수 */
-  reviewCount?: number
-  /** 태그 또는 카테고리 목록 */
-  tags?: string[]
-  /** 위치 정보 */
-  location?: string
-  /** 날짜 정보 (예: '2023.10.12 ~ 2023.10.15') */
-  date?: string
+  // 1. 기본 식별 정보
+  id: string;
+  title: string;          // 예: "영도 흰여울문화마을 산책 코스"
+  imageUrl: string;
+  category: string;       // 예: "해안 산책"
+  isHot: boolean;         // '인기 코스' 배지 여부
 
-  /**
-   * 카드 레이아웃 형태:
-   * - 'vertical': 이미지 상단, 내용 하단 (그리드 뷰에 적합)
-   * - 'horizontal': 이미지 좌측, 내용 우측 (리스트 뷰에 적합)
-   * - 'compact': 더 작은 형태의 세로형 카드
-   */
-  variant?: 'vertical' | 'horizontal' | 'compact'
+  // 2. 주요 요약 정보 (이미지의 상단 5개 아이콘 영역)
+  summary: {
+    totalDistance: number;  // 3.2km
+    totalTime: string;      // "약 2시간"
+    spotCount: number;      // 5곳
+    estimatedCost: number;  // 2,400원 (총 이동 비용)
+    saveCount: number;      // 1,024 (저장 수)
+  };
 
-  /**
-   * 페이지별 외부 크기 및 스타일 조정을 위한 클래스 (예: 'w-full', 'w-[280px]', 'h-64')
-   */
-  className?: string
+  // 3. 보행 환경 평균 데이터 (이미지 좌측 하단)
+  avgStats: {
+    incline: '평지' | '완만' | '보통' | '급경사';
+    stairs: '없음' | '적음' | '다소 많음' | '매우 많음';
+    shade: '없음' | '적음' | '보통' | '충분함';
+  };
 
-  /** 보관(Keep) 여부 상태 (북마크 아이콘 채움/빈 상태) */
-  isKept?: boolean
+  // 4. 리뷰 요약
+  rating: number;         // 4.2
+  reviewCount: number;    // 128개
 
-  /** 보관 버튼 클릭 시 실행할 함수. 전달되면 상단에 북마크(보관) 버튼이 나타납니다. */
-  onKeep?: (e: React.MouseEvent) => void
+  // 5. 추가 정보
+  tags?: string[];        // 예: ["가족여행", "힐링", "바다"]
 
-  /**
-   * 카드 클릭 이벤트
-   */
-  onClick?: () => void
+  // 6. UI 제어
+  variant?: 'vertical' | 'horizontal';
+  isKept: boolean;
+  onKeep?: (id: string) => void;
+  onClick?: () => void;
 }
 
 export default function TravelCard({
+  id,
   title,
   imageUrl,
-  imageAlt = 'Travel Image',
-  description,
-  author,
+  category,
+  isHot,
+  summary,
+  avgStats,
   rating,
   reviewCount,
   tags,
-  location,
-  date,
   variant = 'vertical',
-  className = '',
-  isKept = false,
+  isKept,
   onKeep,
   onClick,
 }: TravelCardProps) {
-  // 기본 공통 스타일 (크기 조정은 className에서 주입받음)
-  const baseCardStyle = `group relative overflow-hidden rounded-xl border border-gray-100 bg-white transition-all hover:shadow-md ${
-    onClick ? 'cursor-pointer' : ''
-  } ${className}`
+  const isHorizontal = variant === 'horizontal'
 
-  // 이미지가 없을 때의 플레이스홀더
-  const ImagePlaceholder = () => (
-    <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400">
-      <span className="text-sm">No Image</span>
+  const handleKeepClick = (e: React.MouseEvent) => {
+    if (onKeep) {
+      e.stopPropagation()
+      onKeep(id)
+    }
+  }
+
+  // 내부 UI 컴포넌트: 요약 정보 아이템
+  const SummaryItem = ({ icon: Icon, value }: { icon: any; value: string | number }) => (
+    <div className="flex items-center space-x-1 text-xs text-gray-500">
+      <Icon className="h-3.5 w-3.5" />
+      <span>{value}</span>
     </div>
   )
 
-  // 상단 (절대 위치) 보관(북마크) 버튼
-  const KeepButton = () =>
-    onKeep ? (
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation() // 카드 배경 클릭 이벤트와 겹치지 않게 방지
-          onKeep(e)
-        }}
-        className="absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 p-1.5 text-gray-700 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:text-purple-600 focus:outline-none"
-      >
-        <Bookmark
-          className={`h-full w-full transition-colors ${isKept ? 'fill-purple-600 text-purple-600' : ''}`}
-        />
-      </button>
-    ) : null
-
-  // 별점 UI
-  const RatingArea = () =>
-    (rating !== undefined || reviewCount !== undefined) && (
-      <div className="flex items-center space-x-1 text-sm text-gray-600">
-        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-        {rating !== undefined && (
-          <span className="font-medium text-gray-900">{rating}</span>
-        )}
-        {reviewCount !== undefined && <span>({reviewCount})</span>}
-      </div>
-    )
-
-  if (variant === 'horizontal') {
-    return (
-      <div
-        className={`${baseCardStyle} flex h-32 w-full sm:h-40`}
-        onClick={onClick}
-      >
-        {/* 이미지 영역 (좌측) */}
-        <div className="relative h-full w-1/3 min-w-[120px] shrink-0 sm:w-40 sm:min-w-[160px]">
-          {imageUrl ? (
-            <Image
-              src={imageUrl}
-              alt={imageAlt}
-              fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-          ) : (
-            <ImagePlaceholder />
-          )}
-          <KeepButton />
-        </div>
-
-        {/* 컨텐츠 영역 (우측) */}
-        <div className="flex flex-1 flex-col justify-between p-3 sm:p-4">
-          <div>
-            <div className="flex items-start justify-between">
-              <h3 className="line-clamp-2 font-semibold text-gray-900">
-                {title}
-              </h3>
-            </div>
-            {location && (
-              <div className="mt-1 flex items-center text-xs text-gray-500 sm:text-sm">
-                <MapPin className="mr-1 h-3 w-3" />
-                <span className="truncate">{location}</span>
-              </div>
-            )}
-            {description && (
-              <p className="mt-1 line-clamp-1 text-xs text-gray-500 sm:mt-2 sm:line-clamp-2 sm:text-sm">
-                {description}
-              </p>
-            )}
-          </div>
-
-          <div className="mt-2 flex items-center justify-between">
-            <RatingArea />
-            {author && (
-              <span className="text-xs text-gray-500">by {author.name}</span>
-            )}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // vertical & compact
-  const isCompact = variant === 'compact'
+  // 내부 UI 컴포넌트: 보행 환경 통계 배지
+  const StatBadge = ({ label }: { label: string }) => (
+    <span className="rounded bg-black/40 px-1.5 py-0.5 text-[10px] text-white backdrop-blur-md">
+      {label}
+    </span>
+  )
 
   return (
-    <div className={`${baseCardStyle} flex flex-col`} onClick={onClick}>
-      {/* 이미지 영역 (상단) */}
+    <div
+      onClick={onClick}
+      className={`group relative overflow-hidden rounded-xl border border-gray-100 bg-white transition-all duration-200 hover:shadow-lg active:scale-[0.98] active:shadow-md ${
+        onClick ? 'cursor-pointer' : ''
+      } ${isHorizontal ? 'flex h-48 w-full' : 'flex flex-col'}`}
+    >
+      {/* 1. 이미지 및 오버레이 레이어 */}
       <div
-        className={`relative w-full shrink-0 ${isCompact ? 'aspect-square' : 'aspect-video'}`}
+        className={`relative overflow-hidden ${
+          isHorizontal ? 'h-full w-2/5 min-w-[160px]' : 'aspect-[4/3] w-full'
+        }`}
       >
-        {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={imageAlt}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <ImagePlaceholder />
-        )}
-        <KeepButton />
+        <Image
+          src={imageUrl}
+          alt={title}
+          fill
+          className="object-cover transition-transform duration-500 group-hover:scale-110"
+        />
+        
+        {/* 그라데이션 오버레이 (텍스트 가독성) */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
 
-        {/* 태그 영역 (이미지 위 하단) */}
-        {tags && tags.length > 0 && (
-          <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
-            {tags.slice(0, 2).map((tag, idx) => (
-              <span
-                key={idx}
-                className="rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm sm:text-xs"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
+        {/* 좌측 상단: 카테고리 태그 및 인기 배지 */}
+        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+          <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-gray-900 shadow-sm">
+            {category}
+          </span>
+          {isHot && (
+            <span className="flex items-center gap-1 rounded-full bg-orange-500 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm">
+              <Flame className="h-3 w-3 fill-white" />
+              HOT 코스
+            </span>
+          )}
+        </div>
+
+        {/* 우측 상단: 보관 버튼 */}
+        {onKeep && (
+          <button
+            onClick={handleKeepClick}
+            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 p-1.5 text-gray-700 shadow-sm backdrop-blur-md transition-all hover:bg-white hover:text-purple-600"
+          >
+            <Bookmark
+              className={`h-full w-full transition-colors ${isKept ? 'fill-purple-600 text-purple-600' : ''}`}
+            />
+          </button>
         )}
+
+        {/* 좌측 하단: 보행 환경 평균 데이터 */}
+        <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5">
+          <StatBadge label={avgStats.incline} />
+          <StatBadge label={`계단 ${avgStats.stairs}`} />
+          <StatBadge label={`그늘 ${avgStats.shade}`} />
+        </div>
       </div>
 
-      {/* 컨텐츠 영역 (하단) */}
-      <div
-        className={`flex flex-col flex-1 ${isCompact ? 'p-2 sm:p-3' : 'p-3 sm:p-4'}`}
-      >
-        <div className="flex-1">
-          {date && (
-            <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-purple-600 sm:text-xs">
-              {date}
+      {/* 2. 컨텐츠 영역 */}
+      <div className={`flex flex-1 flex-col justify-between p-4 ${isHorizontal ? 'overflow-hidden' : ''}`}>
+        <div className="space-y-2">
+          {/* 제목 및 별점 */}
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="line-clamp-2 text-base font-bold text-gray-900 group-hover:text-purple-700 transition-colors">
+              {title}
+            </h3>
+            <div className="flex items-center gap-1 shrink-0">
+              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <span className="text-sm font-bold text-gray-900">{rating}</span>
+              <span className="text-xs text-gray-400">({reviewCount})</span>
             </div>
-          )}
+          </div>
 
-          <h3
-            className={`font-semibold text-gray-900 ${isCompact ? 'line-clamp-1 text-sm' : 'line-clamp-2 text-base'}`}
-          >
-            {title}
-          </h3>
+          {/* 주요 요약 정보 (5개 아이콘) */}
+          <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2">
+            <SummaryItem icon={Route} value={`${summary.totalDistance}km`} />
+            <SummaryItem icon={Clock} value={summary.totalTime} />
+            <SummaryItem icon={MapPin} value={`${summary.spotCount}곳`} />
+            <SummaryItem icon={CreditCard} value={`${summary.estimatedCost.toLocaleString()}원`} />
+            <SummaryItem icon={Bookmark} value={summary.saveCount} />
+          </div>
 
-          {location && (
-            <div className="mt-1 flex items-center text-xs text-gray-500">
-              <MapPin className="mr-1 h-3 w-3 shrink-0" />
-              <span className="truncate">{location}</span>
-            </div>
-          )}
-
-          {!isCompact && description && (
-            <p className="mt-1.5 line-clamp-2 text-sm text-gray-500">
-              {description}
-            </p>
-          )}
-        </div>
-
-        {/* 푸터 영역 (별점 및 작성자) */}
-        <div
-          className={`mt-2 flex items-center justify-between border-t border-gray-50 pt-2 ${isCompact ? 'mt-1 pt-1' : ''}`}
-        >
-          <RatingArea />
-          {author && (
-            <div className="flex items-center space-x-1.5">
-              {author.avatarUrl && (
-                <div className="relative h-5 w-5 overflow-hidden rounded-full border border-gray-100">
-                  <Image
-                    src={author.avatarUrl}
-                    alt={author.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              )}
-              <span className="truncate text-xs text-gray-500">
-                {author.name}
-              </span>
+          {/* 태그 목록 */}
+          {tags && tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {tags.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="text-[11px] text-gray-400 before:content-['#'] hover:text-purple-600 transition-colors cursor-pointer"
+                >
+                  {tag}
+                </span>
+              ))}
             </div>
           )}
         </div>
+
       </div>
     </div>
   )
