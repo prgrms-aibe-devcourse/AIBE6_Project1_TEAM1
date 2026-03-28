@@ -1,4 +1,15 @@
-import { Route, RouteIcon } from 'lucide-react'
+import {
+  ArrowRight,
+  ArrowUpNarrowWide,
+  Minus,
+  Mountain,
+  Route,
+  RouteIcon,
+  TreeDeciduous,
+  TreePine,
+  Trees,
+  TrendingUp,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 type Route = {
@@ -11,6 +22,48 @@ type RouteOption = {
   slope: string
   stairs: string
   shade: string
+}
+
+type Place = {
+  id: number
+  place_name: string
+}
+
+const getSlopeIcon = (value: string) => {
+  switch (value) {
+    case '평지':
+      return <ArrowRight />
+    case '보통':
+      return <TrendingUp />
+    case '가파름':
+      return <Mountain />
+    default:
+      return <TrendingUp className="text-gray-300" />
+  }
+}
+
+const getStairsIcon = (value: string) => {
+  switch (value) {
+    case '없음':
+      return <Minus />
+    case '있음':
+      return <ArrowUpNarrowWide />
+    default:
+      return <ArrowUpNarrowWide className="text-gray-300" />
+  }
+}
+
+const getShadeIcon = (value: string) => {
+  switch (value) {
+    case '적음':
+      return <TreePine />
+    case '보통':
+      return <TreeDeciduous />
+    case '많음':
+      return <Trees />
+    default:
+      return <TreeDeciduous className="text-gray-300" />
+  }
 }
 
 export default function RouteOptionSelector({
@@ -57,8 +110,8 @@ export default function RouteOptionSelector({
       }
 
       const map: Record<number, string> = {}
-      data?.forEach((item: any) => {
-        map[item.id] = item.name
+      data?.forEach((item: Place) => {
+        map[item.id] = item.place_name
       })
 
       setPlaceMap(map)
@@ -114,6 +167,7 @@ export default function RouteOptionSelector({
             {route.transport === 'walk' ? (
               <div className="flex items-center gap-6 text-gray-700">
                 {/* 경사도 */}
+                {getSlopeIcon(opt.slope)}
                 <select
                   value={opt.slope || ''}
                   onChange={(e) => updateOption(index, 'slope', e.target.value)}
@@ -126,6 +180,7 @@ export default function RouteOptionSelector({
                 </select>
 
                 {/* 계단 */}
+                {getStairsIcon(opt.stairs)}
                 <select
                   value={opt.stairs || ''}
                   onChange={(e) =>
@@ -139,6 +194,7 @@ export default function RouteOptionSelector({
                 </select>
 
                 {/* 그늘 */}
+                {getShadeIcon(opt.shade)}
                 <select
                   value={opt.shade || ''}
                   onChange={(e) => updateOption(index, 'shade', e.target.value)}

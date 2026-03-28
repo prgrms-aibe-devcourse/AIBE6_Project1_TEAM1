@@ -144,9 +144,23 @@ export default function ReviewWritePage() {
   const handleSubmit = async () => {
     if (loading) return
     if (!rating) return alert('별점을 선택해주세요')
-    // if (!options.slope || !options.width || !options.stairs)
-    //   return alert('보행 환경을 선택해주세요')
-    // if (!content) return alert('내용을 입력해주세요')
+    // ✅ routes와 options 개수 체크
+    if (routes.length !== routeOptions.length) {
+      return alert('경로 옵션이 모두 선택되지 않았습니다')
+    }
+
+    // ✅ walk 경로만 검사
+    const hasEmpty = routes.some((route, index) => {
+      if (route.transport !== 'walk') return false
+
+      const opt = routeOptions[index]
+      return !opt?.slope || !opt?.stairs || !opt?.shade
+    })
+
+    if (hasEmpty) {
+      return alert('도보 경로의 보행 환경을 모두 선택해주세요')
+    }
+    if (!content) return alert('내용을 입력해주세요')
 
     setLoading(true)
     const { data: reviewData, error: reviewError } = await supabase
@@ -156,9 +170,6 @@ export default function ReviewWritePage() {
         trip_id: tripId,
         rating,
         content,
-        // slope: options.slope,
-        // width: options.width,
-        // stairs: options.stairs,
       })
       .select()
       .single()
@@ -168,8 +179,38 @@ export default function ReviewWritePage() {
       console.error(reviewError)
       return alert('리뷰 저장 실패')
     }
-
     const reviewId = reviewData.id
+
+    setLoading(true)
+    const routeRows = routes.map((route, index) => {
+      const isWalk = route.transport === 'walk'
+      const option = routeOptions[index]
+
+      return {
+        user_id: userId,
+        trip_id: tripId,
+        review_id: reviewId,
+        start: route.from,
+        end: route.to,
+        transport_type: route.transport, // ✅ 추가
+
+        // ✅ walk일 때만 저장
+        slope: isWalk ? option?.slope : null,
+        stairs: isWalk ? option?.stairs : null,
+        shade: isWalk ? option?.shade : null,
+      }
+    })
+
+    const { error: routeError } = await supabase
+      .from('routes')
+      .insert(routeRows)
+
+    if (routeError) {
+      setLoading(false)
+      console.error(routeError)
+      return alert('경로 저장 실패')
+    }
+
     if (images.length > 0) {
       const imageRows = images.map((image) => ({
         review_id: reviewId,
@@ -205,7 +246,7 @@ export default function ReviewWritePage() {
           <h1 className="inline text-2xl p-4 font-bold">리뷰작성</h1>
         </div>
 
-        <div className="border rounded-xl mb-6 p-6 flex flex-row gap-4 text-gray-400">
+        <div className="border rounded-xl mb-6 p-6 flex flex-row gap-4 text-gray-700">
           <div>
             <Image src="/icon.svg" width={50} height={50} alt="card image" />
           </div>
