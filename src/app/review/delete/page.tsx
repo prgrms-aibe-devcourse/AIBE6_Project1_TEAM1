@@ -32,7 +32,7 @@ export default function ReviewDeletePage() {
 
       if (!data) {
         alert('리뷰가 없습니다')
-        router.push('/')
+        //router.push('/')
       }
     }
     checkReview()

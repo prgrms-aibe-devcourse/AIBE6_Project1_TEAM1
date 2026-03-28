@@ -57,6 +57,7 @@ export default function ReviewViewPage() {
         .from('routes')
         .select('*')
         .eq('review_id', reviewId)
+        .order('order', { ascending: true })
 
       if (routeError) {
         console.error(routeError)

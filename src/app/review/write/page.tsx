@@ -25,11 +25,6 @@ export default function ReviewWritePage() {
   const [rating, setRating] = useState(0)
   const [content, setContent] = useState('')
   const [images, setImages] = useState<{ url: string; path: string }[]>([])
-  const [options, setOptions] = useState({
-    slope: '',
-    stairs: '',
-    shade: '',
-  })
 
   const [userId, setUserId] = useState<string | null>(null)
   const [tripTitle, setTriptitle] = useState<string | null>(null)
@@ -192,7 +187,8 @@ export default function ReviewWritePage() {
         review_id: reviewId,
         start: route.from,
         end: route.to,
-        transport_type: route.transport, // ✅ 추가
+        order: index + 1,
+        transport_type: route.transport,
 
         // ✅ walk일 때만 저장
         slope: isWalk ? option?.slope : null,

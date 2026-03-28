@@ -4,18 +4,10 @@ export default async function DeleteReview(
   supabase: any,
   reviewId: number,
 ): Promise<void> {
-  //
-  // Storage path 추출 함수
-  function extractPathFromUrl(url: string, bucketName: string): string {
-    const parts = url.split(`/storage/v1/object/public/${bucketName}/`)
-    if (parts.length < 2) return ''
-    return parts[1]
-  }
-
-  // 1. media 테이블 조회
-  const { data: mediaData, error: fetchError } = await supabase
-    .from('media')
-    .select('file_url')
+  // 1. image 테이블 조회
+  const { data: imageData, error: fetchError } = await supabase
+    .from('images')
+    .select('file_url', 'file_path')
     .eq('review_id', reviewId)
 
   if (fetchError) {
@@ -24,14 +16,12 @@ export default async function DeleteReview(
     return
   }
 
-  // 2. media가 있을 때만 Storage 삭제 & media 레코드 삭제
-  if (mediaData && mediaData.length > 0) {
+  // 2. image가 있을 때만 Storage 삭제 & image 레코드 삭제
+  if (imageData && imageData.length > 0) {
     // 3-1 Storage 삭제
-    const paths: string[] = mediaData
-      .map((item: { file_url: string }) =>
-        extractPathFromUrl(item.file_url, 'media-storage'),
-      )
-      .filter((path: string) => path !== '')
+    const paths: string[] = imageData.map(
+      (item: { file_url: string; file_path: string }) => item.file_path,
+    )
 
     if (paths.length > 0) {
       const { error: storageError } = await supabase.storage
@@ -45,20 +35,32 @@ export default async function DeleteReview(
       }
     }
 
-    // 3-2 media 레코드 삭제
-    const { error: mediaError } = await supabase
-      .from('media')
+    // 3-2 image 레코드 삭제
+    const { error: imageError } = await supabase
+      .from('images')
       .delete()
       .eq('review_id', reviewId)
 
-    if (mediaError) {
-      console.error('Media 레코드 삭제 실패:', mediaError)
+    if (imageError) {
+      console.error('Image 레코드 삭제 실패:', imageError)
       alert('첨부기록 삭제 실패')
       return
     }
   }
 
-  // 4. 리뷰 삭제
+  // 4. routes 레코드 삭제
+  const { error: routeError } = await supabase
+    .from('routes')
+    .delete()
+    .eq('review_id', reviewId)
+
+  if (routeError) {
+    console.error('routes 레코드 삭제 실패:', routeError)
+    alert('경로리뷰 삭제 실패')
+    return
+  }
+
+  // 5. 리뷰 삭제
   const { error: reviewError } = await supabase
     .from('reviews')
     .delete()

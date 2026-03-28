@@ -27,7 +27,6 @@ export default function ReviewWritePage() {
   const [images, setImages] = useState<{ url: string; path: string }[]>([])
 
   const [userId, setUserId] = useState<string | null>(null)
-  const [tripId, setTripId] = useState(0)
   const [tripTitle, setTriptitle] = useState<string | null>(null)
   const [startDate, setStartDate] = useState<string | null>()
   const [endDate, setEndDate] = useState<string | null>()
@@ -38,6 +37,7 @@ export default function ReviewWritePage() {
   // url 형식 : /review/edit?reviewId="리뷰번호"
   const searchParams = useSearchParams()
   const reviewId = Number(searchParams.get('reviewId'))
+  const [tripId, setTripId] = useState<number | null>(null)
   const [routeOptions, setRouteOptions] = useState<RouteOption[]>([])
   const [routes, setRoutes] = useState<Route[]>([])
 
@@ -71,15 +71,16 @@ export default function ReviewWritePage() {
         return alert('리뷰 불러오기 실패')
       }
 
+      setTripId(reviewData.trip_id)
       setRating(reviewData.rating)
       setContent(reviewData.content)
-      setTripId(reviewData.trip_id)
 
       // 2️⃣ routes
       const { data: routeData, error: routeError } = await supabase
         .from('routes')
         .select('*')
-        .eq('trip_id', tripId)
+        .eq('review_id', reviewId)
+        .order('order', { ascending: true })
 
       if (routeError) {
         console.error(routeError)
@@ -123,6 +124,29 @@ export default function ReviewWritePage() {
     fetchReview()
   }, [reviewId])
 
+  useEffect(() => {
+    if (!tripId) return
+
+    const getTripData = async () => {
+      const { data: tripData, error } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('id', tripId)
+        .single()
+
+      if (error) {
+        console.error(error)
+        return
+      }
+
+      setTriptitle(tripData.title)
+      setStartDate(tripData.start_date)
+      setEndDate(tripData.end_date)
+    }
+
+    getTripData()
+  }, [tripId])
+
   // 리뷰 수정 등록
   const handleSubmit = async () => {
     if (loading) return
@@ -162,7 +186,7 @@ export default function ReviewWritePage() {
     }
 
     // ✅ 2️⃣ 기존 routes 삭제 후 재삽입 (간단하고 안전)
-    await supabase.from('routes').delete().eq('trip_id', tripId)
+    await supabase.from('routes').delete().eq('review_id', reviewId)
 
     const routeRows = routes.map((route, index) => {
       const isWalk = route.transport === 'walk'
@@ -171,7 +195,7 @@ export default function ReviewWritePage() {
       return {
         user_id: userId,
         trip_id: tripId,
-        // review_id: reviewId, // ⭐ 중요
+        review_id: reviewId,
         start: route.from,
         end: route.to,
         transport_type: route.transport,
@@ -227,7 +251,7 @@ export default function ReviewWritePage() {
           >
             ←
           </button>
-          <h1 className="inline text-2xl p-4 font-bold">리뷰작성</h1>
+          <h1 className="inline text-2xl p-4 font-bold">리뷰 수정</h1>
         </div>
 
         <div className="border rounded-xl mb-6 p-6 flex flex-row gap-4 text-gray-700">
@@ -250,6 +274,7 @@ export default function ReviewWritePage() {
         <div className="text-xl font-bold py-4">경로별 보행 환경</div>
         <div className="border rounded-xl mb-6 p-6 flex flex-col text-gray-700">
           <RouteOptionSelector
+            key={reviewId} // 컴포넌트 강제 리렌더 -> 초기화 문제 방지
             routes={routes}
             supabase={supabase}
             onChange={setRouteOptions}
