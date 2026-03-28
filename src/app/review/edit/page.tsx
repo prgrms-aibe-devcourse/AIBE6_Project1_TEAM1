@@ -11,24 +11,14 @@ import { useEffect, useState } from 'react'
 
 export default function ReviewEditPage() {
   const supabase = createClient()
-  const router = useRouter()
-  // url 형식 : /review/edit?reviewId="리뷰번호"
   const searchParams = useSearchParams()
   const reviewId = Number(searchParams.get('reviewId'))
-
+  const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
-  const [placeId, setPlaceId] = useState(0)
-  const [rating, setRating] = useState(3)
-  const [content, setContent] = useState('불러오기테스트')
-  const [media, setMedia] = useState<{ url: string; path: string }[]>([])
-  const [options, setOptions] = useState({
-    slope: '',
-    width: '',
-    stairs: '',
-  })
-  const [loading, setLoading] = useState(false)
 
-  // 유저 정보 불러오기
+  // url 형식 : /review/view?reviewId="리뷰번호"
+
+  // 유저 정보 가져오기
   useEffect(() => {
     const getUser = async () => {
       const {
@@ -40,87 +30,82 @@ export default function ReviewEditPage() {
     getUser()
   }, [])
 
-  // 기존 리뷰 내용 불러오기
-  const fetchReviewData = async (reviewId: Number) => {
-    const { data, error } = await supabase
-      .from('reviews')
-      .select('*')
-      .eq('id', reviewId)
-      .single()
-
-    if (error) {
-      alert('리뷰 불러오기 실패')
-      return
-    }
-
-    if (data === null) {
-      alert('리뷰가 없습니다')
-      return
-    }
-
-    ////////////////// 디버깅시 주석처리하기 /////////////
-    // 해당 review를 쓴 유저가 아니면 수정불가
-    if (data.user_id !== userId) {
-      alert('권한이 없습니다')
-      router.push('/')
-    }
-
-    return data || null
-  }
-  //////////////////////////////////////////////////
-
-  // 기존 첨부 이미지 불러오기
-  const fetchMediaData = async (reviewId: Number) => {
-    const { data, error } = await supabase
-      .from('media')
-      .select('*')
-      .eq('review_id', reviewId)
-
-    console.log(data) // 디버깅용
-    if (error) {
-      alert('사진 불러오기 실패')
-      return
-    }
-    return data || null
-  }
+  const [reviewData, setReviewData] = useState(null)
+  const [mediaData, setMediaData] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [rating, setRating] = useState(0)
+  const [content, setContent] = useState('')
+  const [media, setMedia] = useState<{ url: string; path: string }[]>([])
+  const [options, setOptions] = useState({
+    slope: '',
+    width: '',
+    stairs: '',
+  })
 
   useEffect(() => {
-    const loadReview = async () => {
-      const reviewData = await fetchReviewData(reviewId)
-      if (reviewData) {
-        setPlaceId(reviewData.place_id)
-        setRating(reviewData.rating)
-        setContent(reviewData.content)
-        setOptions({
-          slope: reviewData.slope,
-          width: reviewData.width,
-          stairs: reviewData.stairs,
-        })
-      }
-    }
-    loadReview()
+    const fetchReview = async () => {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('id', reviewId)
+        .single()
 
-    function extractPathFromUrl(url: string, bucketName: string) {
-      // URL에서 bucketName 뒤의 경로만 추출
-      const parts = url.split(`/storage/v1/object/public/${bucketName}/`)
-      if (parts.length < 2) return null // 형식이 안 맞으면 null
-      return parts[1] // bucket 뒤부터가 path
+      if (error) {
+        alert('리뷰 불러오기 실패')
+        setLoading(false)
+        return
+      }
+
+      if (!data) {
+        alert('리뷰가 없습니다')
+        setLoading(false)
+        return
+      }
+
+      setReviewData(data)
+      const placeId = reviewData.place_id
+      setLoading(false)
     }
 
-    const loadMedia = async () => {
-      const mediaData = await fetchMediaData(reviewId)
-      console.log(mediaData) // 디버깅용
-      if (mediaData) {
-        const newMedia = mediaData.map((item) => {
-          const path = extractPathFromUrl(item.file_url, 'media-storage')
-          return { url: item.file_url, path: path ?? '' } // null 방어
-        })
-        setMedia(newMedia)
-        console.log(newMedia)
+    const fetchMedia = async () => {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('media')
+        .select('file_url')
+        .eq('review_id', reviewId)
+      if (error) {
+        alert('사진 불러오기 실패')
+        setLoading(false)
+        return
       }
+
+      if (!data) return
+      const urls = data
+        .map((item) => item.file_url)
+        .filter((url): url is string => url !== null)
+
+      setMediaData(urls)
+      setLoading(false)
     }
-    loadMedia()
+
+    fetchReview()
+    fetchMedia()
   }, [])
+
+  if (loading) return <p>Loading...</p>
+  if (!reviewData) return <p>리뷰가 없습니다</p>
+
+  // const {
+  //   user_id: reviewUserId,
+  //   place_id: placeId,
+  //   rating,
+  //   content,
+  //   slope,
+  //   width,
+  //   stairs,
+  // } = reviewData
+  // const options = { slope, width, stairs }
 
   // 리뷰 수정 내용 업데이트
   const handleSubmit = async () => {
@@ -131,12 +116,11 @@ export default function ReviewEditPage() {
     if (!content) return alert('내용을 입력해주세요')
 
     setLoading(true)
-    const { data: reviewData, error: reviewError } = await supabase
+    const { data: newReviewData, error: reviewError } = await supabase
       .from('reviews')
       .update({
-        //user_id: userId,
-        user_id: '0ba3c127-607e-4644-96fd-a186c7096422',
-        place_id: placeId,
+        user_id: userId,
+        place_id: reviewData.place_id,
         rating,
         content,
         slope: options.slope,
@@ -151,10 +135,10 @@ export default function ReviewEditPage() {
       return alert('리뷰 저장 실패')
     }
 
-    if (media.length > 0) {
-      const mediaRows = media.map((media) => ({
+    if (mediaData.length > 0) {
+      const mediaRows = mediaData.map((media) => ({
         review_id: reviewId,
-        file_url: media.url,
+        file_url: media,
         file_type: 'image', // 필요하면 분기
       }))
 
