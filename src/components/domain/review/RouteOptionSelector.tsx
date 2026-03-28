@@ -159,8 +159,12 @@ export default function RouteOptionSelector({
             className="flex items-center justify-between border-b py-2"
           >
             {/* 왼쪽: from → to */}
-            <div className="font-medium">
-              {fromName} → {toName}
+            <div className="font-medium w-auto">
+              {fromName}
+              <br/>
+               → 
+               <br/>
+               {toName}
             </div>
 
             {/* 오른쪽: 옵션 or walk 아닌 경우 빈 공간 */}
