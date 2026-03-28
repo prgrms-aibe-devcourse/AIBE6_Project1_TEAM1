@@ -2,6 +2,7 @@
 
 import { X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useModalStore } from '@/store/useModalStore'
 
 interface SaveTripModalProps {
   onClose: () => void
@@ -27,6 +28,7 @@ export default function SaveTripModal({
   totalDays,
   initialData,
 }: SaveTripModalProps) {
+  const { openModal } = useModalStore()
   const [title, setTitle] = useState(initialData?.title || '')
   // 날짜를 YYYY-MM-DD 형태로 기본값 세팅
   const [startDate, setStartDate] = useState(
@@ -54,13 +56,23 @@ export default function SaveTripModal({
 
     // 최소한의 방어 로직 (빈 제목 막기)
     if (!title.trim()) {
-      alert('여행 제목을 입력해주세요.')
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '입력 확인',
+        description: '여행 제목을 입력해주세요.',
+      })
       return
     }
 
     // 시작일/종료일 검증
     if (new Date(startDate) > new Date(endDate)) {
-      alert('종료일은 시작일보다 빠를 수 없습니다.')
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '날짜 확인',
+        description: '종료일은 시작일보다 빠를 수 없습니다.',
+      })
       return
     }
 
