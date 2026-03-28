@@ -3,9 +3,18 @@
 import { createClient } from "@/utils/supabase/client";
 import { motion, useAnimation, useInView, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, Download, Map, MessageSquare, Users } from "lucide-react";
-import Image from "next/image";
+
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+
+//이미지 관련
+import feature1 from "@public/images/intro/feature1.png";
+import feature2 from "@public/images/intro/feature2.png";
+import hero from "@public/images/intro/hero.png";
+import Image from "next/image";
+
+
+
 
 // --- 개별 컴포넌트 정의 ---
 
@@ -133,7 +142,7 @@ export default function Main() {
           {/* 어두운 그라데이션 오버레이로 텍스트 가독성 확보 */}
           <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/40 via-transparent to-white"></div>
           <Image 
-            src="/images/intro/hero.png" 
+            src={hero}
             alt="도시의 아름다운 배경" 
             fill 
             className="object-cover"
@@ -156,8 +165,8 @@ export default function Main() {
               <span className="text-purple-300">고민하지 마세요.</span>
             </h1>
             <p className="mb-10 max-w-2xl text-lg text-white/90 md:text-xl">
-              뚜벅과 함께라면 복잡한 여행 계획도 즐거움이 됩니다. <br />
-              실제 여행가들이 검증한 마을과 도시의 코스로 나만의 완벽한 여행을 완성하세요.
+              '뚜벅'과 함께라면 차가 없는 여행 계획도 즐거워집니다. <br />
+              실제 뚜벅이 여행가들이 검증한 마을과 도시의 코스로 나만의 완벽한 여행을 완성하세요.
             </p>
             {/* 버튼들 */}
             <div className="flex flex-wrap justify-center gap-4">
@@ -213,7 +222,7 @@ export default function Main() {
             <ScrollReveal direction="right"> {/* 오른쪽에서 등장 */}
               <div className="relative aspect-square overflow-hidden rounded-3xl shadow-2xl">
                 <Image 
-                  src="/images/intro/feature1.png" 
+                  src={feature1} 
                   alt="도시 일정 계획 화면" 
                   fill 
                   className="object-cover"
@@ -229,7 +238,7 @@ export default function Main() {
                 </h2>
                 <p className="text-lg text-gray-600 leading-relaxed">
                   지도를 보며 복잡하게 계산할 필요가 없습니다. <br />
-                  가고 싶은 도심 속 장소를 선택만 하세요. 최적의 경로를 뚜벅이가 대신 계산해 드립니다. 동선을 고민하던 시간은 이제 여행을 즐기는 시간으로 바뀝니다.
+                  가고 싶은 도심 속 장소를 선택만 하세요. 최적의 경로를 '뚜벅'이 대신 계산해 드립니다. 동선을 고민하던 시간은 이제 여행을 즐기는 시간으로 바뀝니다.
                 </p>
               </div>
             </ScrollReveal>
@@ -246,14 +255,16 @@ export default function Main() {
                 </h2>
                 <p className="text-lg text-gray-600 leading-relaxed">
                   홍보용 글에 속지 마세요. <br />
-                  그 마을에 실제 다녀온 여행자들의 생생한 리뷰와 현지인만 아는 숨은 명소 정보를 한눈에 확인할 수 있습니다. 당신의 여행이 풍성해지는 가장 확실한 방법입니다.
+                  실제 다녀온 뚜벅이 여행자들의 생생한 리뷰와 현지인만 아는 숨은 명소 정보를 한눈에 확인할 수 있습니다.
+                  <br />
+                  당신의 추억에 '뚜벅'이 함께 할게요!
                 </p>
               </div>
             </ScrollReveal>
             <ScrollReveal direction="left" className="order-1 md:order-2">
               <div className="relative aspect-square overflow-hidden rounded-3xl shadow-2xl">
                 <Image 
-                  src="/images/intro/feature2.png" 
+                  src={feature2} 
                   alt="마을 현지인 경험" 
                   fill 
                   className="object-cover"
