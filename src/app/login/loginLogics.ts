@@ -3,17 +3,20 @@ import { createClient } from "@/utils/supabase/client";
 // 브라우저 화면에서 동작하는 함수들이므로, 클라이언트용 Supabase를 가져옵니다.
 const supabase = createClient();
 
+/**
+ * 소셜 로그인(구글, 카카오)을 처리하는 함수입니다.
+ * @param provider 로그인 제공자 ('google' 또는 'kakao')
+ */
 export const handleSocialLogin = async (provider: 'google' | 'kakao') => {
-  // 구글 소셜 로그인 창을 띄우는 함수입니다.
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: provider,
     options: {
-      // 로그인을 무사히 마치면, 구글이 우리 사이트의 어느 주소로 사용자를 돌려보낼지 정합니다.
-      // 방금 우리가 만든 /auth/callback 경로로 보내서 일회성 코드를 로그인 세션(쿠키)으로 교환하게 만듭니다.
+      // 로그인을 무사히 마치면, /auth/callback 경로로 사용자를 리다이렉트합니다.
+      // 여기서 일회성 코드를 세션으로 교환합니다.
       redirectTo: `${window.location.origin}/auth/callback`,
       queryParams: {
-        access_type: 'offline', // 구글 토큰 만료 시 재발급 받을 수 있게 권한 추가
-        prompt: 'consent', // 항상 사용자로부터 구글 로그인 권한 동의창을 띄우게 설정
+        access_type: 'offline',
+        prompt: 'consent',
       },
     },
   })
@@ -25,7 +28,12 @@ export const handleSocialLogin = async (provider: 'google' | 'kakao') => {
   }
 }
 
-// 이메일 로그인 처리 함수
+/**
+ * 이메일과 비밀번호를 사용하여 로그인을 처리하는 함수입니다.
+ * @param email 사용자 이메일
+ * @param password 사용자 비밀번호
+ * @returns 에러 객체를 포함한 프로미스
+ */
 export const handleEmailLogin = async (email: string, password: string): Promise<{error: Error | null}> => {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -39,4 +47,41 @@ export const handleEmailLogin = async (email: string, password: string): Promise
   }
 
   return { error };
-};
+};
+
+/**
+ * 비밀번호 재설정 이메일을 발송하는 함수입니다.
+ * @param email 비밀번호를 재설정할 사용자의 이메일 주소
+ * @returns 에러 객체를 포함한 프로미스
+ */
+export const handleResetPassword = async (email: string): Promise<{error: Error | null}> => {
+  // Supabase Auth의 resetPasswordForEmail 메서드를 사용하여 재설정 링크가 담긴 메일을 보냅니다.
+  // redirectTo 옵션에 지정된 경로는 사용자가 메일의 링크를 클릭했을 때 돌아올 주소입니다.
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/auth/callback?next=/login/update-password`,
+  });
+
+  if (error) {
+    console.error('Reset Password Error:', error.message, error);
+  }
+
+  return { error };
+};
+
+/**
+ * 로그인된 상태에서 사용자의 비밀번호를 새로운 값으로 업데이트하는 함수입니다.
+ * @param password 새롭게 설정할 비밀번호
+ * @returns 에러 객체를 포함한 프로미스
+ */
+export const handleUpdatePassword = async (password: string): Promise<{error: Error | null}> => {
+  // Supabase Auth의 updateUser 메서드를 사용하여 비밀번호를 업데이트합니다.
+  const { error } = await supabase.auth.updateUser({
+    password: password,
+  });
+
+  if (error) {
+    console.error('Update Password Error:', error.message, error);
+  }
+
+  return { error };
+};
