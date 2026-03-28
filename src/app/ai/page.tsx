@@ -1,7 +1,7 @@
 'use client'
 
 // ─── Import: React ───
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 // ─── Import: AI API 타입 ───
 import type { AIPlace, AIRecommendResponse } from '@/app/api/ai-recommend/route'
@@ -112,6 +112,39 @@ export default function AIPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [aiResult, setAiResult] = useState<AIRecommendResponse | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
+  const [searchResults, setSearchResults] = useState<
+    { place_name: string; address_name: string }[]
+  >([])
+  const [showDropdown, setShowDropdown] = useState(false)
+
+  // ─── 지하철역 검색 debounce ───
+  useEffect(() => {
+    if (searchKeyword.length < 1) {
+      setSearchResults([])
+      setShowDropdown(false)
+      return
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const keyword = searchKeyword.includes('역')
+          ? searchKeyword
+          : `${searchKeyword}역`
+        const res = await fetch(
+          `/api/places?query=${encodeURIComponent(keyword)}&size=15`,
+        )
+        const data = await res.json()
+        const stations = (data.documents ?? []).filter(
+          (doc: { category_name: string }) =>
+            doc.category_name?.includes('지하철'),
+        )
+        setSearchResults(stations.slice(0, 5))
+        setShowDropdown(true)
+      } catch {
+        setSearchResults([])
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchKeyword])
 
   const handleThemeToggle = (label: string) => {
     setSelectedThemes((prev) =>
@@ -193,15 +226,63 @@ export default function AIPage() {
             </p>
 
             {/* 검색창 */}
-            <div className="w-full max-w-md border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-3 mb-8">
-              <Search className="w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="지하철역 이름을 입력하세요"
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                className="flex-1 outline-none text-sm text-gray-900 placeholder:text-gray-400"
-              />
+            <div className="relative w-full max-w-md mb-8">
+              <div className="border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-3">
+                <Search className="w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="지하철역 이름을 입력하세요"
+                  value={searchKeyword}
+                  onChange={(e) => {
+                    setSearchKeyword(e.target.value)
+                    setStation('')
+                  }}
+                  onFocus={() =>
+                    searchResults.length > 0 && setShowDropdown(true)
+                  }
+                  className="flex-1 outline-none text-sm text-gray-900 placeholder:text-gray-400"
+                />
+                {searchKeyword && (
+                  <button
+                    onClick={() => {
+                      setSearchKeyword('')
+                      setStation('')
+                      setSearchResults([])
+                      setShowDropdown(false)
+                    }}
+                    className="text-gray-400 hover:text-gray-600 text-sm cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* 검색 자동완성 드롭다운 */}
+              {showDropdown && searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 overflow-hidden">
+                  {searchResults.map((place, idx) => (
+                    <button
+                      key={`${place.place_name}-${idx}`}
+                      onClick={() => {
+                        setStation(place.place_name)
+                        setSearchKeyword(place.place_name)
+                        setShowDropdown(false)
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer text-left"
+                    >
+                      <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {place.place_name}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {place.address_name}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* 인기 출발지 */}
