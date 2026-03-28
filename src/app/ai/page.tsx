@@ -26,6 +26,7 @@ import {
   MapPin,
   Search,
   Sparkles,
+  Wallet,
 } from 'lucide-react'
 
 // ─── 상수 정의 ───
@@ -65,6 +66,7 @@ const DUMMY_RESULTS = [
     desc: '2호선 성수역 3번 출구에서 시작합니다.',
     duration: '5분',
     walkInfo: null,
+    transitFare: null,
   },
   {
     order: 2,
@@ -73,6 +75,7 @@ const DUMMY_RESULTS = [
     desc: '성수동 대표 복합문화공간으로 전시와 카페를 함께 즐길 수 있습니다.',
     duration: '30분',
     walkInfo: '도보 8분 (0.5km)',
+    transitFare: 0,
   },
   {
     order: 3,
@@ -81,6 +84,7 @@ const DUMMY_RESULTS = [
     desc: '감성적인 인테리어와 핸드드립 커피로 유명한 성수동 인기 카페입니다.',
     duration: '40분',
     walkInfo: '도보 5분 (0.3km)',
+    transitFare: 0,
   },
   {
     order: 4,
@@ -89,6 +93,7 @@ const DUMMY_RESULTS = [
     desc: '도심 속 자연을 만끽할 수 있는 대규모 공원으로 산책과 사진 촬영에 최적입니다.',
     duration: '40분',
     walkInfo: '도보 12분 (0.9km)',
+    transitFare: 0,
   },
   {
     order: 5,
@@ -97,6 +102,7 @@ const DUMMY_RESULTS = [
     desc: '레트로 감성의 필름 사진관으로 여행의 마무리를 특별하게 남길 수 있습니다.',
     duration: '25분',
     walkInfo: '도보 10분 (0.7km)',
+    transitFare: 0,
   },
 ]
 
@@ -106,7 +112,7 @@ export default function AIPage() {
   const [station, setStation] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedThemes, setSelectedThemes] = useState<string[]>([])
-  const [totalMinutes, setTotalMinutes] = useState(150)
+  const [totalMinutes, setTotalMinutes] = useState(240)
   const [includeMeal, setIncludeMeal] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [aiResult, setAiResult] = useState<AIRecommendResponse | null>(null)
@@ -116,7 +122,7 @@ export default function AIPage() {
   >([])
   const [showDropdown, setShowDropdown] = useState(false)
 
-  // ─── 지하철역 검색 debounce ───
+  // ─── 출발지 검색 debounce ───
   useEffect(() => {
     if (searchKeyword.length < 1) {
       setSearchResults([])
@@ -125,18 +131,11 @@ export default function AIPage() {
     }
     const timer = setTimeout(async () => {
       try {
-        const keyword = searchKeyword.includes('역')
-          ? searchKeyword
-          : `${searchKeyword}역`
         const res = await fetch(
-          `/api/places?query=${encodeURIComponent(keyword)}&size=15`,
+          `/api/places?query=${encodeURIComponent(searchKeyword)}&size=15`,
         )
         const data = await res.json()
-        const stations = (data.documents ?? []).filter(
-          (doc: { category_name: string }) =>
-            doc.category_name?.includes('지하철'),
-        )
-        setSearchResults(stations.slice(0, 5))
+        setSearchResults((data.documents ?? []).slice(0, 5))
         setShowDropdown(true)
       } catch {
         setSearchResults([])
@@ -188,6 +187,7 @@ export default function AIPage() {
   }
 
   const formatTime = (min: number) => {
+    if (min >= 720) return '하루 (약 12시간)'
     const h = Math.floor(min / 60)
     const m = min % 60
     return m > 0 ? `약 ${h}시간 ${m}분` : `약 ${h}시간`
@@ -216,12 +216,9 @@ export default function AIPage() {
         {/* ── Step 1: 출발지 선택 ── */}
         {step === 1 && (
           <div className="flex flex-col items-center">
-            <h2 className="text-2xl font-extrabold text-gray-900 mb-2">
+            <h2 className="text-2xl font-extrabold text-gray-900 mb-8">
               어디서 출발하시나요?
             </h2>
-            <p className="text-sm text-gray-500 mb-8">
-              가까운 지하철역을 검색해주세요
-            </p>
 
             {/* 검색창 */}
             <div className="relative w-full max-w-md mb-8">
@@ -229,7 +226,7 @@ export default function AIPage() {
                 <Search className="w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="지하철역 이름을 입력하세요"
+                  placeholder="출발지를 검색해주세요"
                   value={searchKeyword}
                   onChange={(e) => {
                     setSearchKeyword(e.target.value)
@@ -451,7 +448,7 @@ export default function AIPage() {
             </div>
 
             {/* 결과 요약 통계 */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-4 gap-3 mb-6">
               <div className="border border-gray-200 rounded-xl p-4 bg-white">
                 <Footprints className="w-4 h-4 text-gray-500 mb-1" />
                 <p className="text-xs text-gray-400">총 도보 거리</p>
@@ -471,6 +468,15 @@ export default function AIPage() {
                 <p className="text-xs text-gray-400">주요 장소</p>
                 <p className="text-sm font-bold text-gray-900">
                   {aiResult?.totalPlaces ?? DUMMY_RESULTS.length}곳
+                </p>
+              </div>
+              <div className="border border-gray-200 rounded-xl p-4 bg-white">
+                <Wallet className="w-4 h-4 text-gray-500 mb-1" />
+                <p className="text-xs text-gray-400">교통비</p>
+                <p className="text-sm font-bold text-gray-900">
+                  {aiResult?.totalTransitFare != null
+                    ? `${aiResult.totalTransitFare.toLocaleString()}원`
+                    : '...'}
                 </p>
               </div>
             </div>
@@ -495,7 +501,7 @@ export default function AIPage() {
                   setStep(1)
                   setStation('')
                   setSelectedThemes([])
-                  setTotalMinutes(150)
+                  setTotalMinutes(240)
                   setAiResult(null)
                   setAiError(null)
                 }}
