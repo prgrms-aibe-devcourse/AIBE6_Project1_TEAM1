@@ -234,7 +234,7 @@ export default function ReviewWritePage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
-      <div className="flex-col w-1/3 self-center">
+      <div className="flex-col w-auto self-center">
         <div className="py-4">
           <button
             className="text-2xl p-2 cursor-pointer"
