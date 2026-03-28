@@ -60,6 +60,38 @@ export function calcTravelMinutes(p1: Place, p2: Place, type: TransportType = 't
   return Math.max(1, Math.round((realDist / speed) * 60 + waitTime))
 }
 
+// Day 요약 계산: 총 이동시간(분) + 예상 교통비(원)
+function calcDaySummary(places: Place[]): { totalMins: number; totalCost: number } {
+  let totalMins = 0
+  let totalCost = 0
+
+  for (let i = 0; i < places.length - 1; i++) {
+    const from = places[i]
+    const to = places[i + 1]
+    const mode = from.transportType || 'walk'
+    const mins = calcTravelMinutes(from, to, mode)
+    totalMins += mins
+
+    if (mode === 'transit') {
+      totalCost += 1500 // 대중교통 기본 요금 (버스/지하철 평균)
+    } else if (mode === 'taxi') {
+      // 택시 미터기 기준: 기본요금 4,800원 (1.6km) + 이후 100원/132m
+      const R = 6371
+      const dLat = (to.lat - from.lat) * (Math.PI / 180)
+      const dLon = (to.lng - from.lng) * (Math.PI / 180)
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(from.lat * (Math.PI / 180)) * Math.cos(to.lat * (Math.PI / 180)) * Math.sin(dLon / 2) ** 2
+      const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1.4
+      const baseFare = 4800
+      const extraFare = distKm > 1.6 ? Math.ceil((distKm - 1.6) * 1000 / 132) * 100 : 0
+      totalCost += baseFare + extraFare
+    }
+    // 도보는 0원
+  }
+  return { totalMins, totalCost }
+}
+
 function PlanPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -708,6 +740,37 @@ function PlanPageContent() {
                 + Day 추가
               </button>
             </div>
+
+            {/* Day 요약 배지: 총 이동시간 + 예상 교통비 */}
+            {currentPlaces.length >= 2 && (() => {
+              const { totalMins, totalCost } = calcDaySummary(currentPlaces)
+              const hours = Math.floor(totalMins / 60)
+              const mins = totalMins % 60
+              const timeStr = hours > 0 ? `${hours}시간 ${mins}분` : `${mins}분`
+              const hasPaidTransit = currentPlaces.some(
+                (p) => p.transportType === 'transit' || p.transportType === 'taxi'
+              )
+              return (
+                <div className="flex items-center gap-2 px-1 mb-2 flex-wrap">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-full text-[11px] font-semibold text-blue-700">
+                    <span>⏱</span>
+                    <span>이동 {timeStr}</span>
+                  </div>
+                  {hasPaidTransit && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-100 rounded-full text-[11px] font-semibold text-amber-700">
+                      <span>💳</span>
+                      <span>교통비 약 {totalCost.toLocaleString('ko-KR')}원~</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1 ml-auto">
+                    {currentPlaces.slice(0, -1).map((p, i) => {
+                      const emoji = p.transportType === 'walk' ? '🚶' : p.transportType === 'transit' ? '🚌' : '🚕'
+                      return <span key={i} className="text-[13px]">{emoji}</span>
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
 
             <TimelineList
               places={currentPlaces}
