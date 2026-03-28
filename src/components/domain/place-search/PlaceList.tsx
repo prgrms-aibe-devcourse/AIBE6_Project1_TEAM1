@@ -43,20 +43,8 @@ export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
   }
 
   return (
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
     <section className="space-y-6">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-=======
-    <section className="space-y-6">
-<<<<<<< HEAD
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
->>>>>>> 2e4a410 (Refactor: UI변경)
-=======
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
->>>>>>> cc29114 (Refactor: UI변경)
         {currentTrips.map((trip) => (
           <PlaceCard
             key={trip.id}
@@ -90,24 +78,5 @@ export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
         </button>
       </div>
     </section>
-<<<<<<< HEAD
-=======
-=======
->>>>>>> d603736 (Feat: 검색로직 전면 수정)
-<<<<<<< HEAD
-=======
->>>>>>> 4948500 (Fix: 충돌수정)
-    <div className="space-y-3">
-      {trips.map((trip) => (
-        <PlaceCard
-          key={trip.id}
-          trip={trip}
-          detailItems={tripDetailsMap[trip.id] ?? []}
-        />
-      ))}
-    </div>
->>>>>>> 908f1f0 (Feat: 검색결과 정렬)
-=======
->>>>>>> 2e4a410 (Refactor: UI변경)
   )
 }

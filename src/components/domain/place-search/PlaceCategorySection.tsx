@@ -3,51 +3,15 @@ interface PlaceCategorySectionProps {
   onSelectCategory: (category: string) => void
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-const categories = ['전체', '음식점', '카페', '숙박', '관광명소', '문화시설']
-=======
->>>>>>> d603736 (Feat: 검색로직 전면 수정)
 const categories = [
   '전체',
-<<<<<<< HEAD
-=======
-  '관광명소',
->>>>>>> 908f1f0 (Feat: 검색결과 정렬)
-=======
-const categories = [
-  '전체',
->>>>>>> fffbf31 (Refactor: UI변경, 디렉토리 이동)
   '음식점',
   '카페',
   '숙박',
   '관광명소',
   '문화시설',
-<<<<<<< HEAD
-<<<<<<< HEAD
-  '당일치기',
-=======
-  '지하철역',
->>>>>>> 908f1f0 (Feat: 검색결과 정렬)
-]
-<<<<<<< HEAD
-=======
->>>>>>> 56c7bc4 (카테고리 수정)
-=======
-const categories = ['전체', '음식점', '카페', '숙박', '관광명소', '문화시설']
->>>>>>> b807596 (Feat: 검색로직 전면 수정)
->>>>>>> d603736 (Feat: 검색로직 전면 수정)
-=======
-const categories = ['전체', '음식점', '카페', '숙박', '관광명소', '문화시설']
->>>>>>> 4948500 (Fix: 충돌수정)
-=======
   '당일치기',
 ]
->>>>>>> fffbf31 (Refactor: UI변경, 디렉토리 이동)
 
 export default function PlaceCategorySection({
   selectedCategory,
@@ -59,16 +23,6 @@ export default function PlaceCategorySection({
         {categories.map((category) => {
           const isActive = selectedCategory === category
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> b807596 (Feat: 검색로직 전면 수정)
->>>>>>> d603736 (Feat: 검색로직 전면 수정)
-=======
->>>>>>> 4948500 (Fix: 충돌수정)
           return (
             <button
               key={category}
@@ -85,37 +39,6 @@ export default function PlaceCategorySection({
           )
         })}
       </div>
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> d603736 (Feat: 검색로직 전면 수정)
-=======
-        return (
-          <button
-            key={category}
-            type="button"
-            onClick={() => onSelectCategory(category)}
-            className={`rounded-2xl border px-4 py-4 text-sm font-medium text-left transition ${
-              isActive
-                ? 'border-gray-900 bg-gray-900 text-white'
-                : 'border-gray-200 bg-white text-gray-800 hover:border-gray-300'
-            }`}
-          >
-            {category}
-          </button>
-        )
-      })}
->>>>>>> 56c7bc4 (카테고리 수정)
-<<<<<<< HEAD
->>>>>>> 908f1f0 (Feat: 검색결과 정렬)
-=======
-=======
->>>>>>> b807596 (Feat: 검색로직 전면 수정)
->>>>>>> d603736 (Feat: 검색로직 전면 수정)
-=======
->>>>>>> 4948500 (Fix: 충돌수정)
     </div>
   )
 }

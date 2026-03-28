@@ -2,38 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get('query')
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  const categoryGroupCode = req.nextUrl.searchParams.get('categoryGroupCode')
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> 908f1f0 (Feat: 검색결과 정렬)
   const pageParam = req.nextUrl.searchParams.get('page')
   const sizeParam = req.nextUrl.searchParams.get('size')
   const categoryGroupCode = req.nextUrl.searchParams.get('categoryGroupCode')
-<<<<<<< HEAD
-=======
->>>>>>> 4986e65 (카테고리 수정)
-<<<<<<< HEAD
->>>>>>> 56c7bc4 (카테고리 수정)
-=======
-=======
-  const pageParam = req.nextUrl.searchParams.get('page')
-  const sizeParam = req.nextUrl.searchParams.get('size')
->>>>>>> 3380091 (Feat: 페이지기능 구현)
->>>>>>> 6539aea (Feat: 페이지기능 구현)
-=======
-  const pageParam = req.nextUrl.searchParams.get('page')
-  const sizeParam = req.nextUrl.searchParams.get('size')
->>>>>>> 64d8b82 (Feat: 검색결과 정렬)
->>>>>>> 908f1f0 (Feat: 검색결과 정렬)
-=======
-  const pageParam = req.nextUrl.searchParams.get('page')
-  const sizeParam = req.nextUrl.searchParams.get('size')
-  const categoryGroupCode = req.nextUrl.searchParams.get('categoryGroupCode')
->>>>>>> 4948500 (Fix: 충돌수정)
 
   if (!query || !query.trim()) {
     return NextResponse.json(
@@ -52,23 +23,7 @@ export async function GET(req: NextRequest) {
   }
 
   const page = Math.max(1, Number(pageParam) || 1)
-<<<<<<< HEAD
-<<<<<<< HEAD
   const size = Math.min(15, Math.max(1, Number(sizeParam) || 9))
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-  const size = Math.min(15, Math.max(1, Number(sizeParam) || 9))
-=======
-  const size = Math.min(15, Math.max(1, Number(sizeParam) || 15))
->>>>>>> 6539aea (Feat: 페이지기능 구현)
-=======
-  const size = Math.min(15, Math.max(1, Number(sizeParam) || 9))
->>>>>>> 64d8b82 (Feat: 검색결과 정렬)
->>>>>>> 908f1f0 (Feat: 검색결과 정렬)
-=======
-  const size = Math.min(15, Math.max(1, Number(sizeParam) || 9))
->>>>>>> 4948500 (Fix: 충돌수정)
 
   try {
     const kakaoParams = new URLSearchParams({

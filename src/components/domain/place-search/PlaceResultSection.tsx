@@ -1,59 +1,10 @@
 import PlaceCategorySection from './PlaceCategorySection'
 import PlaceList from './PlaceList'
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-import type { Trip, TripDetailItem } from './PlaceSearchSection'
-=======
-
-interface Place {
-  id: string
-  name: string
-  address: string
-  category: string
-  categoryGroupName?: string
-  phone?: string
-  imageUrl?: string
-}
->>>>>>> 64d8b82 (Feat: 검색결과 정렬)
-
-interface PlaceResultSectionProps {
-  trips: Trip[]
-  tripDetailsMap: Record<number, TripDetailItem[]>
-<<<<<<< HEAD
-=======
-=======
-  keyword: string
-  places: Place[]
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  trendingPlaces: Place[]
->>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
-=======
->>>>>>> 4986e65 (카테고리 수정)
->>>>>>> 56c7bc4 (카테고리 수정)
-=======
-  selectedPlace?: Place | null
-  onSelectPlace?: (place: Place) => void
->>>>>>> 64d8b82 (Feat: 검색결과 정렬)
-<<<<<<< HEAD
->>>>>>> 908f1f0 (Feat: 검색결과 정렬)
-=======
-=======
-=======
->>>>>>> 4948500 (Fix: 충돌수정)
 import type { Trip, TripDetailItem } from './PlaceSearchSection'
 
 interface PlaceResultSectionProps {
   trips: Trip[]
   tripDetailsMap: Record<number, TripDetailItem[]>
-<<<<<<< HEAD
->>>>>>> b807596 (Feat: 검색로직 전면 수정)
->>>>>>> d603736 (Feat: 검색로직 전면 수정)
-=======
->>>>>>> 4948500 (Fix: 충돌수정)
   isLoading?: boolean
   errorMessage?: string
   selectedCategory: string
@@ -61,44 +12,8 @@ interface PlaceResultSectionProps {
 }
 
 export default function PlaceResultSection({
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> d603736 (Feat: 검색로직 전면 수정)
   trips,
   tripDetailsMap,
-<<<<<<< HEAD
-=======
-=======
-  keyword,
-  places,
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  trendingPlaces,
->>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
-=======
->>>>>>> 4986e65 (카테고리 수정)
->>>>>>> 56c7bc4 (카테고리 수정)
-=======
-  selectedPlace,
-  onSelectPlace,
->>>>>>> 64d8b82 (Feat: 검색결과 정렬)
-<<<<<<< HEAD
->>>>>>> 908f1f0 (Feat: 검색결과 정렬)
-=======
-=======
-  trips,
-  tripDetailsMap,
->>>>>>> b807596 (Feat: 검색로직 전면 수정)
->>>>>>> d603736 (Feat: 검색로직 전면 수정)
-=======
-  trips,
-  tripDetailsMap,
->>>>>>> 4948500 (Fix: 충돌수정)
   isLoading = false,
   errorMessage = '',
   selectedCategory,
@@ -117,50 +32,9 @@ export default function PlaceResultSection({
 
       {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
       {!isLoading && !errorMessage && (
         <PlaceList trips={trips} tripDetailsMap={tripDetailsMap} />
       )}
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-      {!isLoading && !errorMessage && (
-        <PlaceList trips={trips} tripDetailsMap={tripDetailsMap} />
-      )}
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-      {!isLoading && <PlaceList places={places} />}
-=======
-=======
->>>>>>> 64d8b82 (Feat: 검색결과 정렬)
-      {!isLoading && (
-        <PlaceList
-          places={places}
-          selectedPlaceId={selectedPlace?.id}
-          onSelectPlace={onSelectPlace}
-        />
-=======
-      {!isLoading && !errorMessage && (
-        <PlaceList trips={trips} tripDetailsMap={tripDetailsMap} />
->>>>>>> b807596 (Feat: 검색로직 전면 수정)
-      )}
-<<<<<<< HEAD
->>>>>>> 6e518ef (feat: 검색 결과 출력 기능 추가 및 카카오 API 연결)
-=======
-      {!isLoading && <PlaceList places={places} />}
->>>>>>> 4986e65 (카테고리 수정)
->>>>>>> 56c7bc4 (카테고리 수정)
-=======
->>>>>>> 64d8b82 (Feat: 검색결과 정렬)
->>>>>>> 908f1f0 (Feat: 검색결과 정렬)
-=======
-      {!isLoading && !errorMessage && (
-        <PlaceList trips={trips} tripDetailsMap={tripDetailsMap} />
-      )}
->>>>>>> 4948500 (Fix: 충돌수정)
     </section>
   )
 }
