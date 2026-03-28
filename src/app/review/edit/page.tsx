@@ -40,6 +40,7 @@ export default function ReviewWritePage() {
   const [tripId, setTripId] = useState<number | null>(null)
   const [routeOptions, setRouteOptions] = useState<RouteOption[]>([])
   const [routes, setRoutes] = useState<Route[]>([])
+  const [placeMap, setPlaceMap] = useState<Record<number, string>>({})
 
   useEffect(() => {
     const getUser = async () => {
@@ -147,6 +148,29 @@ export default function ReviewWritePage() {
     getTripData()
   }, [tripId])
 
+  useEffect(() => {
+    const fetchPlaces = async () => {
+      const ids = Array.from(new Set(routes.flatMap((r) => [r.from, r.to])))
+      const { data, error } = await supabase
+        .from('places')
+        .select('id, place_name')
+        .in('id', ids)
+
+      if (error) {
+        console.error(error)
+        return
+      }
+
+      const map: Record<number, string> = {}
+      data?.forEach((item) => {
+        map[item.id] = item.place_name
+      })
+      setPlaceMap(map)
+    }
+
+    if (routes.length > 0) fetchPlaces()
+  }, [routes])
+
   // 리뷰 수정 등록
   const handleSubmit = async () => {
     if (loading) return
@@ -198,6 +222,7 @@ export default function ReviewWritePage() {
         review_id: reviewId,
         start: route.from,
         end: route.to,
+        order: index + 1,
         transport_type: route.transport,
         slope: isWalk ? option?.slope : null,
         stairs: isWalk ? option?.stairs : null,
@@ -274,9 +299,9 @@ export default function ReviewWritePage() {
         <div className="text-xl font-bold py-4">경로별 보행 환경</div>
         <div className="border rounded-xl mb-6 p-6 flex flex-col text-gray-700">
           <RouteOptionSelector
-            key={reviewId} // 컴포넌트 강제 리렌더 -> 초기화 문제 방지
             routes={routes}
-            supabase={supabase}
+            placeMap={placeMap}
+            options={routeOptions}
             onChange={setRouteOptions}
           />
         </div>

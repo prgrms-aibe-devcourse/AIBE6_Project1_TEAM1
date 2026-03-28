@@ -39,6 +39,7 @@ export default function ReviewWritePage() {
   const tripId = Number(searchParams.get('tripId'))
   const [routeOptions, setRouteOptions] = useState<RouteOption[]>([])
   const [routes, setRoutes] = useState<Route[]>([])
+  const [placeMap, setPlaceMap] = useState<Record<number, string>>({})
 
   useEffect(() => {
     const getUser = async () => {
@@ -117,6 +118,29 @@ export default function ReviewWritePage() {
 
     fetchRoutes()
   }, [tripId])
+
+  useEffect(() => {
+    const fetchPlaces = async () => {
+      const ids = Array.from(new Set(routes.flatMap((r) => [r.from, r.to])))
+      const { data, error } = await supabase
+        .from('places')
+        .select('id, place_name')
+        .in('id', ids)
+
+      if (error) {
+        console.error(error)
+        return
+      }
+
+      const map: Record<number, string> = {}
+      data?.forEach((item) => {
+        map[item.id] = item.place_name
+      })
+      setPlaceMap(map)
+    }
+
+    if (routes.length > 0) fetchPlaces()
+  }, [routes])
 
   // 이미 리뷰가 작성되었는지 체크
   // useEffect(() => {
@@ -263,7 +287,8 @@ export default function ReviewWritePage() {
         <div className="border rounded-xl mb-6 p-6 flex flex-col text-gray-700">
           <RouteOptionSelector
             routes={routes}
-            supabase={supabase}
+            placeMap={placeMap}
+            options={routeOptions}
             onChange={setRouteOptions}
           />
         </div>

@@ -9,7 +9,6 @@ import {
   Trees,
   TrendingUp,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import CustomListbox from './CustomListBox'
 
 type Route = {
@@ -24,10 +23,7 @@ type RouteOption = {
   shade: string
 }
 
-type Place = {
-  id: number
-  place_name: string
-}
+type PlaceMap = Record<number, string>
 
 const getTransportIcon = (transport: string) => {
   switch (transport) {
@@ -81,72 +77,24 @@ const getShadeIcon = (value: string) => {
 
 export default function RouteOptionSelector({
   routes,
-  supabase,
+  placeMap,
+  options,
   onChange,
 }: {
   routes: Route[]
-  supabase: any
+  placeMap: PlaceMap
+  options: RouteOption[]
   onChange: (data: RouteOption[]) => void
 }) {
-  const [placeMap, setPlaceMap] = useState<Record<number, string>>({})
-  const [options, setOptions] = useState<RouteOption[]>([])
-
-  // ✅ routes 변경 시 options 초기화
-  useEffect(() => {
-    setOptions(
-      routes.map(() => ({
-        slope: '',
-        stairs: '',
-        shade: '',
-      })),
-    )
-  }, [routes])
-
-  // ✅ options 변경 시 부모로 전달
-  useEffect(() => {
-    onChange(options)
-  }, [options])
-
-  // ✅ place_id → place_name 변환
-  useEffect(() => {
-    const fetchPlaces = async () => {
-      const ids = Array.from(new Set(routes.flatMap((r) => [r.from, r.to])))
-
-      const { data, error } = await supabase
-        .from('places')
-        .select('id, place_name')
-        .in('id', ids)
-
-      if (error) {
-        console.error(error)
-        return
-      }
-
-      const map: Record<number, string> = {}
-      data?.forEach((item: Place) => {
-        map[item.id] = item.place_name
-      })
-
-      setPlaceMap(map)
-    }
-
-    if (routes.length > 0) fetchPlaces()
-  }, [routes])
-
-  // ✅ 옵션 업데이트 함수
+  // ✅ 옵션 업데이트: 내부 상태 없이 부모 onChange 사용
   const updateOption = (
     index: number,
     key: keyof RouteOption,
     value: string,
   ) => {
-    setOptions((prev) => {
-      const updated = [...prev]
-      updated[index] = {
-        ...updated[index],
-        [key]: value,
-      }
-      return updated
-    })
+    const updated = [...options]
+    updated[index] = { ...updated[index], [key]: value }
+    onChange(updated)
   }
 
   return (
@@ -159,12 +107,7 @@ export default function RouteOptionSelector({
         const fromName = placeMap[route.from] ?? route.from
         const toName = placeMap[route.to] ?? route.to
         const transport = route.transport
-        const opt = options[index] || {}
-
-        // // 옵션 텍스트, 선택 없으면 '-' 표시
-        // const slopeText = opt.slope || '-'
-        // const stairsText = opt.stairs || '-'
-        // const shadeText = opt.shade || '-'
+        const opt = options[index] || { slope: '', stairs: '', shade: '' }
 
         return (
           <div
@@ -177,12 +120,16 @@ export default function RouteOptionSelector({
               <br /> → <br />
               {toName}
             </div>
+
+            {/* 가운데: transport 아이콘 */}
             <div className="flex flex-col items-center justify-center w-20 text-2xl">
               {getTransportIcon(transport)}
             </div>
-            {/* ✅ 2. 오른쪽 영역: select 대신 CustomListbox 사용 */}
-            {route.transport === 'walk' ? (
+
+            {/* 오른쪽: walk만 옵션 */}
+            {transport === 'walk' ? (
               <div className="flex items-center gap-4">
+                {/* 경사도 */}
                 <div className="flex items-center gap-2">
                   <div className="text-gray-700">{getSlopeIcon(opt.slope)}</div>
                   <CustomListbox
@@ -197,6 +144,7 @@ export default function RouteOptionSelector({
                   />
                 </div>
 
+                {/* 계단 */}
                 <div className="flex items-center gap-2">
                   <div className="text-gray-700">
                     {getStairsIcon(opt.stairs)}
@@ -212,6 +160,7 @@ export default function RouteOptionSelector({
                   />
                 </div>
 
+                {/* 그늘 */}
                 <div className="flex items-center gap-2">
                   <div className="text-gray-700">{getShadeIcon(opt.shade)}</div>
                   <CustomListbox
