@@ -80,6 +80,15 @@ export default function LoginPage() {
 
             {errorMsg && <p className="text-sm text-red-500 font-medium">{errorMsg}</p>}
 
+            <div className="flex justify-end">
+              <Link 
+                href="/login/reset-password" 
+                className="text-[13px] text-gray-400 hover:text-gray-900 underline underline-offset-4"
+              >
+                비밀번호를 잊으셨나요?
+              </Link>
+            </div>
+
             <button
               type="submit"
               disabled={isLoading}
