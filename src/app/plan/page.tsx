@@ -22,6 +22,8 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
 
+export type TransportType = 'walk' | 'transit' | 'taxi'
+
 // 글로벌 공통 장소 데이터 구조
 export interface Place {
   id: string
@@ -32,6 +34,7 @@ export interface Place {
   lat: number
   lng: number
   isNearStation?: boolean
+  transportType?: TransportType
 }
 
 function PlanPageContent() {
@@ -205,6 +208,7 @@ function PlanPageContent() {
               lat: item.places.latitude,
               lng: item.places.longitude,
               isNearStation: item.places.is_near_station,
+              transportType: item.transport_type as TransportType,
             })
           }
         })
@@ -247,6 +251,7 @@ function PlanPageContent() {
       lat,
       lng,
       isNearStation,
+      transportType: 'walk', // 기본 이동수단 도보 설정
     }
     setPlacesByDay((prev) => ({
       ...prev,
@@ -260,6 +265,16 @@ function PlanPageContent() {
       const dayPlaces = Array.from(prev[currentDay] || [])
       const [removed] = dayPlaces.splice(startIndex, 1)
       dayPlaces.splice(endIndex, 0, removed)
+      return { ...prev, [currentDay]: dayPlaces }
+    })
+    setIsModified(true)
+  }
+  
+  const handleUpdateTransport = (id: string, type: TransportType) => {
+    setPlacesByDay((prev) => {
+      const dayPlaces = (prev[currentDay] || []).map((p) => 
+        p.id === id ? { ...p, transportType: type } : p
+      )
       return { ...prev, [currentDay]: dayPlaces }
     })
     setIsModified(true)
@@ -446,7 +461,7 @@ function PlanPageContent() {
               place_id: dbPlaceId,
               visit_day: parseInt(dayStr), // 드디어 Day 구분 정보가 DB에 저장됩니다!
               visit_order: globalOrder++, // Day 상관없이 전역 순서체계 혹은 Day내 순서 혼용 가능 (현재 스크립트는 전체 순서 유지)
-              transport_type: 'bus', // 이동수단 기본값
+              transport_type: place.transportType || 'walk', // 선택된 이동수단 저장
               travel_time: 15, // 소요시간 기본값
             })
           }
@@ -669,6 +684,7 @@ function PlanPageContent() {
               onDelete={handleDeletePlace}
               onOpenSearch={() => setIsSearchOpen(true)}
               onSelectPlace={(pos) => setFocusPlace(pos)}
+              onUpdateTransport={handleUpdateTransport}
             />
           </div>
         </div>

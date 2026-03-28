@@ -14,8 +14,10 @@ import CommonButton from '@/components/common/CommonButton'
 import FilterBadge from './FilterBadge'
 import TransitIndicator from './TransitIndicator'
 
+import { TransportType } from '@/app/plan/page'
+
 // 두 좌표 사이의 직선 거리를 계산하고 이동 시간을 추정하는 헬퍼 함수
-const getEstimatedTransit = (p1: Place, p2: Place) => {
+const getEstimatedTransit = (p1: Place, p2: Place, type: TransportType = 'transit') => {
   const R = 6371 // 지구 반지름 (km)
   const dLat = (p2.lat - p1.lat) * (Math.PI / 180)
   const dLon = (p2.lng - p1.lng) * (Math.PI / 180)
@@ -31,15 +33,22 @@ const getEstimatedTransit = (p1: Place, p2: Place) => {
   // 실제 도로의 굴곡을 고려해 직선 거리에 보정치(1.4배) 적용
   const realDist = distanceKm * 1.4
 
-  if (realDist < 1.0) {
-    // 1km 미만은 도보 (시속 4.5km 기준)
-    const minutes = Math.max(1, Math.round((realDist / 4.5) * 60))
-    return { type: 'walk' as const, duration: `${minutes}분` }
-  } else {
-    // 1km 이상은 대중교통 (시속 15km + 대기/도보시간 5분)
-    const minutes = Math.round((realDist / 15) * 60 + 5)
-    return { type: 'bus' as const, duration: `약 ${minutes}분` }
+  let speed = 15 // 기본값 (버스/지하철/택시의 대략적 시속)
+  let waitTime = 5 // 기본 도보+대기시간
+
+  if (type === 'walk') {
+    speed = 4.5
+    waitTime = 0
+  } else if (type === 'taxi') {
+    speed = 25
+    waitTime = 3
+  } else if (type === 'transit') {
+    speed = 20
+    waitTime = 8
   }
+
+  const minutes = Math.max(1, Math.round((realDist / speed) * 60 + waitTime))
+  return { type, duration: minutes >= 60 ? `약 ${Math.floor(minutes / 60)}시간 ${minutes % 60}분` : `약 ${minutes}분` }
 }
 
 interface TimelineListProps {
@@ -48,6 +57,7 @@ interface TimelineListProps {
   onDelete: (id: string) => void
   onOpenSearch: () => void
   onSelectPlace?: (pos: { lat: number; lng: number }) => void
+  onUpdateTransport: (id: string, type: TransportType) => void
 }
 
 export default function TimelineList({
@@ -56,6 +66,7 @@ export default function TimelineList({
   onDelete,
   onOpenSearch,
   onSelectPlace,
+  onUpdateTransport,
 }: TimelineListProps) {
   // 드래그 앤 드롭은 브라우저(Client) 환경에서만 작동하게끔 방어하는 Hydration 꼬임 방지 장치
   const [mounted, setMounted] = useState(false)
@@ -112,8 +123,8 @@ export default function TimelineList({
                       <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
-                        style={provided.draggableProps.style}
-                        className={`relative z-10 flex flex-col mb-1.5 ${snapshot.isDragging ? 'opacity-90 shadow-2xl scale-[1.02] z-50 transition-transform' : 'transition-transform'}`}
+                        className={`relative flex flex-col mb-1.5 ${snapshot.isDragging ? 'opacity-90 shadow-2xl scale-[1.02] z-[100] transition-transform' : 'transition-transform'}`}
+                        style={{ ...provided.draggableProps.style, zIndex: snapshot.isDragging ? 100 : places.length - index + 10 }}
                       >
                         {/* 한 줄 형태의 카드 Row */}
                         <div className="flex items-start">
@@ -179,24 +190,38 @@ export default function TimelineList({
                         <div className="h-10 flex flex-col justify-center">
                           {index < places.length - 1 && (
                             <div className="ml-1 relative z-10 w-full">
-                              {(() => {
-                                const info = getEstimatedTransit(
-                                  place,
-                                  places[index + 1],
-                                )
-                                return (
-                                  <TransitIndicator
-                                    type={info.type}
-                                    duration={info.duration}
-                                    onClick={() => {
-                                      const from = place
-                                      const to = places[index + 1]
-                                      const url = `https://map.kakao.com/link/from/${from.name},${from.lat},${from.lng}/to/${to.name},${to.lat},${to.lng}`
-                                      window.open(url, '_blank')
-                                    }}
-                                  />
-                                )
-                              })()}
+                                <TransitIndicator
+                                  type={place.transportType || 'walk'}
+                                  duration={getEstimatedTransit(
+                                    place,
+                                    places[index + 1],
+                                    place.transportType || 'walk'
+                                  ).duration}
+                                  onTypeChange={(type: TransportType) => onUpdateTransport(place.id, type)}
+                                  onClick={() => {
+                                    const from = place
+                                    const to = places[index + 1]
+                                    const mode = place.transportType || 'walk'
+                                    
+                                    // 카카오맵 공식 URL 스킴 (apis.map.kakao.com/web/guide/#routeurl)
+                                    // - 도보(walk): link/by/walk 스킴으로 100% 경로 탐색 보장
+                                    // - 대중교통/택시: 경로가 없을 수 있으므로 모든 이동수단 탭이 열리는
+                                    //   link/from/.../to 범용 URL로 열어 사용자가 직접 탭 전환 가능하게 처리
+                                    let url = ''
+                                    
+                                    if (mode === 'walk') {
+                                      // 도보 - 항상 경로 존재, 정확한 모드로 바로 연결
+                                      url = `https://map.kakao.com/link/by/walk/${encodeURIComponent(from.name)},${from.lat},${from.lng}/${encodeURIComponent(to.name)},${to.lat},${to.lng}`
+                                    } else {
+                                      // 대중교통/택시 - 경로 없을 수 있음
+                                      // → 자동차/대중교통/도보 탭이 모두 표시되는 범용 URL 사용
+                                      // → 카카오맵 내에서 탭 전환으로 원하는 수단 선택 가능
+                                      url = `https://map.kakao.com/link/from/${encodeURIComponent(from.name)},${from.lat},${from.lng}/to/${encodeURIComponent(to.name)},${to.lat},${to.lng}`
+                                    }
+                                    
+                                    window.open(url, '_blank')
+                                  }}
+                                />
                             </div>
                           )}
                         </div>
