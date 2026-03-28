@@ -14,41 +14,15 @@ import CommonButton from '@/components/common/CommonButton'
 import FilterBadge from './FilterBadge'
 import TransitIndicator from './TransitIndicator'
 
-import { TransportType } from '@/app/plan/page'
+import { TransportType, calcTravelMinutes } from '@/app/plan/page'
 
-// 두 좌표 사이의 직선 거리를 계산하고 이동 시간을 추정하는 헬퍼 함수
+// calcTravelMinutes(shared)를 래핑하여 화면 표시용 포맷 문자열 반환
 const getEstimatedTransit = (p1: Place, p2: Place, type: TransportType = 'transit') => {
-  const R = 6371 // 지구 반지름 (km)
-  const dLat = (p2.lat - p1.lat) * (Math.PI / 180)
-  const dLon = (p2.lng - p1.lng) * (Math.PI / 180)
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(p1.lat * (Math.PI / 180)) *
-      Math.cos(p2.lat * (Math.PI / 180)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  const distanceKm = R * c
-
-  // 실제 도로의 굴곡을 고려해 직선 거리에 보정치(1.4배) 적용
-  const realDist = distanceKm * 1.4
-
-  let speed = 15 // 기본값 (버스/지하철/택시의 대략적 시속)
-  let waitTime = 5 // 기본 도보+대기시간
-
-  if (type === 'walk') {
-    speed = 4.5
-    waitTime = 0
-  } else if (type === 'taxi') {
-    speed = 25
-    waitTime = 3
-  } else if (type === 'transit') {
-    speed = 20
-    waitTime = 8
-  }
-
-  const minutes = Math.max(1, Math.round((realDist / speed) * 60 + waitTime))
-  return { type, duration: minutes >= 60 ? `약 ${Math.floor(minutes / 60)}시간 ${minutes % 60}분` : `약 ${minutes}분` }
+  const minutes = calcTravelMinutes(p1, p2, type)
+  const duration = minutes >= 60
+    ? `약 ${Math.floor(minutes / 60)}시간 ${minutes % 60}분`
+    : `약 ${minutes}분`
+  return { type, duration }
 }
 
 interface TimelineListProps {
