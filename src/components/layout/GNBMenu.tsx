@@ -54,9 +54,9 @@ export default function GNBMenu() {
         href="/search"
         className="flex flex-col items-center gap-1 hover:text-black hover:font-medium transition-colors"
       >
-        <Compass className="w-5 h-5 stroke-[2.5]" />
+        <Compass className="w-5 h-5" />
         <span className="text-[11px] font-bold text-black text-center">
-          탐색
+          검색
         </span>
       </Link>
       <Link
