@@ -189,7 +189,6 @@ export default function ReviewWritePage() {
       return {
         user_id: userId,
         trip_id: tripId,
-        review_id: reviewId,
         start: route.from,
         end: route.to,
         transport_type: route.transport, // ✅ 추가
