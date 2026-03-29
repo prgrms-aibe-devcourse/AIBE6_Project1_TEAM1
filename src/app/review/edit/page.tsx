@@ -1,234 +1,390 @@
 'use client'
 
-import MediaUploader from '@/components/domain/review/MediaUploader'
-import OptionSelector from '@/components/domain/review/OptionSelector'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
+
+import EditMediaUploader from '@/components/domain/review/EditMediaUploader'
 import RatingSelector from '@/components/domain/review/RatingSelector'
+import RouteOptionSelector from '@/components/domain/review/RouteOptionSelector'
+import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 
-import Image from 'next/image'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+type Route = { from: number; to: number; transport: string }
+type RouteOption = { slope: string; stairs: string; shade: string }
+type MediaItem = { id?: number; url: string; path: string; isNew?: boolean }
 
 export default function ReviewEditPage() {
   const supabase = createClient()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const reviewId = Number(searchParams.get('reviewId'))
-  const router = useRouter()
+
+  const { openModal } = useModalStore()
+
+  // --- State ---
+  const [rating, setRating] = useState(0)
+  const [content, setContent] = useState('')
+  const [images, setImages] = useState<MediaItem[]>([])
+  const [originalImages, setOriginalImages] = useState<MediaItem[]>([])
+  const [routes, setRoutes] = useState<Route[]>([])
+  const [routeOptions, setRouteOptions] = useState<RouteOption[]>([])
+  const [tripId, setTripId] = useState<number | null>(null)
+  const [tripTitle, setTripTitle] = useState<string | null>(null)
+  const [startDate, setStartDate] = useState<string | null>(null)
+  const [endDate, setEndDate] = useState<string | null>(null)
+  const [placeMap, setPlaceMap] = useState<Record<number, string>>({})
   const [userId, setUserId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  // url 형식 : /review/view?reviewId="리뷰번호"
+  const mediaCleanupRef = useRef<(() => Promise<void>) | undefined>(undefined)
 
-  // 유저 정보 가져오기
+  // --- Get current user ---
   useEffect(() => {
     const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      setUserId(user?.id ?? null)
+      const { data } = await supabase.auth.getUser()
+      setUserId(data?.user?.id ?? null)
     }
     getUser()
   }, [])
 
-  const [reviewData, setReviewData] = useState(null)
-  const [mediaData, setMediaData] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
-  const [rating, setRating] = useState(0)
-  const [content, setContent] = useState('')
-  const [media, setMedia] = useState<{ url: string; path: string }[]>([])
-  const [options, setOptions] = useState({
-    slope: '',
-    width: '',
-    stairs: '',
-  })
-
+  // --- Fetch review ---
   useEffect(() => {
+    if (!reviewId) return
+
     const fetchReview = async () => {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('id', reviewId)
-        .single()
 
-      if (error) {
-        alert('리뷰 불러오기 실패')
+      try {
+        const { data: reviewData, error: reviewError } = await supabase
+          .from('reviews')
+          .select('*')
+          .eq('id', reviewId)
+          .single()
+
+        if (reviewError || !reviewData) {
+          console.error('리뷰 조회 실패:', reviewError)
+          openModal({
+            type: 'alert',
+            variant: 'danger',
+            title: '리뷰 조회 실패',
+            description: '리뷰를 불러올 수 없습니다.',
+            onConfirm: () => router.back(),
+          })
+          return
+        }
+
+        setTripId(reviewData.trip_id)
+        setRating(reviewData.rating)
+        setContent(reviewData.content)
+
+        // --- Routes ---
+        const { data: routeData, error: routeError } = await supabase
+          .from('routes')
+          .select('*')
+          .eq('review_id', reviewId)
+          .order('order', { ascending: true })
+
+        if (routeError || !routeData) {
+          console.error('경로 조회 실패:', routeError)
+          openModal({
+            type: 'alert',
+            variant: 'danger',
+            title: '경로 조회 실패',
+            description: '경로 정보를 불러올 수 없습니다.',
+            onConfirm: () => router.back(),
+          })
+          return
+        }
+
+        setRoutes(
+          routeData.map((r: any) => ({
+            from: r.start,
+            to: r.end,
+            transport: r.transport_type,
+          })),
+        )
+
+        setRouteOptions(
+          routeData.map((r: any) => ({
+            slope: r.slope || '',
+            stairs: r.stairs || '',
+            shade: r.shade || '',
+          })),
+        )
+
+        // --- Images ---
+        const { data: imageData } = await supabase
+          .from('images')
+          .select('file_url, file_path')
+          .eq('review_id', reviewId)
+
+        const formattedImages = (imageData ?? []).map((img: any) => ({
+          url: img.file_url,
+          path: img.file_path,
+          isNew: false,
+        }))
+
+        setImages(formattedImages)
+        setOriginalImages(formattedImages)
+      } finally {
         setLoading(false)
-        return
       }
-
-      if (!data) {
-        alert('리뷰가 없습니다')
-        setLoading(false)
-        return
-      }
-
-      setReviewData(data)
-      const placeId = reviewData.place_id
-      setLoading(false)
-    }
-
-    const fetchMedia = async () => {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('media')
-        .select('file_url')
-        .eq('review_id', reviewId)
-      if (error) {
-        alert('사진 불러오기 실패')
-        setLoading(false)
-        return
-      }
-
-      if (!data) return
-      const urls = data
-        .map((item) => item.file_url)
-        .filter((url): url is string => url !== null)
-
-      setMediaData(urls)
-      setLoading(false)
     }
 
     fetchReview()
-    fetchMedia()
-  }, [])
+  }, [reviewId])
 
-  if (loading) return <p>Loading...</p>
-  if (!reviewData) return <p>리뷰가 없습니다</p>
+  // --- Fetch trip info ---
+  useEffect(() => {
+    if (!tripId) return
 
-  // const {
-  //   user_id: reviewUserId,
-  //   place_id: placeId,
-  //   rating,
-  //   content,
-  //   slope,
-  //   width,
-  //   stairs,
-  // } = reviewData
-  // const options = { slope, width, stairs }
+    const fetchTrip = async () => {
+      const { data: tripData, error } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('id', tripId)
+        .single()
 
-  // 리뷰 수정 내용 업데이트
+      if (error) {
+        console.error('Trip 조회 실패:', error)
+        return
+      }
+
+      setTripTitle(tripData.title)
+      setStartDate(tripData.start_date)
+      setEndDate(tripData.end_date)
+    }
+
+    fetchTrip()
+  }, [tripId])
+
+  // --- Fetch place map ---
+  useEffect(() => {
+    if (routes.length === 0) return
+
+    const fetchPlaces = async () => {
+      const ids = Array.from(new Set(routes.flatMap((r) => [r.from, r.to])))
+      const { data, error } = await supabase
+        .from('places')
+        .select('id, place_name')
+        .in('id', ids)
+
+      if (error) {
+        console.error('Places 조회 실패:', error)
+        return
+      }
+
+      const map: Record<number, string> = {}
+      data?.forEach((item) => (map[item.id] = item.place_name))
+      setPlaceMap(map)
+    }
+
+    fetchPlaces()
+  }, [routes])
+
+  // --- Submit handler ---
   const handleSubmit = async () => {
     if (loading) return
-    if (!rating) return alert('별점을 선택해주세요')
-    if (!options.slope || !options.width || !options.stairs)
-      return alert('보행 환경을 선택해주세요')
-    if (!content) return alert('내용을 입력해주세요')
+
+    // Validation
+    if (!rating)
+      return openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '별점 선택',
+        description: '별점을 선택해주세요.',
+      })
+    if (!content)
+      return openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '내용 없음',
+        description: '내용을 입력해주세요.',
+      })
+    if (routes.length !== routeOptions.length)
+      return openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '옵션 오류',
+        description: '경로 옵션이 모두 선택되지 않았습니다.',
+      })
+    const hasEmptyWalk = routes.some(
+      (r, idx) =>
+        r.transport === 'walk' &&
+        (!routeOptions[idx]?.slope ||
+          !routeOptions[idx]?.stairs ||
+          !routeOptions[idx]?.shade),
+    )
+    if (hasEmptyWalk)
+      return openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '보행 옵션 오류',
+        description: '도보 경로의 보행 환경을 모두 선택해주세요.',
+      })
 
     setLoading(true)
-    const { data: newReviewData, error: reviewError } = await supabase
-      .from('reviews')
-      .update({
+
+    try {
+      // 1. 리뷰 업데이트
+      const { error: reviewError } = await supabase
+        .from('reviews')
+        .update({ rating, content })
+        .eq('id', reviewId)
+      if (reviewError) throw reviewError
+
+      // 2. routes 삭제 후 삽입
+      await supabase.from('routes').delete().eq('review_id', reviewId)
+      const routeRows = routes.map((r, idx) => ({
         user_id: userId,
-        place_id: reviewData.place_id,
-        rating,
-        content,
-        slope: options.slope,
-        width: options.width,
-        stairs: options.stairs,
-      })
-      .eq('id', reviewId)
-
-    if (reviewError) {
-      setLoading(false)
-      console.error(reviewError)
-      return alert('리뷰 저장 실패')
-    }
-
-    if (mediaData.length > 0) {
-      const mediaRows = mediaData.map((media) => ({
+        trip_id: tripId,
         review_id: reviewId,
-        file_url: media,
-        file_type: 'image', // 필요하면 분기
+        start: r.from,
+        end: r.to,
+        order: idx + 1,
+        transport_type: r.transport,
+        slope: r.transport === 'walk' ? routeOptions[idx]?.slope : null,
+        stairs: r.transport === 'walk' ? routeOptions[idx]?.stairs : null,
+        shade: r.transport === 'walk' ? routeOptions[idx]?.shade : null,
       }))
+      const { error: routeError } = await supabase
+        .from('routes')
+        .insert(routeRows)
+      if (routeError) throw routeError
 
-      const { error: mediaError } = await supabase
-        .from('media')
-        .insert(mediaRows)
-      if (mediaError) {
-        console.error(mediaError)
-        setLoading(false)
-        return alert('사진 저장 실패')
+      // 3. 이미지 삭제/업로드 처리 (DB 전체 교체)
+      const deletedImages = originalImages.filter(
+        (orig) => !images.find((img) => img.path === orig.path),
+      )
+      if (deletedImages.length > 0) {
+        const { error: storageError } = await supabase.storage
+          .from('media-storage')
+          .remove(deletedImages.map((img) => img.path))
+        if (storageError) throw storageError
       }
+      await supabase.from('images').delete().eq('review_id', reviewId)
+      if (images.length > 0) {
+        const { error: imageError } = await supabase.from('images').insert(
+          images.map((img) => ({
+            review_id: reviewId,
+            file_url: img.url,
+            file_path: img.path,
+          })),
+        )
+        if (imageError) throw imageError
+      }
+
+      router.push(`/review/view?reviewId=${reviewId}`)
+    } catch (err) {
+      console.error('리뷰 수정 실패:', err)
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '수정 실패',
+        description: '리뷰 수정에 실패했습니다.',
+        onConfirm: () => router.back(),
+      })
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
-    alert('수정 완료!')
-    router.push('/')
-  }
-
-  const handleCancel = () => {
-    router.back()
   }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
-      <div className="flex-col w-1/3 self-center">
-        <div className="py-4">
+      <div className="flex-col w-auto self-center">
+        <div className="py-4 flex items-center gap-2">
           <button
             className="text-2xl p-2 cursor-pointer"
-            onClick={() => router.back()}
+            onClick={async () => {
+              if (mediaCleanupRef.current) await mediaCleanupRef.current()
+              router.back()
+            }}
           >
             ←
           </button>
-          <h1 className="inline text-2xl p-4 font-bold">리뷰작성</h1>
+          <h1 className="text-2xl font-bold">리뷰 수정</h1>
         </div>
 
-        <div className="border rounded-xl mb-6 p-6 flex flex-row gap-4 text-gray-400">
-          <div>
-            <Image src="/icon.svg" width={50} height={50} alt="card image" />
-          </div>
-          <div className="flex-col">
-            <div>장소명</div>
-            <div>주소</div>
+        {/* Trip info */}
+        <div className="border rounded-xl mb-6 p-6 flex flex-row gap-4 text-gray-700">
+          <div className="flex flex-col">
+            <div>{tripTitle}</div>
+            <div>
+              {startDate} ~ {endDate}
+            </div>
           </div>
         </div>
 
+        {/* Rating */}
         <div className="text-xl font-bold">전체 평점</div>
         <div className="p-4">
           <RatingSelector rating={rating} setRating={setRating} />
         </div>
 
-        <div className="text-xl font-bold py-4">보행 환경 체크</div>
-        <div className="border rounded-xl mb-6 p-6 flex flex-col text-gray-400">
-          <OptionSelector options={options} onChange={setOptions} />
+        {/* Route options */}
+        <div className="text-xl font-bold py-4">경로별 보행 환경</div>
+        <div className="border rounded-xl mb-6 p-6 flex flex-col text-gray-700">
+          <RouteOptionSelector
+            routes={routes}
+            placeMap={placeMap}
+            options={routeOptions}
+            onChange={setRouteOptions}
+          />
         </div>
 
+        {/* Content */}
         <div className="text-xl font-bold py-4">리뷰 내용</div>
-        <div>
-          <textarea
-            name="content"
-            rows={4}
-            className="resize-none w-full py-4"
-            placeholder=" 뚜벅이 여행자에게 도움이 될 보행환경, 접근성, 추천 팁 등을 자유롭게 작성해주세요"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-          />
-        </div>
+        <textarea
+          name="content"
+          rows={4}
+          className="resize-none w-full py-4"
+          placeholder="뚜벅이 여행자에게 도움이 될 보행환경, 접근성, 추천 팁 등을 작성해주세요"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+        />
 
+        {/* Media uploader */}
         <div className="text-xl font-bold py-4">사진 첨부</div>
-        <div className="mb-6">
-          <MediaUploader
-            supabase={supabase}
-            onUpload={(urls: { url: string; path: string }[]) =>
-              setMedia((prev) => [...prev, ...urls])
-            }
-            onRemove={(urls: { url: string; path: string }[]) => setMedia(urls)}
-          />
-        </div>
+        <EditMediaUploader
+          supabase={supabase}
+          images={images}
+          onUpload={(uploaded) =>
+            setImages((prev) => [
+              ...prev,
+              ...uploaded.map((f) => ({ ...f, isNew: true })),
+            ])
+          }
+          onRemove={setImages}
+          onCleanup={mediaCleanupRef}
+        />
 
-        <button
-          className="w-1/2 bg-black text-white py-3 rounded-lg mb-6 cursor-pointer"
-          onClick={handleSubmit}
-        >
-          {loading ? '등록 중...' : '수정'}
-        </button>
-        <button
-          className="w-1/2 bg-white text-black py-3 border rounded-lg mb-6 cursor-pointer"
-          onClick={handleCancel}
-        >
-          취소
-        </button>
+        {/* Buttons */}
+        <div className="flex gap-2 my-6">
+          <button
+            className="w-1/2 bg-black text-white py-3 rounded-lg cursor-pointer"
+            onClick={() =>
+              openModal({
+                type: 'confirm',
+                variant: 'primary',
+                title: '리뷰를 수정하시겠습니까?',
+                confirmText: '수정',
+                cancelText: '취소',
+                onConfirm: handleSubmit,
+              })
+            }
+          >
+            {loading ? '수정 중...' : '리뷰 수정'}
+          </button>
+          <button
+            className="w-1/2 bg-white text-black py-3 rounded-lg border cursor-pointer"
+            onClick={async () => {
+              if (mediaCleanupRef.current) await mediaCleanupRef.current()
+              router.back()
+            }}
+          >
+            수정 취소
+          </button>
+        </div>
       </div>
     </div>
   )
