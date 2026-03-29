@@ -22,15 +22,74 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
 
+export type TransportType = 'walk' | 'transit' | 'taxi'
+
 // 글로벌 공통 장소 데이터 구조
 export interface Place {
   id: string
-  kakao_place_id?: string // DB(places)와 연결하기 위한 필수 식별 고유키
+  kakao_place_id?: string
   name: string
   category: string
   address: string
   lat: number
   lng: number
+  isNearStation?: boolean
+  transportType?: TransportType
+}
+
+// 두 장소 사이의 예상 이동 시간을 '분' 단위 정수로 계산 (DB 저장용)
+export function calcTravelMinutes(p1: Place, p2: Place, type: TransportType = 'transit'): number {
+  const R = 6371
+  const dLat = (p2.lat - p1.lat) * (Math.PI / 180)
+  const dLon = (p2.lng - p1.lng) * (Math.PI / 180)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(p1.lat * (Math.PI / 180)) *
+      Math.cos(p2.lat * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  const realDist = R * c * 1.4 // 도로 굴곡 보정 1.4배
+
+  let speed = 15
+  let waitTime = 5
+  if (type === 'walk') { speed = 4.5; waitTime = 0 }
+  else if (type === 'taxi') { speed = 25; waitTime = 3 }
+  else if (type === 'transit') { speed = 20; waitTime = 8 }
+
+  return Math.max(1, Math.round((realDist / speed) * 60 + waitTime))
+}
+
+// Day 요약 계산: 총 이동시간(분) + 예상 교통비(원)
+function calcDaySummary(places: Place[]): { totalMins: number; totalCost: number } {
+  let totalMins = 0
+  let totalCost = 0
+
+  for (let i = 0; i < places.length - 1; i++) {
+    const from = places[i]
+    const to = places[i + 1]
+    const mode = from.transportType || 'walk'
+    const mins = calcTravelMinutes(from, to, mode)
+    totalMins += mins
+
+    if (mode === 'transit') {
+      totalCost += 1500 // 대중교통 기본 요금 (버스/지하철 평균)
+    } else if (mode === 'taxi') {
+      // 택시 미터기 기준: 기본요금 4,800원 (1.6km) + 이후 100원/132m
+      const R = 6371
+      const dLat = (to.lat - from.lat) * (Math.PI / 180)
+      const dLon = (to.lng - from.lng) * (Math.PI / 180)
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(from.lat * (Math.PI / 180)) * Math.cos(to.lat * (Math.PI / 180)) * Math.sin(dLon / 2) ** 2
+      const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1.4
+      const baseFare = 4800
+      const extraFare = distKm > 1.6 ? Math.ceil((distKm - 1.6) * 1000 / 132) * 100 : 0
+      totalCost += baseFare + extraFare
+    }
+    // 도보는 0원
+  }
+  return { totalMins, totalCost }
 }
 
 function PlanPageContent() {
@@ -66,6 +125,7 @@ function PlanPageContent() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false) // 사이드바 관리 추가
+  const [isModified, setIsModified] = useState(false) // 수정 여부 추적 추가
 
   const { openModal } = useModalStore()
 
@@ -94,8 +154,8 @@ function PlanPageContent() {
       }
     }
 
-    // 작성 중인 내용이 있다면 모달로 확인
-    if (hasContent) {
+    // 작성 중인 내용이 있고 수정된 사항이 있다면 모달로 확인
+    if (isModified) {
       openModal({
         type: 'confirm',
         variant: 'primary',
@@ -149,8 +209,10 @@ function PlanPageContent() {
             trip_items (
               visit_day,
               visit_order,
+              transport_type,
+              travel_time,
               places (
-                id, kakao_place_id, place_name, category, address, latitude, longitude
+                id, kakao_place_id, place_name, category, address, latitude, longitude, is_near_station
               )
             )
           `,
@@ -162,9 +224,12 @@ function PlanPageContent() {
         if (error || !tripData) {
           console.error('여행 불러오기 에러 상세:', error?.message || error)
           // location 컬럼이 아직 DB에 없을 때 42703 에러가 날 수 있습니다.
-          alert(
-            `여행 정보를 불러올 수 없습니다. (${error?.message || '알 수 없는 에러'})`,
-          )
+          openModal({
+            type: 'alert',
+            variant: 'danger',
+            title: '여행 불러오기 실패',
+            description: `여행 정보를 불러올 수 없습니다.\n(${error?.message || '알 수 없는 에러'})`,
+          })
           return
         }
 
@@ -199,6 +264,8 @@ function PlanPageContent() {
               address: item.places.address || '주소 없음', // DB에서 긁어온 실제 주소 맵핑
               lat: item.places.latitude,
               lng: item.places.longitude,
+              isNearStation: item.places.is_near_station,
+              transportType: item.transport_type as TransportType,
             })
           }
         })
@@ -212,6 +279,8 @@ function PlanPageContent() {
         setPlacesByDay(fetchedPlacesByDay)
         // 불러올 땐 항상 Day 1 탭을 보여줍니다.
         setCurrentDay(1)
+        // 새로 불러왔으므로 수정 사항 없음으로 초기화
+        setIsModified(false)
       } catch (err) {
         console.error('플랜 로딩 중 문제 발생:', err)
       }
@@ -228,6 +297,7 @@ function PlanPageContent() {
     name: string,
     category: string,
     address: string,
+    isNearStation: boolean, // 역세권 여부 파라미터 추가
   ) => {
     const newPlace: Place = {
       id: Date.now().toString(),
@@ -237,11 +307,14 @@ function PlanPageContent() {
       address,
       lat,
       lng,
+      isNearStation,
+      transportType: 'walk', // 기본 이동수단 도보 설정
     }
     setPlacesByDay((prev) => ({
       ...prev,
       [currentDay]: [...(prev[currentDay] || []), newPlace],
     }))
+    setIsModified(true)
   }
 
   const handleReorderPlaces = (startIndex: number, endIndex: number) => {
@@ -251,6 +324,17 @@ function PlanPageContent() {
       dayPlaces.splice(endIndex, 0, removed)
       return { ...prev, [currentDay]: dayPlaces }
     })
+    setIsModified(true)
+  }
+  
+  const handleUpdateTransport = (id: string, type: TransportType) => {
+    setPlacesByDay((prev) => {
+      const dayPlaces = (prev[currentDay] || []).map((p) => 
+        p.id === id ? { ...p, transportType: type } : p
+      )
+      return { ...prev, [currentDay]: dayPlaces }
+    })
+    setIsModified(true)
   }
 
   const handleDeletePlace = (id: string) => {
@@ -258,13 +342,19 @@ function PlanPageContent() {
       ...prev,
       [currentDay]: (prev[currentDay] || []).filter((p) => p.id !== id),
     }))
+    setIsModified(true)
   }
 
   const handleDeleteDay = (dayToDelete: number) => {
     const dayPlaces = placesByDay[dayToDelete] || []
 
     if (Object.keys(placesByDay).length <= 1) {
-      alert('최소 한 개의 날짜는 유지해야 합니다.')
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '날짜 삭제 불가',
+        description: '최소 한 개의 날짜는 유지해야 합니다.',
+      })
       return
     }
 
@@ -297,12 +387,69 @@ function PlanPageContent() {
       } else if (currentDay > dayToDelete) {
         setCurrentDay(currentDay - 1)
       }
-
+      setIsModified(true)
       return newPlacesByDay
     })
   }
 
   const [isSaving, setIsSaving] = useState(false)
+  const [isOptimizing, setIsOptimizing] = useState(false)
+
+  // Gemini AI 동선 최적화 핸들러
+  const handleAiOptimize = async () => {
+    if (currentPlaces.length < 2) {
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '장소 부족',
+        description: '동선 최적화를 위해 현재 Day에 2개 이상의 장소가 필요합니다.',
+      })
+      return
+    }
+
+    setIsOptimizing(true)
+    try {
+      const res = await fetch('/api/ai-optimize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          places: currentPlaces.map((p) => ({
+            id: p.id,
+            name: p.name,
+            category: p.category,
+            lat: p.lat,
+            lng: p.lng,
+            transportType: p.transportType,
+          })),
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      // order 배열 순서대로 places 재정렬
+      const reordered = (data.order as number[]).map((i: number) => currentPlaces[i])
+      setPlacesByDay((prev) => ({ ...prev, [currentDay]: reordered }))
+      setIsModified(true)
+
+      openModal({
+        type: 'alert',
+        variant: 'primary',
+        title: '✨ AI 동선 최적화 완료',
+        description: data.reason,
+      })
+    } catch (err) {
+      console.error(err)
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: 'AI 최적화 실패',
+        description: 'AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+      })
+    } finally {
+      setIsOptimizing(false)
+    }
+  }
 
   // 하드코딩 정보 대신 모달에서 쏴준 데이터(title, startDate, endDate, isPublic)를 파라미터로 받음
   const handleSaveTrip = async (
@@ -312,14 +459,24 @@ function PlanPageContent() {
     isPublic: boolean,
   ) => {
     if (!userId) {
-      alert('로그인이 필요합니다.')
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '로그인 필요',
+        description: '일정을 저장하시려면 로그인이 필요합니다.',
+      })
       return
     }
 
     const totalPlacesCount = Object.values(placesByDay).flat().length
 
     if (totalPlacesCount === 0) {
-      alert('여행 장소를 전체 Day 통틀어 1개 이상 추가해주세요!')
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '장소 부족',
+        description: '여행 장소를 전체 Day 통틀어 1개 이상 추가해주세요!',
+      })
       return
     }
 
@@ -397,7 +554,7 @@ function PlanPageContent() {
                   address: place.address, // 새롭게 추가된 주소 필드 저장 연결!
                   latitude: place.lat,
                   longitude: place.lng,
-                  is_near_station: false,
+                  is_near_station: place.isNearStation ?? false,
                 })
                 .select('id')
                 .single()
@@ -413,19 +570,30 @@ function PlanPageContent() {
 
           // 2-2 trip_items(교차 테이블)에 일정 순서 정보를 연결지어 Insert
           if (dbPlaceId) {
+            // 다음 장소가 있으면 실제 계산된 소요시간(분)을 저장, 마지막 장소는 0
+            const nextPlace = dayPlaces[i + 1]
+            const travelMins = nextPlace
+              ? calcTravelMinutes(place, nextPlace, place.transportType || 'walk')
+              : 0
+
             await supabase.from('trip_items').insert({
               trip_id: tripId,
               place_id: dbPlaceId,
-              visit_day: parseInt(dayStr), // 드디어 Day 구분 정보가 DB에 저장됩니다!
-              visit_order: globalOrder++, // Day 상관없이 전역 순서체계 혹은 Day내 순서 혼용 가능 (현재 스크립트는 전체 순서 유지)
-              transport_type: 'bus', // 이동수단 기본값
-              travel_time: 15, // 소요시간 기본값
+              visit_day: parseInt(dayStr),
+              visit_order: globalOrder++,
+              transport_type: place.transportType || 'walk', // 선택된 이동수단 저장
+              travel_time: travelMins, // 실제 계산된 소요시간(분) 저장
             })
           }
         }
       }
 
-      alert('플랜이 성공적으로 데이터베이스에 저장되었습니다!')
+      openModal({
+        type: 'alert',
+        variant: 'primary',
+        title: '저장 완료',
+        description: '플랜이 내 보관함에 저장되었습니다!',
+      })
 
       // 저장 성공 후 화면 상부의 Badge 정보들도 동기화해줍니다.
       setTripMetadata({
@@ -434,9 +602,16 @@ function PlanPageContent() {
         endDate,
         isPublic,
       })
+      // 저장 성공 후 수정 여부 초기화
+      setIsModified(false)
     } catch (error) {
       console.error(error)
-      alert('저장 중 오류가 발생했습니다.')
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '저장 실패',
+        description: '일정을 저장하는 도중 오류가 발생했습니다.',
+      })
     } finally {
       setIsSaving(false)
     }
@@ -464,8 +639,8 @@ function PlanPageContent() {
       {isSearchOpen && (
         <PlaceSearchModal
           onClose={() => setIsSearchOpen(false)}
-          onSelect={(kakaoId, lat, lng, name, category, addr) => {
-            handleAddPlace(kakaoId, lat, lng, name, category, addr)
+          onSelect={(kakaoId, lat, lng, name, category, addr, isNear) => {
+            handleAddPlace(kakaoId, lat, lng, name, category, addr, isNear)
             setIsSearchOpen(false) // 완추가 후 모달 자동 닫기
           }}
         />
@@ -538,17 +713,42 @@ function PlanPageContent() {
               {/* 곧바로 저장(handleSaveTrip)을 호출하지 않고 팝업(Modal) 상태를 켭니다. */}
               <CommonButton
                 onClick={() => setIsSaveModalOpen(true)}
-                disabled={isSaving || isSaveModalOpen}
-                className="!bg-purple-600 !text-white hover:!bg-purple-700 !rounded-lg px-4 py-2 flex items-center gap-2 text-[13px] font-semibold border-none ml-2 shadow-sm transition-all"
+                disabled={
+                  isSaving ||
+                  isSaveModalOpen ||
+                  (!editTripId ? false : !isModified)
+                }
+                className={`!rounded-lg px-4 py-2 flex items-center gap-2 text-[13px] font-semibold border-none ml-2 shadow-sm transition-all ${
+                  !editTripId || isModified
+                    ? '!bg-purple-600 !text-white hover:!bg-purple-700'
+                    : '!bg-gray-200 !text-gray-400 cursor-not-allowed'
+                }`}
               >
-                {isSaving ? '저장 중...' : '일정 저장하기'}
+                {isSaving
+                  ? '저장 중...'
+                  : editTripId
+                    ? isModified
+                      ? '일정 수정하기'
+                      : '일정 수정하기'
+                    : '일정 저장하기'}
               </CommonButton>
             </div>
           </div>
 
           <div className="mb-2">
-            <CommonButton className="!bg-gray-900 !text-white hover:!bg-gray-800 !rounded-lg px-4 py-2 flex items-center gap-2 text-xs border-none">
-              <Sparkles className="w-3.5 h-3.5" /> AI 동선 최적화
+            <CommonButton
+              onClick={handleAiOptimize}
+              disabled={isOptimizing || currentPlaces.length < 2}
+              className={`!rounded-lg px-4 py-2 flex items-center gap-2 text-xs border-none transition-all ${
+                isOptimizing
+                  ? '!bg-gray-600 !text-gray-300 cursor-not-allowed'
+                  : currentPlaces.length < 2
+                  ? '!bg-gray-300 !text-gray-500 cursor-not-allowed'
+                  : '!bg-gray-900 !text-white hover:!bg-purple-700'
+              }`}
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${isOptimizing ? 'animate-spin' : ''}`} />
+              {isOptimizing ? 'AI 분석 중...' : 'AI 동선 최적화'}
             </CommonButton>
           </div>
         </div>
@@ -598,6 +798,7 @@ function PlanPageContent() {
                   setPlacesByDay((prev) => {
                     const nextDay =
                       Math.max(...Object.keys(prev).map(Number)) + 1
+                    setIsModified(true)
                     return { ...prev, [nextDay]: [] }
                   })
                 }
@@ -608,12 +809,44 @@ function PlanPageContent() {
               </button>
             </div>
 
+            {/* Day 요약 배지: 총 이동시간 + 예상 교통비 */}
+            {currentPlaces.length >= 2 && (() => {
+              const { totalMins, totalCost } = calcDaySummary(currentPlaces)
+              const hours = Math.floor(totalMins / 60)
+              const mins = totalMins % 60
+              const timeStr = hours > 0 ? `${hours}시간 ${mins}분` : `${mins}분`
+              const hasPaidTransit = currentPlaces.some(
+                (p) => p.transportType === 'transit' || p.transportType === 'taxi'
+              )
+              return (
+                <div className="flex items-center gap-2 px-1 mb-2 flex-wrap">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-full text-[11px] font-semibold text-blue-700">
+                    <span>⏱</span>
+                    <span>이동 {timeStr}</span>
+                  </div>
+                  {hasPaidTransit && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-100 rounded-full text-[11px] font-semibold text-amber-700">
+                      <span>💳</span>
+                      <span>교통비 약 {totalCost.toLocaleString('ko-KR')}원~</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1 ml-auto">
+                    {currentPlaces.slice(0, -1).map((p, i) => {
+                      const emoji = p.transportType === 'walk' ? '🚶' : p.transportType === 'transit' ? '🚌' : '🚕'
+                      return <span key={i} className="text-[13px]">{emoji}</span>
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+
             <TimelineList
               places={currentPlaces}
               onReorder={handleReorderPlaces}
               onDelete={handleDeletePlace}
               onOpenSearch={() => setIsSearchOpen(true)}
               onSelectPlace={(pos) => setFocusPlace(pos)}
+              onUpdateTransport={handleUpdateTransport}
             />
           </div>
         </div>
