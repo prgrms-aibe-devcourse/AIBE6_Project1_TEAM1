@@ -50,7 +50,6 @@ export default function ReviewWritePage() {
       } = await supabase.auth.getUser()
 
       setUserId(user?.id ?? null)
-      console.log(userId)
     }
     getUser()
 
