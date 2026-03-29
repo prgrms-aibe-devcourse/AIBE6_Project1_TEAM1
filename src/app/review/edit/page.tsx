@@ -22,6 +22,7 @@ type MediaItem = {
 import EditMediaUploader from '@/components/domain/review/EditMediaUploader'
 import RatingSelector from '@/components/domain/review/RatingSelector'
 import RouteOptionSelector from '@/components/domain/review/RouteOptionSelector'
+import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 
 import Image from 'next/image'
@@ -44,6 +45,7 @@ export default function ReviewWritePage() {
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
   const router = useRouter()
+  const { openModal } = useModalStore()
 
   // url 형식 : /review/edit?reviewId="리뷰번호"
   const searchParams = useSearchParams()
@@ -293,7 +295,6 @@ export default function ReviewWritePage() {
     }
 
     setLoading(false)
-    alert('수정 완료!')
     router.push(`/review/view?reviewId=${reviewId}`)
   }
 
@@ -372,7 +373,16 @@ export default function ReviewWritePage() {
 
         <button
           className="w-1/2 bg-black text-white py-3 rounded-lg mb-6 cursor-pointer"
-          onClick={handleSubmit}
+          onClick={() =>
+            openModal({
+              type: 'confirm',
+              variant: 'primary',
+              title: '리뷰를 수정하시겠습니까?',
+              confirmText: '수정',
+              cancelText: '취소',
+              onConfirm: handleSubmit,
+            })
+          }
         >
           {loading ? '수정 중...' : '리뷰 수정'}
         </button>

@@ -47,12 +47,6 @@ export default function EditMediaUploader({
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
-
-    if (images.length + files.length > MAX_COUNT) {
-      alert(`파일은 최대 ${MAX_COUNT}개까지 업로드 가능합니다.`)
-      return
-    }
-
     const validFiles = Array.from(files).filter((file) => {
       if (file.size > MAX_SIZE) {
         alert(`${file.name} 용량 초과`)
@@ -60,6 +54,12 @@ export default function EditMediaUploader({
       }
       return true
     })
+    const currentCount = images.length
+    const remainingSlots = MAX_COUNT - currentCount
+    if (validFiles.length > remainingSlots) {
+      alert(`파일은 최대 ${MAX_COUNT}개까지 업로드 가능합니다.`)
+      return
+    }
 
     setUploading(true)
 

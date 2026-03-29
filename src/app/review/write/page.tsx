@@ -15,6 +15,7 @@ type RouteOption = {
 import MediaUploader from '@/components/domain/review/MediaUploader'
 import RatingSelector from '@/components/domain/review/RatingSelector'
 import RouteOptionSelector from '@/components/domain/review/RouteOptionSelector'
+import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 
 import Image from 'next/image'
@@ -33,6 +34,7 @@ export default function ReviewWritePage() {
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
   const router = useRouter()
+  const { openModal } = useModalStore()
 
   // url 형식 : /review/write?tripId="일정번호"
   const searchParams = useSearchParams()
@@ -249,7 +251,6 @@ export default function ReviewWritePage() {
     }
 
     setLoading(false)
-    alert('등록 완료!')
     router.push(`/review/view?reviewId=${reviewId}`)
   }
 
@@ -320,7 +321,16 @@ export default function ReviewWritePage() {
 
         <button
           className="w-full bg-black text-white py-3 rounded-lg mb-6 cursor-pointer"
-          onClick={handleSubmit}
+          onClick={() =>
+            openModal({
+              type: 'confirm',
+              variant: 'primary',
+              title: '리뷰를 등록하시겠습니까?',
+              confirmText: '등록',
+              cancelText: '취소',
+              onConfirm: handleSubmit,
+            })
+          }
         >
           {loading ? '등록 중...' : '리뷰 등록'}
         </button>
