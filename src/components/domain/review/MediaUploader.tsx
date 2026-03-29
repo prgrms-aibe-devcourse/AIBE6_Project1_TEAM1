@@ -1,5 +1,6 @@
 'use client'
 
+import { useModalStore } from '@/store/useModalStore'
 import { Camera, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 
@@ -7,6 +8,7 @@ export default function MediaUploader({ supabase, onUpload, onRemove }: any) {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [images, setImages] = useState<{ url: string; path: string }[]>([])
   const [uploading, setUploading] = useState(false)
+  const { openModal } = useModalStore()
 
   const MAX_SIZE = 20 * 1024 * 1024 // 20MB
   const MAX_COUNT = 5
@@ -15,17 +17,32 @@ export default function MediaUploader({ supabase, onUpload, onRemove }: any) {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
-    if (images.length + files.length > MAX_COUNT) {
-      alert(`파일은 최대 ${MAX_COUNT}개까지 업로드 가능합니다.`)
-      return
-    }
     const validFiles = Array.from(files).filter((file) => {
       if (file.size > MAX_SIZE) {
-        alert(`${file.name} 용량 초과`)
-        return false
+        openModal({
+          type: 'alert',
+          variant: 'danger',
+          title: '파일 용량 초과',
+          description: `${file.name} 용량 초과`,
+          onConfirm: () => {
+            return false
+          },
+        })
       }
       return true
     })
+    const currentCount = images.length
+    const remainingSlots = MAX_COUNT - currentCount
+    if (validFiles.length > remainingSlots) {
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '파일 용량 초과',
+        description: `파일은 최대 ${MAX_COUNT}개까지 업로드 가능합니다.`,
+        onConfirm: () => {},
+      })
+      return
+    }
 
     setUploading(true)
     const uploadedUrls: { url: string; path: string }[] = []
@@ -38,7 +55,12 @@ export default function MediaUploader({ supabase, onUpload, onRemove }: any) {
         .upload(fileName, file)
       if (error) {
         console.log(error)
-        alert('파일 형식 및 용량을 확인해주세요')
+        openModal({
+          type: 'alert',
+          variant: 'danger',
+          title: '파일 확인 필요',
+          description: '파일 형식 및 용량을 확인해주세요',
+        })
         continue
       }
 
@@ -67,8 +89,15 @@ export default function MediaUploader({ supabase, onUpload, onRemove }: any) {
       .remove([target.path])
     console.log(error)
     if (error) {
-      alert('삭제 실패')
-      return
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '첨부 취소 실패',
+        description: '사진 첨부 취소에 실패했습니다.',
+        onConfirm: () => {
+          return
+        },
+      })
     }
 
     // 2. state에서 제거

@@ -8,7 +8,7 @@ import {
   useScroll,
   useTransform,
 } from 'framer-motion'
-import { ArrowRight, Download, Map, MessageSquare, Users } from 'lucide-react'
+import { ArrowRight, Download, Map, MessageSquare, Sparkles, Users } from 'lucide-react'
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
@@ -344,6 +344,23 @@ export default function Main() {
           </div>
         </div>
       </section>
+      {/* 5. Floating AI Button: AI 추천 페이지로 이동 */}
+      <motion.button
+        onClick={() => router.push('/ai')}
+        initial={{ opacity: 0, scale: 0.5, y: 30 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        whileHover={{ scale: 1.1, translateY: -5 }}
+        whileTap={{ scale: 0.9 }}
+        className="group fixed bottom-8 right-8 z-[60] flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-tr from-purple-600 to-indigo-500 text-white shadow-2xl shadow-purple-500/40 ring-4 ring-white transition-all hover:shadow-purple-500/60"
+      >
+        <Sparkles className="h-8 w-8 drop-shadow-md" />
+        
+        {/* Tooltip-like label for AI */}
+        <span className="absolute -top-12 right-0 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 md:block hidden">
+          AI 코스 추천받기
+          <span className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-gray-900"></span>
+        </span>
+      </motion.button>
     </div>
   )
 }

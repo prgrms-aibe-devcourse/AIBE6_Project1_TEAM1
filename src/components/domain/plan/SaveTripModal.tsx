@@ -1,8 +1,9 @@
 'use client'
 
-import { X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { X, Upload, ImageIcon, Loader2, Hash } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
 import { useModalStore } from '@/store/useModalStore'
+import { createClient } from '@/utils/supabase/client'
 
 interface SaveTripModalProps {
   onClose: () => void
@@ -11,14 +12,19 @@ interface SaveTripModalProps {
     startDate: string,
     endDate: string,
     isPublic: boolean,
+    imgUrl: string,
+    tags: string,
   ) => Promise<void>
   totalDays: number // 자동으로 종료일을 계산하기 위해 추가
+  userId: string | null // 이미지 업로드 경로 생성을 위해 추가
   initialData?: {
     // 기존 정보를 불러올 때 초기값 세팅용
     title: string
     startDate: string
     endDate: string
     isPublic: boolean
+    imgUrl?: string
+    tags?: string
   }
 }
 
@@ -26,6 +32,7 @@ export default function SaveTripModal({
   onClose,
   onSave,
   totalDays,
+  userId,
   initialData,
 }: SaveTripModalProps) {
   const { openModal } = useModalStore()
@@ -38,7 +45,12 @@ export default function SaveTripModal({
     () => initialData?.endDate || new Date().toISOString().split('T')[0],
   )
   const [isPublic, setIsPublic] = useState(initialData?.isPublic ?? true)
+  const [imgUrl, setImgUrl] = useState(initialData?.imgUrl || '')
+  const [tags, setTags] = useState(initialData?.tags || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 시작일이 바뀌거나 총 일수(Day 탭 개수)가 바뀌면 자동으로 종료일을 계산합니다.
   useEffect(() => {
@@ -51,7 +63,47 @@ export default function SaveTripModal({
     setEndDate(end.toISOString().split('T')[0])
   }, [startDate, totalDays])
 
-  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+  // 이미지 업로드 핸들러
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !userId) return
+
+    setIsUploading(true)
+    const supabase = createClient()
+
+    try {
+      // 1. 파일 이름 생성 (중복 방지를 위해 timestamp 추가)
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${userId}/${Date.now()}.${fileExt}`
+      const filePath = `${fileName}`
+
+      // 2. Supabase Storage 'tripTitleImages' 버킷에 업로드
+      const { error: uploadError } = await supabase.storage
+        .from('tripTitleImages')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      // 3. 업로드된 파일의 Public URL 가져오기
+      const { data } = supabase.storage
+        .from('tripTitleImages')
+        .getPublicUrl(filePath)
+
+      setImgUrl(data.publicUrl)
+    } catch (error: any) {
+      console.error('이미지 업로드 실패:', error.message)
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '이미지 업로드 실패',
+        description: '이미지를 서버에 기록하는 도중 문제가 생겼습니다.',
+      })
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     // 최소한의 방어 로직 (빈 제목 막기)
@@ -79,7 +131,7 @@ export default function SaveTripModal({
     setIsSubmitting(true)
     try {
       // 부모 컴포넌트(Page)가 넘겨준 실제 DB 저장 함수 호출
-      await onSave(title, startDate, endDate, isPublic)
+      await onSave(title, startDate, endDate, isPublic, imgUrl, tags)
       onClose() // 저장이 완전히 성공하면 모달 닫기
     } catch (error) {
       console.error(error)
@@ -111,8 +163,59 @@ export default function SaveTripModal({
         {/* 정보 입력 Form 범위 */}
         <form
           onSubmit={handleSubmit}
-          className="p-5 flex flex-col gap-6 bg-gray-50/50"
+          className="p-5 flex flex-col gap-6 bg-gray-50/50 max-h-[80vh] overflow-y-auto"
         >
+          {/* 대표 이미지 설정 섹션 (업로드 방식) */}
+          <div className="flex flex-col gap-3">
+            <label className="text-[13px] font-bold text-gray-700 flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-purple-600" /> 대표 이미지 설정
+            </label>
+            
+            <div 
+              onClick={() => !isUploading && fileInputRef.current?.click()}
+              className={`group relative w-full h-40 rounded-2xl border-2 border-dashed border-gray-200 bg-white flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all hover:border-purple-300 hover:bg-purple-50/10 ${isUploading ? 'cursor-not-allowed opacity-80' : ''}`}
+            >
+              {imgUrl ? (
+                <>
+                  <img
+                    src={imgUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-white text-[13px] font-bold flex items-center gap-2">
+                      <Upload className="w-4 h-4" /> 이미지 변경
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-gray-400">
+                  <div className="p-3 bg-gray-50 rounded-full group-hover:bg-purple-50 transition-colors">
+                    <Upload className="w-6 h-6 group-hover:text-purple-500" />
+                  </div>
+                  <span className="text-[12px] font-medium">여행을 대표할 사진을 올려주세요</span>
+                  <span className="text-[10px] text-gray-300">최대 30MB / 이미지 파일만 가능</span>
+                </div>
+              )}
+
+              {/* 로딩 표시 */}
+              {isUploading && (
+                <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center">
+                  <Loader2 className="w-6 h-6 text-purple-600 animate-spin mb-2" />
+                  <span className="text-[12px] font-bold text-purple-600">업로드 중...</span>
+                </div>
+              )}
+            </div>
+            
+            <input 
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="title"
@@ -130,6 +233,27 @@ export default function SaveTripModal({
               className="w-full px-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-[14px] text-gray-900 shadow-sm transition-all"
               autoFocus
             />
+          </div>
+
+          {/* 해시태그 입력 섹션 추가 */}
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="tags"
+              className="text-[13px] font-bold text-gray-700 flex items-center gap-2"
+            >
+              <Hash className="w-4 h-4 text-purple-600" /> 태그 입력
+            </label>
+            <input
+              id="tags"
+              type="text"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="#제주 #여행 #맛집 (공백으로 구분)"
+              className="w-full px-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-[14px] text-gray-900 shadow-sm transition-all"
+            />
+            <p className="text-[10px] text-gray-400 mt-0.5">
+              * 해시태그를 공백이나 #으로 구분하여 입력해주세요.
+            </p>
           </div>
 
           <div className="flex gap-4 w-full">
@@ -199,7 +323,7 @@ export default function SaveTripModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploading}
               className="px-6 py-3 text-[14px] font-semibold text-white bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 disabled:cursor-not-allowed rounded-xl transition-colors shadow-sm flex items-center justify-center min-w-[110px]"
             >
               {isSubmitting ? (

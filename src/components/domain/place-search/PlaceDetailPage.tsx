@@ -337,6 +337,7 @@ function normalizeShadeLabel(value?: string | null) {
 
 const SummaryCard = ({ icon: Icon, label, value }: SummaryCardProps) => (
   <div className="flex flex-col items-center justify-center space-y-1 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+
     <Icon className="h-5 w-5 text-gray-400" />
     <span className="text-[10px] font-medium text-gray-400">{label}</span>
     <span className="text-sm font-bold text-gray-900">{value}</span>
@@ -483,6 +484,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
 
         console.log('[fetchTripDetail] start', { tripId })
 
+
         const { data: tripRow, error: tripError } = await supabase
           .from('trips')
           .select(
@@ -505,6 +507,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
           setErrorMessage('')
           return
         }
+
 
         const { data: tripItemsRows, error: tripItemsError } = await supabase
           .from('trip_items')
@@ -529,6 +532,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
               .map((item) => item.place_id)
               .filter((id): id is number => typeof id === 'number'),
           ),
+
         ]
 
         let placeMap = new Map<number, Place>()
@@ -545,6 +549,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
             console.error('[fetchTripDetail] places query error:', placesError)
             throw placesError
           }
+
 
           placeMap = new Map(
             (placeRows ?? []).map((place) => [place.id, place]),
@@ -634,6 +639,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
           routesCount: mappedReviewRoutes.length,
         })
 
+
         setTrip(tripRow)
         setDetailItems(mergedItems)
         setReviews(reviewRows ?? [])
@@ -671,14 +677,18 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
         if (isMounted) {
           setIsLoading(false)
         }
+
       }
     }
 
     fetchTripDetail()
+<<<<<<< HEAD
 
     return () => {
       isMounted = false
     }
+=======
+>>>>>>> main
   }, [supabase, tripId])
 
   if (isLoading) {
@@ -964,18 +974,20 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
               <button
                 type="button"
                 className="rounded-xl px-3 py-1.5 text-sm font-bold text-gray-900"
-              >
+
                 최신순
               </button>
               <button
                 type="button"
                 className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700"
+
               >
                 평점순
               </button>
               <button
                 type="button"
                 className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700"
+
               >
                 사진순
               </button>
@@ -1036,6 +1048,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                                 ? review.rating.toFixed(1)
                                 : '-'}
                             </span>
+
                           </div>
                         </div>
                       </div>
@@ -1107,6 +1120,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                     </div>
                   )
                 })
+
               ) : (
                 <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
                   <div className="flex justify-between">
