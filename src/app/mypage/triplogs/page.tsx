@@ -1,71 +1,136 @@
 'use client'
 
 import TravelCard from '@/components/display/TravelCard';
-import { motion } from 'framer-motion';
-import { ChevronLeft, Footprints, Route, Search, Trophy } from 'lucide-react';
+import StatCardGroup from '@/components/domain/my-page/StatCardGroup';
+import { createClient } from '@/utils/supabase/client';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, Search, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
-// Dummy data for travel history
-const HISTORY_DATA = [
-  {
-    id: '1',
-    title: '부산 영도 흰여울마을 & 감천문화마을',
-    date: '2024.03.15',
-    memo: '부산의 파란 바다를 실컷 보며 걸었던 하루',
-    status: 'Completed' as const,
-    imageUrl: '/images/jeju-east.png',
-    distance: 4.2,
-    time: '3시간',
-  },
-  {
-    id: '2',
-    title: '서울 경복궁 & 서촌 역사 산책',
-    date: '2024.02.28',
-    memo: '눈 내린 고궁의 고즈넉함과 서촌의 아기자기한 매력',
-    status: 'Completed' as const,
-    imageUrl: '/images/jeju-east.png',
-    distance: 3.5,
-    time: '2시간 30분',
-  },
-  {
-    id: '3',
-    title: '제주 올레길 7코스 완주',
-    date: '2024.02.10',
-    memo: '외돌개에서 만난 환상적인 일몰',
-    status: 'Completed' as const,
-    imageUrl: '/images/jeju-east.png',
-    distance: 14.8,
-    time: '5시간',
-  },
-  {
-    id: '4',
-    title: '경주 불국사 & 다보탑 가을 나들이',
-    date: '2023.11.20',
-    memo: '단풍이 무르익은 불국사 사계절 중 최고',
-    status: 'Completed' as const,
-    imageUrl: '/images/jeju-east.png',
-    distance: 2.8,
-    time: '2시간',
-  },
-];
+interface TripLog {
+  id: string;
+  title: string;
+  date: string;
+  memo: string;
+  status: 'Completed';
+  imageUrl: string;
+  distance: number;
+  time: string;
+  spotCount: number;
+  cost: number;
+  rating: number;
+  reviewCount: number;
+}
 
-const STATS = [
-  { label: '총 거리', value: '142.5', unit: 'km', icon: Route, color: 'text-purple-600', bgColor: 'bg-purple-50' },
-  { label: '완주한 코스', value: '48', unit: '코스', icon: Trophy, color: 'text-blue-500', bgColor: 'bg-blue-50' },
-  { label: '총 이동시간', value: '254,821', unit: '시간', icon: Footprints, color: 'text-pink-500', bgColor: 'bg-pink-50' },
-];
-
-export default function HaveBeenPage() {
+export default function TriplogsPage() {
+  const [trips, setTrips] = useState<TripLog[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const supabase = createClient();
 
-  const filteredHistory = HISTORY_DATA.filter(item => 
+  useEffect(() => {
+    const fetchTrips = async () => {
+      try {
+        setLoading(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const userId = session.user.id;
+
+        // 1. Fetch user's trips
+        const { data: tripsData, error: tripsError } = await supabase
+          .from('trips')
+          .select('*')
+          .eq('user_id', userId)
+          .order('start_date', { ascending: false });
+
+        if (tripsError) throw tripsError;
+
+        if (!tripsData || tripsData.length === 0) {
+          setTrips([]);
+          return;
+        }
+
+        const tripIds = tripsData.map(t => t.id);
+
+        // 2. Fetch trip items to get spot counts
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('trip_items')
+          .select('trip_id')
+          .in('trip_id', tripIds);
+
+        if (itemsError) throw itemsError;
+
+        // 3. Fetch reviews to get ratings
+        const { data: reviewsData, error: reviewsError } = await supabase
+          .from('reviews')
+          .select('*') // Get all fields to calculate count properly
+          .in('trip_id', tripIds);
+
+        if (reviewsError) throw reviewsError;
+
+        // Transform data
+        const transformedTrips: TripLog[] = tripsData.map(trip => {
+          const tripItems = itemsData?.filter(item => item.trip_id === trip.id) || [];
+          const tripReviews = reviewsData?.filter(rev => rev.trip_id === trip.id) || [];
+          
+          const avgRating = tripReviews.length > 0 
+            ? tripReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / tripReviews.length 
+            : 0;
+
+          // Format time (assuming total_travel_time is in minutes)
+          const totalMinutes = trip.total_travel_time || 0;
+          const hours = Math.floor(totalMinutes / 60);
+          const mins = totalMinutes % 60;
+          const timeStr = hours > 0 ? `${hours}시간 ${mins > 0 ? `${mins}분` : ''}` : `${mins}분`;
+
+          return {
+            id: String(trip.id),
+            title: trip.title || '제목 없는 여행',
+            date: trip.start_date ? new Date(trip.start_date).toLocaleDateString() : '-',
+            memo: '', 
+            status: 'Completed',
+            imageUrl: '/images/jeju-east.png', 
+            distance: trip.total_distance || 0,
+            time: timeStr,
+            spotCount: tripItems.length,
+            cost: trip.total_cost || 0,
+            rating: Number(avgRating.toFixed(1)),
+            reviewCount: tripReviews.length
+          };
+        });
+
+        setTrips(transformedTrips);
+      } catch (error) {
+        console.error('Error fetching trips:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTrips();
+  }, []);
+
+  const overallStats = useMemo(() => {
+    const totalDistance = trips.reduce((sum, t) => sum + t.distance, 0);
+    const tripCount = trips.length;
+    const reviewCount = trips.reduce((sum, t) => sum + t.reviewCount, 0);
+
+    return {
+      triplogCount: tripCount,
+      totalDistance: Number(totalDistance.toFixed(1)),
+      reviewCount
+    };
+  }, [trips]);
+
+  const filteredHistory = trips.filter(item => 
     item.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-gray-50/50">
-      {/* 1. Header Area (Clean White) */}
+      {/* 1. Header Area */}
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
@@ -81,31 +146,13 @@ export default function HaveBeenPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-        {/* 2. Stats Section (Individual White Cards) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {STATS.map((stat, i) => {
-            const Icon = stat.icon;
-            return (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="flex flex-col items-center justify-center p-8 rounded-3xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-              >
-                <div className={`mb-6 p-4 rounded-2xl ${stat.bgColor} ${stat.color}`}>
-                  <Icon className="h-8 w-8" />
-                </div>
-                <div className="text-center">
-                  <span className="block text-sm font-bold text-gray-400 mb-1 uppercase tracking-tight">{stat.label}</span>
-                  <div className="flex items-baseline justify-center gap-1.5">
-                    <span className="text-4xl font-extrabold text-gray-900 tracking-tight">{stat.value}</span>
-                    <span className="text-xs font-bold text-gray-400">{stat.unit}</span>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+        {/* 2. Stats Section - Unified design */}
+        <div className="mb-12">
+            <StatCardGroup 
+                triplogCount={overallStats.triplogCount}
+                totalDistance={overallStats.totalDistance}
+                reviewCount={overallStats.reviewCount}
+            />
         </div>
 
         {/* 3. List Container */}
@@ -117,7 +164,7 @@ export default function HaveBeenPage() {
                 <span className="h-6 w-1 rounded-full bg-purple-500" />
                 <h2 className="text-xl font-bold text-gray-900">기록 리스트</h2>
                 <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full ml-1">
-                  {filteredHistory.length}
+                  {!loading ? filteredHistory.length : '-'}
                 </span>
               </div>
               
@@ -135,37 +182,53 @@ export default function HaveBeenPage() {
 
             {/* History List */}
             <div className="space-y-6">
-              {filteredHistory.map((trip, index) => (
-                <TravelCard
-                  key={trip.id}
-                  id={trip.id}
-                  variant="horizontal"
-                  title={trip.title}
-                  imageUrl={trip.imageUrl}
-                  category="추억 기록"
-                  isHot={false}
-                  summary={{
-                    totalDistance: trip.distance,
-                    totalTime: trip.time,
-                    spotCount: 4,
-                    estimatedCost: 15000,
-                    saveCount: 0
-                  }}
-                  avgStats={{
-                    incline: '평지',
-                    stairs: '없음',
-                    shade: '보통'
-                  }}
-                  rating={4.8}
-                  reviewCount={1}
-                  isKept={true}
-                />
-              ))}
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <Loader2 className="h-10 w-10 text-purple-500 animate-spin mb-4" />
+                  <p className="text-sm font-medium text-gray-400">데이터를 불러오는 중입니다...</p>
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {filteredHistory.map((trip, index) => (
+                    <motion.div
+                      key={trip.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <TravelCard
+                        id={trip.id}
+                        variant="horizontal"
+                        title={trip.title}
+                        imageUrl={trip.imageUrl}
+                        category="추억 기록"
+                        isHot={false}
+                        summary={{
+                          totalDistance: trip.distance,
+                          totalTime: trip.time,
+                          spotCount: trip.spotCount,
+                          estimatedCost: trip.cost,
+                          saveCount: 0
+                        }}
+                        avgStats={{
+                          incline: '평지',
+                          stairs: '없음',
+                          shade: '보통'
+                        }}
+                        rating={trip.rating}
+                        reviewCount={trip.reviewCount}
+                        isKept={true}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
 
-              {filteredHistory.length === 0 && (
+              {!loading && filteredHistory.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 text-center text-gray-400">
                   <Search className="h-10 w-10 mb-4 opacity-20" />
-                  <p className="text-sm font-medium">검색 결과가 없습니다.</p>
+                  <p className="text-sm font-medium">기록이 없거나 검색 결과가 없습니다.</p>
                 </div>
               )}
             </div>
