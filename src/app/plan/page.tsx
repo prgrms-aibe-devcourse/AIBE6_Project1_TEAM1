@@ -59,10 +59,11 @@ export function calcTravelMinutes(p1: Place, p2: Place, type: TransportType = 't
   return Math.max(1, Math.round((realDist / speed) * 60 + waitTime))
 }
 
-// Day 요약 계산: 총 이동시간(분) + 예상 교통비(원)
-function calcDaySummary(places: Place[]): { totalMins: number; totalCost: number } {
+// Day 요약 계산: 총 이동시간(분) + 예상 교통비(원) + 총 이동 거리(km)
+function calcDaySummary(places: Place[]): { totalMins: number; totalCost: number; totalDistance: number } {
   let totalMins = 0
   let totalCost = 0
+  let totalDistance = 0
 
   for (let i = 0; i < places.length - 1; i++) {
     const from = places[i]
@@ -71,24 +72,41 @@ function calcDaySummary(places: Place[]): { totalMins: number; totalCost: number
     const mins = calcTravelMinutes(from, to, mode)
     totalMins += mins
 
+    // 거리 계산 (km)
+    const R = 6371
+    const dLat = (to.lat - from.lat) * (Math.PI / 180)
+    const dLon = (to.lng - from.lng) * (Math.PI / 180)
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(from.lat * (Math.PI / 180)) * Math.cos(to.lat * (Math.PI / 180)) * Math.sin(dLon / 2) ** 2
+    const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1.4
+    totalDistance += distKm
+
     if (mode === 'transit') {
-      totalCost += 1500 // 대중교통 기본 요금 (버스/지하철 평균)
+      totalCost += 1500 // 대중교통 기본 요금
     } else if (mode === 'taxi') {
-      // 택시 미터기 기준: 기본요금 4,800원 (1.6km) + 이후 100원/132m
-      const R = 6371
-      const dLat = (to.lat - from.lat) * (Math.PI / 180)
-      const dLon = (to.lng - from.lng) * (Math.PI / 180)
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(from.lat * (Math.PI / 180)) * Math.cos(to.lat * (Math.PI / 180)) * Math.sin(dLon / 2) ** 2
-      const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1.4
       const baseFare = 4800
       const extraFare = distKm > 1.6 ? Math.ceil((distKm - 1.6) * 1000 / 132) * 100 : 0
       totalCost += baseFare + extraFare
     }
-    // 도보는 0원
   }
-  return { totalMins, totalCost }
+  return { totalMins, totalCost, totalDistance }
+}
+
+// 전체 여행 요약 계산 (모든 Day 합산)
+function calcTripSummary(placesByDay: Record<number, Place[]>) {
+  let totalMins = 0
+  let totalCost = 0
+  let totalDistance = 0
+
+  Object.values(placesByDay).forEach((places) => {
+    const summary = calcDaySummary(places)
+    totalMins += summary.totalMins
+    totalCost += summary.totalCost
+    totalDistance += summary.totalDistance
+  })
+
+  return { totalMins, totalCost, totalDistance }
 }
 
 function PlanPageContent() {
@@ -479,6 +497,9 @@ function PlanPageContent() {
       return
     }
 
+    // 전체 통계 계산 (저장용)
+    const { totalMins, totalCost, totalDistance } = calcTripSummary(placesByDay)
+
     setIsSaving(true)
     try {
       const supabase = createClient()
@@ -494,6 +515,10 @@ function PlanPageContent() {
             start_date: startDate,
             end_date: endDate,
             is_public: isPublic,
+            total_travel_time: totalMins,
+            total_cost: totalCost,
+            total_distance: totalDistance,
+            is_saved: true,
           })
           .select()
           .single()
@@ -511,6 +536,10 @@ function PlanPageContent() {
             start_date: startDate,
             end_date: endDate,
             is_public: isPublic,
+            total_travel_time: totalMins,
+            total_cost: totalCost,
+            total_distance: totalDistance,
+            is_saved: true,
           })
           .eq('id', editTripId)
           .eq('user_id', userId)
