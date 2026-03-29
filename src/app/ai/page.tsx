@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react'
 import type { AIPlace, AIRecommendResponse } from '@/app/api/ai-recommend/route'
 
 // ─── Import: Layout 컴포넌트 ───
-import GlobalHeader from '@/components/layout/GlobalHeader'
 import PageContainer from '@/components/layout/PageContainer'
 
 // ─── Import: AI 도메인 컴포넌트 ───
@@ -196,7 +195,6 @@ export default function AIPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fafafa]">
-      <GlobalHeader />
 
       <PageContainer className="flex-1 py-8">
         {/* 로딩 오버레이 */}
