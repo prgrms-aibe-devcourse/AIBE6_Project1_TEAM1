@@ -1,12 +1,12 @@
 'use client'
 
-import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
 import EditMediaUploader from '@/components/domain/review/EditMediaUploader'
 import RatingSelector from '@/components/domain/review/RatingSelector'
 import RouteOptionSelector from '@/components/domain/review/RouteOptionSelector'
+import GlobalHeader from '@/components/layout/GlobalHeader'
 import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 
@@ -293,9 +293,10 @@ export default function ReviewEditPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
       <div className="flex-col w-auto self-center">
+        <GlobalHeader />
         <div className="py-4 flex items-center gap-2">
           <button
-            className="text-2xl p-2"
+            className="text-2xl p-2 cursor-pointer"
             onClick={async () => {
               if (mediaCleanupRef.current) await mediaCleanupRef.current()
               router.back()
@@ -308,7 +309,6 @@ export default function ReviewEditPage() {
 
         {/* Trip info */}
         <div className="border rounded-xl mb-6 p-6 flex flex-row gap-4 text-gray-700">
-          <Image src="/icon.svg" width={50} height={50} alt="trip image" />
           <div className="flex flex-col">
             <div>{tripTitle}</div>
             <div>
@@ -361,9 +361,9 @@ export default function ReviewEditPage() {
         />
 
         {/* Buttons */}
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2 my-6">
           <button
-            className="w-1/2 bg-black text-white py-3 rounded-lg"
+            className="w-1/2 bg-black text-white py-3 rounded-lg cursor-pointer"
             onClick={() =>
               openModal({
                 type: 'confirm',
@@ -378,7 +378,7 @@ export default function ReviewEditPage() {
             {loading ? '수정 중...' : '리뷰 수정'}
           </button>
           <button
-            className="w-1/2 bg-white text-black py-3 rounded-lg border"
+            className="w-1/2 bg-white text-black py-3 rounded-lg border cursor-pointer"
             onClick={async () => {
               if (mediaCleanupRef.current) await mediaCleanupRef.current()
               router.back()

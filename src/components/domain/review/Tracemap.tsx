@@ -16,14 +16,16 @@ type TripItem = {
   latitude: number
   longitude: number
 }
+
 type Trips = Record<string, TripItem[]>
 
+// ---------------- HSV → HEX (trip 색상용)
 function HSVtoHex(h: number, s = 100, v = 100): string {
   s /= 100
   v /= 100
-  const c = v * s,
-    x = c * (1 - Math.abs(((h / 60) % 2) - 1)),
-    m = v - c
+  const c = v * s
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1))
+  const m = v - c
   let r = 0,
     g = 0,
     b = 0
@@ -39,48 +41,122 @@ function HSVtoHex(h: number, s = 100, v = 100): string {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
 }
 
+// ---------------- tripId → 고정 색상
+// function getColorByTripId(tripId: string): string {
+//   const hash = tripId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
+//   return HSVtoHex(hash % 360, 80, 90)
+// }
 function getColorByTripId(tripId: string): string {
-  const hash = tripId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
-  return HSVtoHex(hash % 360, 80, 90)
+  // 1. SDBM 해시로 고유 숫자 생성
+  let hash = 0
+  for (let i = 0; i < tripId.length; i++) {
+    hash = tripId.charCodeAt(i) + (hash << 6) + (hash << 16) - hash
+  }
+
+  // 2. 황금비(Golden Ratio Conjugate)를 활용한 색상 분산
+  // 이 상수를 더해주면 색상환(0~360)에서 색이 아주 골고루 퍼지게 돼.
+  const goldenRatioConjugate = 0.618033988749895
+  let h = Math.abs(hash) * goldenRatioConjugate
+  h = (h % 1) * 360 // 0~360 사이의 값으로 변환
+
+  // 3. 채도와 명도를 고정해서 선명한 색 유지
+  // S(채도): 80%, V(명도): 90% 정도면 아주 쨍한 색이 나와.
+  return HSVtoHex(h, 80, 90)
 }
 
+// ---------------- Supabase에서 trip_items 가져오기
+// ---------------- Supabase에서 trip_items + places(좌표) 가져오기
 async function getUserTripItemsWithCoords(userId: string): Promise<Trips> {
+  // 1. 사용자가 작성한 리뷰의 trip_id 목록 가져오기
   const { data: reviews } = await supabase
     .from('reviews')
     .select('trip_id')
     .eq('user_id', userId)
-  if (!reviews) return {}
+
+  if (!reviews || reviews.length === 0) return {}
+
   const tripIds = reviews.map((r) => r.trip_id)
-  const { data: tripItems } = await supabase
+
+  // 2. trip_items를 가져오면서 places 테이블의 좌표를 Join해서 가져오기
+  // 'places!inner(latitude, longitude)'는 외래키 관계일 때 사용 가능해.
+  // 만약 관계 설정이 안 되어 있다면 개별 쿼리를 해야 하지만, 보통은 이렇게 한 번에 가져와.
+  const { data: tripItems, error } = await supabase
     .from('trip_items')
-    .select('trip_id, visit_order, latitude, longitude')
+    .select(
+      `
+      trip_id, 
+      visit_order, 
+      place_id,
+      places (
+        latitude,
+        longitude
+      )
+    `,
+    )
     .in('trip_id', tripIds)
-  if (!tripItems) return {}
+
+  if (error || !tripItems) {
+    console.error('데이터 로드 에러:', error)
+    return {}
+  }
+
   const trips: Trips = {}
-  tripItems.forEach((item) => {
-    if (!trips[item.trip_id]) trips[item.trip_id] = []
-    trips[item.trip_id].push(item)
+
+  tripItems.forEach((item: any) => {
+    // places 데이터가 있는지 안전하게 확인
+    if (item.places) {
+      if (!trips[item.trip_id]) trips[item.trip_id] = []
+      trips[item.trip_id].push({
+        trip_id: item.trip_id,
+        visit_order: item.visit_order,
+        latitude: item.places.latitude,
+        longitude: item.places.longitude,
+      })
+    }
   })
-  for (let tripId in trips)
+
+  // 방문 순서대로 정렬
+  for (let tripId in trips) {
     trips[tripId].sort((a, b) => a.visit_order - b.visit_order)
+  }
+
   return trips
 }
 
+// ---------------- 지도에 마커 + Polyline 표시
 function showTripsOnMap(map: any, trips: Trips) {
+  // 1. 모든 좌표를 포함할 범위를 계산하는 객체 생성
+  const bounds = new window.kakao.maps.LatLngBounds()
+  let hasCoords = false
+
   Object.keys(trips).forEach((tripId) => {
     const items = trips[tripId]
     const coords: any[] = []
 
     items.forEach((item) => {
       const { latitude, longitude, visit_order } = item
-      const position = new window.kakao.maps.LatLng(latitude, longitude)
+      const lat = Number(item.latitude)
+      const lng = Number(item.longitude)
+
+      if (isNaN(lat) || isNaN(lng)) {
+        console.warn(
+          `유효하지 않은 좌표 데이터: trip ${tripId}, order ${item.visit_order}`,
+        )
+        return
+      }
+      const position = new window.kakao.maps.LatLng(lat, lng)
       coords.push(position)
 
+      // 2. 이 좌표를 범위(bounds)에 포함시킴
+      bounds.extend(position)
+      hasCoords = true
+
+      // --- 마커 생성 로직 (기존과 동일) ---
       const svgMarker = `
-<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36">
-  <circle cx="18" cy="18" r="16" fill="${getColorByTripId(tripId)}" stroke="#fff" stroke-width="3"/>
-  <text x="18" y="22" font-size="14" font-family="Arial" fill="#fff" text-anchor="middle" alignment-baseline="middle">${visit_order}</text>
-</svg>`
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+          <circle cx="18" cy="18" r="16" fill="${getColorByTripId(tripId)}" stroke="#fff" stroke-width="3"/>
+          <text x="18" y="22" font-size="14" font-family="Arial" fill="#fff" text-anchor="middle" alignment-baseline="middle">${visit_order}</text>
+        </svg>`
       const blob = new Blob([svgMarker], { type: 'image/svg+xml' })
       const url = URL.createObjectURL(blob)
 
@@ -92,13 +168,7 @@ function showTripsOnMap(map: any, trips: Trips) {
         ),
       })
       marker.setMap(map)
-
-      const infowindow = new window.kakao.maps.InfoWindow({
-        content: `<div style="padding:5px;">Trip ${tripId} - 순서 ${visit_order}</div>`,
-      })
-      window.kakao.maps.event.addListener(marker, 'click', () =>
-        infowindow.open(map, marker),
-      )
+      // ---------------------------------
     })
 
     const polyline = new window.kakao.maps.Polyline({
@@ -110,8 +180,14 @@ function showTripsOnMap(map: any, trips: Trips) {
     })
     polyline.setMap(map)
   })
+
+  // 3. 만약 데이터가 있다면, 지도 범위를 해당 좌표들이 모두 보이는 곳으로 이동
+  if (hasCoords) {
+    map.setBounds(bounds)
+  }
 }
 
+// ---------------- TraceMap 컴포넌트
 interface KakaoTripMapProps {
   userId: string
 }
@@ -120,39 +196,45 @@ export default function TraceMap({ userId }: KakaoTripMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    let script: HTMLScriptElement | null = null
+    if (!mapRef.current) return
 
-    const loadMap = async () => {
-      if (!window.kakao) {
-        script = document.createElement('script')
-        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_APP_KEY}&libraries=services,clusterer`
-        script.async = true
-        document.head.appendChild(script)
-
-        script.onload = async () => {
-          const map = new window.kakao.maps.Map(mapRef.current, {
-            center: new window.kakao.maps.LatLng(37.5665, 126.978),
-            level: 5,
-          })
-          const trips = await getUserTripItemsWithCoords(userId)
-          showTripsOnMap(map, trips)
+    const loadKakaoMap = () => {
+      return new Promise<void>((resolve) => {
+        // 이미 로드되어 있다면 바로 해결
+        if (window.kakao && window.kakao.maps && window.kakao.maps.LatLng) {
+          return resolve()
         }
-      } else {
-        const map = new window.kakao.maps.Map(mapRef.current, {
-          center: new window.kakao.maps.LatLng(37.5665, 126.978),
-          level: 5,
-        })
-        const trips = await getUserTripItemsWithCoords(userId)
-        showTripsOnMap(map, trips)
-      }
+
+        const script = document.createElement('script')
+        // 핵심: URL 끝에 &autoload=false 추가
+        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_APP_KEY}&libraries=services,clusterer&autoload=false`
+        script.async = true
+
+        script.onload = () => {
+          // autoload=false일 때는 반드시 kakao.maps.load 콜백 안에서 로직을 실행해야 함
+          window.kakao.maps.load(() => {
+            resolve()
+          })
+        }
+
+        document.head.appendChild(script)
+      })
     }
 
-    loadMap()
+    const initMap = async () => {
+      await loadKakaoMap()
+      if (!mapRef.current) return
 
-    // 항상 cleanup 함수 반환
-    return () => {
-      if (script) document.head.removeChild(script)
+      const map = new window.kakao.maps.Map(mapRef.current, {
+        center: new window.kakao.maps.LatLng(37.5665, 126.978),
+        level: 5,
+      })
+
+      const trips = await getUserTripItemsWithCoords(userId)
+      showTripsOnMap(map, trips)
     }
+
+    initMap()
   }, [userId])
 
   return <div ref={mapRef} style={{ width: '100%', height: '100%' }} />

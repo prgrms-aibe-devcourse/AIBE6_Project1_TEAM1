@@ -1,5 +1,6 @@
 'use client'
 
+import GlobalHeader from '@/components/layout/GlobalHeader'
 import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
@@ -147,12 +148,30 @@ export default function ReviewViewPage() {
     fetchData()
   }, [reviewId])
 
+  const getTransportIcon = (transport: string) => {
+    switch (transport) {
+      case 'walk':
+        return '👟'
+      case 'bus':
+        return '🚍'
+      case 'subway':
+        return '🚇'
+      case 'taxi':
+        return '🚖'
+      case 'transit':
+        return '🚌'
+      default:
+        return '❓'
+    }
+  }
+
   if (loading) return <div>로딩 중...</div>
   if (!review) return <div>데이터 없음</div>
 
   return (
     <div className="min-h-screen flex flex-col items-center">
       <div className="flex-col w-1/3 self-center">
+        <GlobalHeader />
         <div className="py-4">
           <button
             className="text-2xl p-2 cursor-pointer"
@@ -185,10 +204,16 @@ export default function ReviewViewPage() {
             const opt = routeOptions[index]
 
             return (
-              <div key={index} className="border-b py-2">
+              <div
+                key={index}
+                className="flex items-center justify-between border-b py-2 text-center"
+              >
                 <div>
                   {placeMap[route.from] ?? route.from} →
                   {placeMap[route.to] ?? route.to}
+                  <div className="flex flex-col items-center justify-center w-20 text-2xl">
+                    {getTransportIcon(route.transport)}
+                  </div>
                 </div>
 
                 <div className="text-sm text-gray-600">

@@ -3,10 +3,10 @@
 import MediaUploader from '@/components/domain/review/MediaUploader'
 import RatingSelector from '@/components/domain/review/RatingSelector'
 import RouteOptionSelector from '@/components/domain/review/RouteOptionSelector'
+import GlobalHeader from '@/components/layout/GlobalHeader'
 import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 
-import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
@@ -226,6 +226,7 @@ export default function ReviewWritePage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
       <div className="flex-col w-auto self-center">
+        <GlobalHeader />
         <div className="py-4">
           <button
             className="text-2xl p-2 cursor-pointer"
@@ -237,9 +238,6 @@ export default function ReviewWritePage() {
         </div>
 
         <div className="border rounded-xl mb-6 p-6 flex flex-row gap-4 text-gray-700">
-          <div>
-            <Image src="/icon.svg" width={50} height={50} alt="card image" />
-          </div>
           <div className="flex-col">
             <div>{tripTitle}</div>
             <div>
@@ -296,28 +294,28 @@ export default function ReviewWritePage() {
               })
             }
 
-            if (routes.length !== routeOptions.length) {
-              return openModal({
-                type: 'alert',
-                variant: 'danger',
-                title: '경로 옵션 선택',
-                description: '경로 옵션이 모두 선택되지 않았습니다.',
-              })
-            }
+            // 1️⃣ walk 경로만 필수 옵션 체크
+            const walkRoutes = routes
+              .map((route, index) => ({ route, index }))
+              .filter(({ route }) => route.transport === 'walk')
 
-            const hasEmpty = routes.some((route, index) => {
-              if (route.transport !== 'walk') return false
+            const hasEmpty = walkRoutes.some(({ index }) => {
               const opt = routeOptions[index]
-              return !opt?.slope || !opt?.stairs || !opt?.shade
+              return !opt || !opt.slope || !opt.stairs || !opt.shade
             })
+
             if (hasEmpty) {
-              return openModal({
+              openModal({
                 type: 'alert',
                 variant: 'danger',
                 title: '보행 환경 선택 오류',
-                description: '도보 경로의 보행 환경을 모두 선택해주세요.',
+                description: '도보 경로의 보행 환경을 모두 선택해주세요',
               })
+              return
             }
+
+            // 2️⃣ routeOptions.length 체크 제거
+            // 이제 walk가 아닌 경로 때문에 모달이 뜨지 않음
 
             if (!content) {
               return openModal({

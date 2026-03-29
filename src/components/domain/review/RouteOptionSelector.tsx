@@ -30,11 +30,13 @@ const getTransportIcon = (transport: string) => {
     case 'walk':
       return '👟'
     case 'bus':
-      return '🚌'
+      return '🚍'
     case 'subway':
       return '🚇'
     case 'taxi':
       return '🚖'
+    case 'transit':
+      return '🚌'
     default:
       return '❓'
   }
