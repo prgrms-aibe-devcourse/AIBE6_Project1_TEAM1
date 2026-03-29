@@ -1,5 +1,4 @@
 import PlaceDetailPage from '@/components/domain/place-search/PlaceDetailPage'
-import GlobalHeader from '@/components/layout/GlobalHeader'
 
 interface SearchDetailRoutePageProps {
   params: Promise<{
@@ -15,7 +14,6 @@ export default async function SearchDetailRoutePage({
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
-      <GlobalHeader />
       <main className="mx-auto max-w-7xl px-4 py-4">
         {Number.isNaN(parsedTripId) ? (
           <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
