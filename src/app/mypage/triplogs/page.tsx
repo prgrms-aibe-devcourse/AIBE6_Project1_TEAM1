@@ -2,9 +2,10 @@
  
 import TravelCard from '@/components/display/TravelCard';
 import StatCardGroup from '@/components/domain/my-page/StatCardGroup';
+import { useModalStore } from '@/store/useModalStore';
 import { createClient } from '@/utils/supabase/client';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, Loader2, Search } from 'lucide-react';
+import { ChevronLeft, Loader2, Search, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
  
@@ -12,21 +13,31 @@ interface TripLog {
   id: string;
   title: string;
   date: string;
-  memo: string;
-  status: 'Completed';
   imageUrl: string;
-  distance: number;
-  time: string;
-  spotCount: number;
-  cost: number;
+  category: string;
+  isHot: boolean;
+  summary: {
+    totalDistance: number;
+    totalTime: string;
+    spotCount: number;
+    estimatedCost: number;
+    saveCount: number;
+  };
+  avgStats: {
+    incline: '평지' | '완만' | '보통' | '급경사';
+    stairs: '없음' | '적음' | '다소 많음' | '매우 많음';
+    shade: '없음' | '적음' | '보통' | '충분함';
+  };
   rating: number;
   reviewCount: number;
+  tags?: string[];
 }
  
 export default function TriplogsPage() {
   const [trips, setTrips] = useState<TripLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const { openModal } = useModalStore();
   const supabase = createClient();
  
   useEffect(() => {
@@ -79,15 +90,24 @@ export default function TriplogsPage() {
             id: String(trip.id),
             title: trip.title || '제목 없는 여행',
             date: trip.start_date ? new Date(trip.start_date).toLocaleDateString() : '-',
-            memo: '', 
-            status: 'Completed',
             imageUrl: '/images/jeju-east.png', 
-            distance: trip.total_distance || 0,
-            time: timeStr,
-            spotCount: tripItems.length,
-            cost: trip.total_cost || 0,
+            category: '추억 기록',
+            isHot: false,
+            summary: {
+              totalDistance: trip.total_distance || 0,
+              totalTime: timeStr,
+              spotCount: tripItems.length,
+              estimatedCost: trip.total_cost || 0,
+              saveCount: 0
+            },
+            avgStats: {
+              incline: '평지',
+              stairs: '없음',
+              shade: '보통'
+            },
             rating: Number(avgRating.toFixed(1)),
-            reviewCount: tripReviews.length
+            reviewCount: tripReviews.length,
+            tags: []
           };
         });
  
@@ -101,9 +121,51 @@ export default function TriplogsPage() {
  
     fetchTrips();
   }, []);
+ 
+  const handleDeleteTrip = async (id: string, title: string) => {
+    openModal({
+      type: 'confirm',
+      variant: 'danger',
+      title: '기록 삭제',
+      description: `"${title}" 기록을 정말 삭제하시겠습니까?`,
+      confirmText: '삭제',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+ 
+          const { data: traveler } = await supabase
+            .from('travelers')
+            .select('id')
+            .eq('trip_id', id)
+            .eq('user_id', user.id)
+            .maybeSingle();
+ 
+          if (traveler) {
+            const { error } = await supabase
+              .from('travelers')
+              .update({ 
+                status: 'ongoing',
+                has_visited: false
+              })
+              .eq('id', traveler.id);
+ 
+            if (error) throw error;
+ 
+            // 로컬 상태 업데이트
+            setTrips(prev => prev.filter(t => t.id !== id));
+          }
+        } catch (error) {
+          console.error('Error deleting trip record:', error);
+          alert('기록 삭제 중 오류가 발생했습니다.');
+        }
+      }
+    });
+  };
   
   const overallStats = useMemo(() => {
-    const totalDistance = trips.reduce((sum, t) => sum + t.distance, 0);
+    const totalDistance = trips.reduce((sum, t) => sum + t.summary.totalDistance, 0);
     const tripCount = trips.length;
     const reviewCount = trips.reduce((sum, t) => sum + t.reviewCount, 0);
  
@@ -186,30 +248,33 @@ export default function TriplogsPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ delay: index * 0.05 }}
+                      className="relative group"
                     >
                       <TravelCard
                         id={trip.id}
                         variant="horizontal"
                         title={trip.title}
                         imageUrl={trip.imageUrl}
-                        category="추억 기록"
-                        isHot={false}
-                        summary={{
-                          totalDistance: trip.distance,
-                          totalTime: trip.time,
-                          spotCount: trip.spotCount,
-                          estimatedCost: trip.cost,
-                          saveCount: 0
-                        }}
-                        avgStats={{
-                          incline: '평지',
-                          stairs: '없음',
-                          shade: '보통'
-                        }}
+                        category={trip.category}
+                        isHot={trip.isHot}
+                        summary={trip.summary}
+                        avgStats={trip.avgStats}
                         rating={trip.rating}
                         reviewCount={trip.reviewCount}
                         isKept={true}
+                        tags={trip.tags}
                       />
+                      {/* 삭제 버튼 오버레이 */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteTrip(trip.id, trip.title);
+                        }}
+                        className="absolute top-4 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-xl bg-white/90 text-gray-600 shadow-sm backdrop-blur-md transition-all hover:bg-white hover:text-red-500 opacity-0 group-hover:opacity-100 ring-1 ring-black/5"
+                        title="기록 삭제"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
                     </motion.div>
                   ))}
                 </AnimatePresence>
