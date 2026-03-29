@@ -17,6 +17,8 @@ import {
   Share2,
   Sparkles,
   X,
+  Map as MapIcon,
+  Plus,
 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
@@ -123,6 +125,8 @@ function PlanPageContent() {
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
     isPublic: true,
+    imgUrl: '',
+    tags: '',
   })
 
   // 1개짜리 배열에서 N박 M일을 지원하는 객체(Record) 형태로 확장
@@ -152,9 +156,6 @@ function PlanPageContent() {
     // 현재 편집 중인 여행과 동일한 아이디를 클릭했다면 무시
     if (id === editTripId) return
 
-    // 현재 작성 중인 장소가 하나라도 있는지 확인
-    const hasContent = Object.values(placesByDay).flat().length > 0
-
     const executeNavigation = () => {
       if (id === 'new') {
         router.push('/plan')
@@ -165,6 +166,8 @@ function PlanPageContent() {
           startDate: new Date().toISOString().split('T')[0],
           endDate: new Date().toISOString().split('T')[0],
           isPublic: true,
+          imgUrl: '',
+          tags: '',
         })
       } else {
         router.push(`/plan?id=${id}`)
@@ -222,7 +225,7 @@ function PlanPageContent() {
           .from('trips')
           .select(
             `
-            id, title, start_date, end_date, is_public,
+            id, title, start_date, end_date, is_public, img_url, tags,
             trip_items (
               visit_day,
               visit_order,
@@ -240,7 +243,6 @@ function PlanPageContent() {
 
         if (error || !tripData) {
           console.error('여행 불러오기 에러 상세:', error?.message || error)
-          // location 컬럼이 아직 DB에 없을 때 42703 에러가 날 수 있습니다.
           openModal({
             type: 'alert',
             variant: 'danger',
@@ -256,9 +258,10 @@ function PlanPageContent() {
           startDate: tripData.start_date || '',
           endDate: tripData.end_date || '',
           isPublic: tripData.is_public ?? true,
+          imgUrl: tripData.img_url || '',
+          tags: tripData.tags || '',
         })
 
-        // 다른 여행을 클릭해서 넘어왔을 수도 있으니 강제로 찌꺼기를 세탁합니다.
         const fetchedPlacesByDay: Record<number, Place[]> = {}
         const items = tripData.trip_items || []
 
@@ -267,18 +270,18 @@ function PlanPageContent() {
 
         items.forEach((item: any) => {
           if (item.places) {
-            const dayIndex = item.visit_day || 1 // 예전 데이터나 null 방어코드
+            const dayIndex = item.visit_day || 1
 
             if (!fetchedPlacesByDay[dayIndex]) {
               fetchedPlacesByDay[dayIndex] = []
             }
 
             fetchedPlacesByDay[dayIndex].push({
-              id: Date.now().toString() + Math.random(), // 화면 렌더링(DND)용 임시 로컬 ID
+              id: Date.now().toString() + Math.random(),
               kakao_place_id: item.places.kakao_place_id,
               name: item.places.place_name,
               category: item.places.category,
-              address: item.places.address || '주소 없음', // DB에서 긁어온 실제 주소 맵핑
+              address: item.places.address || '주소 없음',
               lat: item.places.latitude,
               lng: item.places.longitude,
               isNearStation: item.places.is_near_station,
@@ -287,16 +290,12 @@ function PlanPageContent() {
           }
         })
 
-        // 텅 빈 여행 일정일 때를 대비해 Day 1 그릇은 최소한 하나 던져줍니다.
         if (Object.keys(fetchedPlacesByDay).length === 0) {
           fetchedPlacesByDay[1] = []
         }
 
-        // 이제 각 날짜별로 제대로 나뉜 객체를 상태에 세팅합니다!
         setPlacesByDay(fetchedPlacesByDay)
-        // 불러올 땐 항상 Day 1 탭을 보여줍니다.
         setCurrentDay(1)
-        // 새로 불러왔으므로 수정 사항 없음으로 초기화
         setIsModified(false)
       } catch (err) {
         console.error('플랜 로딩 중 문제 발생:', err)
@@ -314,7 +313,7 @@ function PlanPageContent() {
     name: string,
     category: string,
     address: string,
-    isNearStation: boolean, // 역세권 여부 파라미터 추가
+    isNearStation: boolean,
   ) => {
     const newPlace: Place = {
       id: Date.now().toString(),
@@ -325,7 +324,7 @@ function PlanPageContent() {
       lat,
       lng,
       isNearStation,
-      transportType: 'walk', // 기본 이동수단 도보 설정
+      transportType: 'walk',
     }
     setPlacesByDay((prev) => ({
       ...prev,
@@ -414,6 +413,7 @@ function PlanPageContent() {
 
   // Gemini AI 동선 최적화 핸들러
   const handleAiOptimize = async () => {
+    const currentPlaces = placesByDay[currentDay] || []
     if (currentPlaces.length < 2) {
       openModal({
         type: 'alert',
@@ -468,12 +468,13 @@ function PlanPageContent() {
     }
   }
 
-  // 하드코딩 정보 대신 모달에서 쏴준 데이터(title, startDate, endDate, isPublic)를 파라미터로 받음
   const handleSaveTrip = async (
     title: string,
     startDate: string,
     endDate: string,
     isPublic: boolean,
+    imgUrl: string,
+    tags: string,
   ) => {
     if (!userId) {
       openModal({
@@ -497,16 +498,14 @@ function PlanPageContent() {
       return
     }
 
-    // 전체 통계 계산 (저장용)
     const { totalMins, totalCost, totalDistance } = calcTripSummary(placesByDay)
 
     setIsSaving(true)
     try {
       const supabase = createClient()
-      let tripId = editTripId // 이미 URL 파라미터가 있다면 수정을 의미함
+      let tripId = editTripId
 
       if (!editTripId) {
-        // [CREATE] 새 일정 만들기: trips 테이블에 Insert
         const { data: tripData, error: tripError } = await supabase
           .from('trips')
           .insert({
@@ -515,10 +514,10 @@ function PlanPageContent() {
             start_date: startDate,
             end_date: endDate,
             is_public: isPublic,
-            total_travel_time: totalMins,
-            total_cost: totalCost,
             total_distance: totalDistance,
             is_saved: true,
+            img_url: imgUrl,
+            tags: tags,
           })
           .select()
           .single()
@@ -528,7 +527,6 @@ function PlanPageContent() {
         }
         tripId = tripData.id
       } else {
-        // [UPDATE] 기존 일정 수정하기: trips 정보 Update
         const { error: tripError } = await supabase
           .from('trips')
           .update({
@@ -536,23 +534,22 @@ function PlanPageContent() {
             start_date: startDate,
             end_date: endDate,
             is_public: isPublic,
-            total_travel_time: totalMins,
-            total_cost: totalCost,
             total_distance: totalDistance,
             is_saved: true,
+            img_url: imgUrl,
+            tags: tags,
+            updated_at: new Date().toISOString(),
           })
           .eq('id', editTripId)
           .eq('user_id', userId)
 
         if (tripError) throw new Error('플랜 수정 실패')
 
-        // 플랜이 수정될 때, 타임라인 순서가 꼬이는 것을 막기 위해 기존 trip_items를 전부 날리고 새로 Insert 합니다. (가장 깔끔한 싱크 방식)
         await supabase.from('trip_items').delete().eq('trip_id', editTripId)
       }
 
-      let globalOrder = 1 // n박 m일을 한줄로 이어붙여서 순서를 매김 (추후 trip_items에 visit_day 컬럼 확장을 고려하면 좋습니다)
+      let globalOrder = 1
 
-      // 2. places 테이블 업데이트(Upsert 성격) 후 trip_items 연결
       for (const dayStr of Object.keys(placesByDay)) {
         const dayPlaces = placesByDay[parseInt(dayStr)]
 
@@ -560,9 +557,7 @@ function PlanPageContent() {
           const place = dayPlaces[i]
           let dbPlaceId: number | null = null
 
-          // 검색을 통해 추가된 정상적인 장소(kakao_place_id 보장)만 처리
           if (place.kakao_place_id) {
-            // 2-1 DB에 이미 이 카카오 장소가 들어있는지 검색 (중복 방지)
             const { data: existingPlace } = await supabase
               .from('places')
               .select('id')
@@ -572,14 +567,13 @@ function PlanPageContent() {
             if (existingPlace) {
               dbPlaceId = existingPlace.id
             } else {
-              // 없다면 새로 places 테이블에 Insert
               const { data: newPlace, error: placeError } = await supabase
                 .from('places')
                 .insert({
                   kakao_place_id: place.kakao_place_id,
                   place_name: place.name,
                   category: place.category,
-                  address: place.address, // 새롭게 추가된 주소 필드 저장 연결!
+                  address: place.address,
                   latitude: place.lat,
                   longitude: place.lng,
                   is_near_station: place.isNearStation ?? false,
@@ -589,16 +583,9 @@ function PlanPageContent() {
 
               if (newPlace) dbPlaceId = newPlace.id
             }
-          } else {
-            // (더미용 데이터 건너뛰기)
-            console.warn(
-              `장소 [${place.name}]는 카카오 ID가 없어 제외되었습니다.`,
-            )
           }
 
-          // 2-2 trip_items(교차 테이블)에 일정 순서 정보를 연결지어 Insert
           if (dbPlaceId) {
-            // 다음 장소가 있으면 실제 계산된 소요시간(분)을 저장, 마지막 장소는 0
             const nextPlace = dayPlaces[i + 1]
             const travelMins = nextPlace
               ? calcTravelMinutes(place, nextPlace, place.transportType || 'walk')
@@ -609,8 +596,8 @@ function PlanPageContent() {
               place_id: dbPlaceId,
               visit_day: parseInt(dayStr),
               visit_order: globalOrder++,
-              transport_type: place.transportType || 'walk', // 선택된 이동수단 저장
-              travel_time: travelMins, // 실제 계산된 소요시간(분) 저장
+              transport_type: place.transportType || 'walk',
+              travel_time: travelMins,
             })
           }
         }
@@ -623,14 +610,14 @@ function PlanPageContent() {
         description: '플랜이 내 보관함에 저장되었습니다!',
       })
 
-      // 저장 성공 후 화면 상부의 Badge 정보들도 동기화해줍니다.
       setTripMetadata({
         title,
         startDate,
         endDate,
         isPublic,
+        imgUrl,
+        tags,
       })
-      // 저장 성공 후 수정 여부 초기화
       setIsModified(false)
     } catch (error) {
       console.error(error)
@@ -645,11 +632,9 @@ function PlanPageContent() {
     }
   }
 
-  // 모든 훅 선언이 끝난 뒤에 로딩 방어화면을 렌더링해야 React 훅 에러가 나지 않습니다.
   if (isAuthChecking) {
     return (
       <div className="min-h-screen bg-[#fafafa] flex items-center justify-center flex-col gap-4">
-        {/* 부드러운 스피너와 로딩 안내 메세지로 깜빡임(FOUC) 방어 */}
         <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
         <p className="text-gray-500 font-medium text-sm">
           인증 정보를 확인하는 중입니다...
@@ -658,23 +643,20 @@ function PlanPageContent() {
     )
   }
 
-  // 렌더링에 사용할 현재 선택된 Day의 장소 배열
   const currentPlaces = placesByDay[currentDay] || []
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fafafa]">
-      {/* 팝업 오버레이 조건부 렌더링 */}
       {isSearchOpen && (
         <PlaceSearchModal
           onClose={() => setIsSearchOpen(false)}
           onSelect={(kakaoId, lat, lng, name, category, addr, isNear) => {
             handleAddPlace(kakaoId, lat, lng, name, category, addr, isNear)
-            setIsSearchOpen(false) // 완추가 후 모달 자동 닫기
+            setIsSearchOpen(false)
           }}
         />
       )}
 
-      {/* 내 일정 서랍형 사이드바 (Sidebar) */}
       <MyTripsSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -683,29 +665,27 @@ function PlanPageContent() {
         onSelectTrip={handleSelectTrip}
       />
 
-      {/* 저장 전 필수 정보 입력 팝업창 띄우기 (Save Modal) */}
       {isSaveModalOpen && (
         <SaveTripModal
           onClose={() => setIsSaveModalOpen(false)}
           onSave={handleSaveTrip}
-          totalDays={Object.keys(placesByDay).length} // 총 일수 전달
-          initialData={editTripId ? tripMetadata : undefined} // 수정 시 초기값 전달
+          totalDays={Object.keys(placesByDay).length}
+          userId={userId}
+          initialData={editTripId ? tripMetadata : undefined}
         />
       )}
 
       <PageContainer className="flex-1 py-8">
-        {/* 상단 헤더 영역 */}
         <div className="flex flex-col mb-4">
           <div className="flex justify-between items-start w-full mb-3">
             <div className="flex items-center gap-4">
               <h1 className="text-[22px] font-bold text-gray-900 flex items-center gap-3">
                 여행 일정 플래너
-                {/* 내 일정 목록 (사이드바 여는 버튼) */}
                 <button
                   onClick={() => setIsSidebarOpen(true)}
                   className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-[13px] font-bold text-gray-600 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-all flex items-center gap-1.5 shadow-sm ml-2"
                 >
-                  <FolderOpen className="w-4 h-4 flex-shrink-0" />{' '}
+                  <FolderOpen className="w-4 h-4 flex-shrink-0" />
                   <span className="hidden sm:inline">내 보관함</span>
                 </button>
               </h1>
@@ -737,14 +717,9 @@ function PlanPageContent() {
               <button className="p-1 hover:text-gray-900 transition-colors">
                 <MoreHorizontal className="w-5 h-5" />
               </button>
-              {/* 곧바로 저장(handleSaveTrip)을 호출하지 않고 팝업(Modal) 상태를 켭니다. */}
               <CommonButton
                 onClick={() => setIsSaveModalOpen(true)}
-                disabled={
-                  isSaving ||
-                  isSaveModalOpen ||
-                  (!editTripId ? false : !isModified)
-                }
+                disabled={isSaving || isSaveModalOpen || (editTripId ? !isModified : false)}
                 className={`!rounded-lg px-4 py-2 flex items-center gap-2 text-[13px] font-semibold border-none ml-2 shadow-sm transition-all ${
                   !editTripId || isModified
                     ? '!bg-purple-600 !text-white hover:!bg-purple-700'
@@ -780,16 +755,12 @@ function PlanPageContent() {
           </div>
         </div>
 
-        {/* 본문 영역: 좌측 지도, 우측 타임라인 */}
         <div className="flex flex-col lg:flex-row w-full gap-8 h-[calc(100vh-240px)] min-h-[600px]">
-          {/* 좌측 지도 패널: 현재 탭(currentPlaces)의 장소들만 렌더링 */}
           <div className="w-full lg:w-[55%] xl:w-[60%] h-[400px] lg:h-full relative rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200">
             <ItineraryMap places={currentPlaces} focusPlace={focusPlace} />
           </div>
 
-          {/* 우측 타임라인 패널 */}
           <div className="w-full lg:w-[45%] xl:w-[40%] h-full flex flex-col relative pr-2">
-            {/* Day 탭 네비게이션 UI */}
             <div className="flex items-center gap-2 mb-2 overflow-x-auto pb-2 scrollbar-hide pt-1 px-1">
               {Object.keys(placesByDay).map((dayStr) => {
                 const day = parseInt(dayStr)
@@ -799,82 +770,81 @@ function PlanPageContent() {
                     onClick={() => setCurrentDay(day)}
                     className={`px-4 py-2 rounded-full text-[13px] font-bold whitespace-nowrap transition-all shadow-sm flex items-center gap-1.5 ${
                       currentDay === day
-                        ? 'bg-purple-600 text-white border-transparent'
-                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-white text-gray-400 hover:bg-purple-50 hover:text-purple-400'
                     }`}
                   >
                     Day {day}
-                    {Object.keys(placesByDay).length > 1 && (
+                    {currentDay === day && Object.keys(placesByDay).length > 1 && (
                       <X
+                        className="w-3 h-3 ml-1 hover:text-red-200 transition-colors"
                         onClick={(e) => {
                           e.stopPropagation()
                           handleDeleteDay(day)
                         }}
-                        className={`w-3.5 h-3.5 p-0.5 rounded-full transition-colors ${
-                          currentDay === day
-                            ? 'text-purple-200 hover:text-white hover:bg-white/20'
-                            : 'text-gray-400 hover:text-red-500 hover:bg-gray-100'
-                        }`}
                       />
                     )}
                   </button>
                 )
               })}
               <button
-                onClick={() =>
-                  setPlacesByDay((prev) => {
-                    const nextDay =
-                      Math.max(...Object.keys(prev).map(Number)) + 1
-                    setIsModified(true)
-                    return { ...prev, [nextDay]: [] }
-                  })
-                }
-                className="px-4 py-2 rounded-full text-[13px] font-bold bg-gray-50 border border-dashed border-gray-300 text-gray-500 hover:bg-gray-100 hover:text-gray-700 whitespace-nowrap transition-colors flex items-center gap-1"
-                title="새로운 여행 날짜 탭 추가"
+                onClick={() => {
+                  const nextDay = Object.keys(placesByDay).length + 1
+                  setPlacesByDay((prev) => ({ ...prev, [nextDay]: [] }))
+                  setCurrentDay(nextDay)
+                  setIsModified(true)
+                }}
+                className="p-2.5 bg-white border border-dashed border-gray-300 rounded-full hover:border-purple-400 hover:bg-purple-50 transition-all shadow-sm flex-shrink-0"
+                title="날짜 추가"
               >
-                + Day 추가
+                <Plus className="w-4 h-4 text-gray-400" />
               </button>
             </div>
 
-            {/* Day 요약 배지: 총 이동시간 + 예상 교통비 */}
-            {currentPlaces.length >= 2 && (() => {
-              const { totalMins, totalCost } = calcDaySummary(currentPlaces)
-              const hours = Math.floor(totalMins / 60)
-              const mins = totalMins % 60
-              const timeStr = hours > 0 ? `${hours}시간 ${mins}분` : `${mins}분`
-              const hasPaidTransit = currentPlaces.some(
-                (p) => p.transportType === 'transit' || p.transportType === 'taxi'
-              )
-              return (
-                <div className="flex items-center gap-2 px-1 mb-2 flex-wrap">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-full text-[11px] font-semibold text-blue-700">
-                    <span>⏱</span>
-                    <span>이동 {timeStr}</span>
+            <div className="flex-1 overflow-y-auto pr-1 pb-20 scrollbar-hide">
+              <TimelineList
+                places={currentPlaces}
+                onReorder={handleReorderPlaces}
+                onDelete={handleDeletePlace}
+                onSelectPlace={setFocusPlace}
+                onUpdateTransport={handleUpdateTransport}
+                onOpenSearch={() => setIsSearchOpen(true)}
+              />
+
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="w-full py-4 mt-4 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 font-bold text-[13px] hover:border-purple-300 hover:bg-purple-50 hover:text-purple-500 transition-all flex items-center justify-center gap-2 bg-white"
+              >
+                <Plus className="w-4 h-4" /> 장소 추가하기
+              </button>
+            </div>
+
+            <div className="absolute bottom-6 left-1 right-3 p-4 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100/50 flex items-center justify-between z-10 animate-in slide-in-from-bottom-4 duration-500">
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Estimated Summary</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col">
+                    <span className="text-[15px] font-black text-gray-900 leading-none">
+                      {calcDaySummary(currentPlaces).totalMins > 60
+                        ? `${Math.floor(calcDaySummary(currentPlaces).totalMins / 60)}h ${calcDaySummary(currentPlaces).totalMins % 60}m`
+                        : `${calcDaySummary(currentPlaces).totalMins}m`}
+                    </span>
                   </div>
-                  {hasPaidTransit && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-100 rounded-full text-[11px] font-semibold text-amber-700">
-                      <span>💳</span>
-                      <span>교통비 약 {totalCost.toLocaleString('ko-KR')}원~</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1 ml-auto">
-                    {currentPlaces.slice(0, -1).map((p, i) => {
-                      const emoji = p.transportType === 'walk' ? '🚶' : p.transportType === 'transit' ? '🚌' : '🚕'
-                      return <span key={i} className="text-[13px]">{emoji}</span>
-                    })}
+                  <div className="w-[1px] h-4 bg-gray-200" />
+                  <div className="flex flex-col">
+                    <span className="text-[15px] font-black text-purple-600 leading-none">
+                      {calcDaySummary(currentPlaces).totalCost.toLocaleString()}원
+                    </span>
                   </div>
                 </div>
-              )
-            })()}
-
-            <TimelineList
-              places={currentPlaces}
-              onReorder={handleReorderPlaces}
-              onDelete={handleDeletePlace}
-              onOpenSearch={() => setIsSearchOpen(true)}
-              onSelectPlace={(pos) => setFocusPlace(pos)}
-              onUpdateTransport={handleUpdateTransport}
-            />
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 rounded-xl">
+                 <MapIcon className="w-3.5 h-3.5 text-purple-400" />
+                 <span className="text-[11px] font-bold text-white whitespace-nowrap">
+                   {calcDaySummary(currentPlaces).totalDistance.toFixed(1)}km
+                 </span>
+              </div>
+            </div>
           </div>
         </div>
       </PageContainer>
@@ -882,17 +852,11 @@ function PlanPageContent() {
   )
 }
 
-// Next.js App Router 환경에서 useSearchParams()를 쓰는 컴포넌트는 전부 Suspense로 감싸주어야 합니다.
 export default function PlanPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-[#fafafa] flex justify-center items-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-        </div>
-      }
-    >
+    <Suspense fallback={<div>Loading...</div>}>
       <PlanPageContent />
     </Suspense>
   )
 }
+

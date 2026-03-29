@@ -6,9 +6,10 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
-  Map,
+  Map as MapIcon,
   Plus,
   X,
+  Hash,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -131,7 +132,7 @@ export default function MyTripsSidebar({
         {/* 헤더 */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-white">
           <h2 className="font-bold text-gray-900 text-[16px] flex items-center gap-2">
-            <Map className="w-5 h-5 text-purple-600" /> 내 보관함
+            <MapIcon className="w-5 h-5 text-purple-600" /> 내 보관함
           </h2>
           <button
             onClick={onClose}
@@ -194,82 +195,110 @@ export default function MyTripsSidebar({
                       : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
                   }`}
                 >
-                  <div className="flex justify-between items-start mb-2.5 gap-2">
-                    <div className="flex flex-col gap-1.5 flex-1">
-                      {isFinished ? (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                          <CheckCircle2 className="w-3 h-3" /> 코스 완주
-                        </span>
-                      ) : isActive ? (
-                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100 animate-pulse">
-                          <span className="relative flex h-1.5 w-1.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-purple-500"></span>
-                          </span>
-                          코스 탐방
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
-                          코스 대기
-                        </span>
-                      )}
-                      <h3
-                        className={`font-bold text-[14px] leading-snug break-keep ${
-                          currentTripId == trip.id
-                            ? 'text-purple-900'
-                            : isFinished
-                              ? 'text-gray-500'
-                              : 'text-gray-900'
+                  <div className="flex gap-4">
+                    {/* 대표 이미지 썸네일 */}
+                    <div className="w-16 h-16 rounded-xl bg-gray-50 flex-shrink-0 relative overflow-hidden flex items-center justify-center border border-gray-100 shadow-inner">
+                      <img 
+                        src={trip.img_url || '/icon.svg'} 
+                        alt="코스 대표 사진" 
+                        className={`w-full h-full object-cover transition-transform duration-500 hover:scale-110 ${!trip.img_url ? 'p-3.5 opacity-20 grayscale' : ''}`}
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start mb-1.5 gap-2">
+                        <div className="flex flex-col gap-1.5 flex-1">
+                          {isFinished ? (
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 w-fit">
+                              <CheckCircle2 className="w-3 h-3" /> 코스 완주
+                            </span>
+                          ) : isActive ? (
+                            <span className="flex items-center gap-1.5 text-[10px] font-bold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100 animate-pulse w-fit">
+                              <span className="relative flex h-1.5 w-1.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-purple-500"></span>
+                              </span>
+                              코스 탐방
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 w-fit">
+                              코스 대기
+                            </span>
+                          )}
+                          <h3
+                            className={`font-bold text-[14px] leading-snug break-keep line-clamp-2 ${
+                              currentTripId == trip.id
+                                ? 'text-purple-900'
+                                : isFinished
+                                  ? 'text-gray-500'
+                                  : 'text-gray-900'
+                            }`}
+                          >
+                            {trip.title}
+                          </h3>
+                        </div>
+                        <div className="flex flex-col items-end gap-2 mt-0.5 shrink-0">
+                          <div className="flex items-center gap-1.5">
+                            {trip.is_public ? (
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold border border-blue-100 flex-shrink-0">
+                                <Eye className="w-3 h-3" />
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 text-gray-400 rounded text-[10px] font-bold border border-gray-100 flex-shrink-0">
+                                <EyeOff className="w-3 h-3" />
+                              </span>
+                            )}
+                            <button
+                              onClick={(e) =>
+                                handleToggleVisited(e, trip.id, isFinished)
+                              }
+                              title={
+                                isFinished ? '미방문으로 표시' : '다녀옴으로 표시'
+                              }
+                              className={`group/btn w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 border ${
+                                isFinished
+                                  ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm shadow-emerald-200 active:scale-95'
+                                  : 'bg-white border-gray-200 text-transparent hover:border-emerald-500 hover:bg-emerald-50/50 active:scale-110'
+                              }`}
+                            >
+                              <CheckCircle2 className={`w-4 h-4 transition-transform duration-300 ${isFinished ? 'scale-100 fill-white' : 'scale-0 group-hover/btn:scale-110 group-hover/btn:text-emerald-500/50'}`} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`flex items-center gap-1.5 text-[11px] font-medium w-fit px-2 py-1 rounded-md ${
+                          isFinished
+                            ? 'bg-gray-50 text-gray-400 border border-gray-100'
+                            : 'bg-gray-50 text-gray-500'
                         }`}
                       >
-                        {trip.title}
-                      </h3>
-                    </div>
-                    <div className="flex flex-col items-end gap-2 mt-0.5 shrink-0">
-                      <div className="flex items-center gap-1.5">
-                        {trip.is_public ? (
-                          <span className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold border border-blue-100 flex-shrink-0">
-                            <Eye className="w-3 h-3" /> 공개
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 text-gray-400 rounded text-[10px] font-bold border border-gray-100 flex-shrink-0">
-                            <EyeOff className="w-3 h-3" /> 비공개
-                          </span>
-                        )}
-                        {/* 다녀옴 체크박스 버튼 디자인 변경 */}
-                        <button
-                          onClick={(e) =>
-                            handleToggleVisited(e, trip.id, isFinished)
-                          }
-                          title={
-                            isFinished ? '미방문으로 표시' : '다녀옴으로 표시'
-                          }
-                          className={`group/btn w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 border ${
-                            isFinished
-                              ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm shadow-emerald-200 active:scale-95'
-                              : 'bg-white border-gray-200 text-transparent hover:border-emerald-500 hover:bg-emerald-50/50 active:scale-110'
-                          }`}
-                        >
-                          <CheckCircle2 className={`w-4 h-4 transition-transform duration-300 ${isFinished ? 'scale-100 fill-white' : 'scale-0 group-hover/btn:scale-110 group-hover/btn:text-emerald-500/50'}`} />
-                        </button>
+                        <CalendarIcon className="w-2.5 h-2.5" />
+                        <span className="text-[10px]">
+                          {trip.start_date.replace(/-/g, '.')} ~{' '}
+                          {trip.end_date.replace(/-/g, '.')}
+                        </span>
                       </div>
+
+                      {/* 해시태그 표시 영역 */}
+                      {trip.tags && (
+                        <div className="mt-2.5 flex flex-wrap gap-1">
+                          {trip.tags.split(/[#\s]+/).filter(Boolean).map((tag: string, idx: number) => (
+                            <span 
+                              key={idx} 
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-purple-50 text-[9px] font-bold text-purple-600 border border-purple-100/50"
+                            >
+                              <Hash className="w-2 h-2" />
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  <div
-                    className={`flex items-center gap-1.5 text-[11px] font-medium w-fit px-2 py-1 rounded-md ${
-                      isFinished
-                        ? 'bg-gray-50 text-gray-400 border border-gray-100'
-                        : 'bg-gray-50 text-gray-500'
-                    }`}
-                  >
-                    <CalendarIcon className="w-3.5 h-3.5" />
-                    <span>
-                      {trip.start_date.replace(/-/g, '.')} ~{' '}
-                      {trip.end_date.replace(/-/g, '.')}
-                    </span>
-                  </div>
-
+                  {/* 작성 및 수정 정보 */}
                   <div className="mt-3 pt-3 border-t border-gray-50 flex items-center justify-between text-[10px] text-gray-400">
                     <div className="flex items-center gap-1">
                       <span className="opacity-70">작성</span>
