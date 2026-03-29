@@ -294,8 +294,6 @@ export default function PlaceCard({
               </div>
             </div>
           </div>
-
-<<<<<<< HEAD
           <div className="flex items-center gap-3 text-[12px] text-gray-500">
             <span className="inline-flex items-center gap-1 whitespace-nowrap">
               <Route className="h-3.5 w-3.5 shrink-0" />
@@ -319,31 +317,7 @@ export default function PlaceCard({
 
             <span className="inline-flex items-center gap-1 whitespace-nowrap">
               <Bookmark className="h-3.5 w-3.5 shrink-0" />
-=======
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-gray-500">
-            <span className="inline-flex items-center gap-1.5">
-              <Route className="h-4 w-4" />
-              {formatDistance(trip.total_distance)}
-            </span>
 
-            <span className="inline-flex items-center gap-1.5">
-              <Clock3 className="h-4 w-4" />
-              {formatTravelTime(trip.total_travel_time)}
-            </span>
-
-            <span className="inline-flex items-center gap-1.5">
-              <MapPin className="h-4 w-4" />
-              {detailItems.length}곳
-            </span>
-
-            <span className="inline-flex items-center gap-1.5">
-              <CreditCard className="h-4 w-4" />
-              {formatCost(trip.total_cost)}
-            </span>
-
-            <span className="inline-flex items-center gap-1.5">
-              <Bookmark className="h-4 w-4" />
->>>>>>> main
               {trip.is_saved ? '저장됨' : '-'}
             </span>
           </div>
@@ -362,15 +336,6 @@ export default function PlaceCard({
               </>
             )}
           </div>
-<<<<<<< HEAD
-=======
-
-          <div className="flex justify-end pt-2">
-            <span className="text-[22px] font-extrabold text-[#6c3cff]">
-              코스 상세보기 →
-            </span>
-          </div>
->>>>>>> main
         </div>
       </div>
     </article>
