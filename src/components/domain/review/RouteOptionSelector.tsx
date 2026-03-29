@@ -33,6 +33,8 @@ const getTransportIcon = (transport: string) => {
       return '🚌'
     case 'subway':
       return '🚇'
+    case 'taxi':
+      return '🚖'
     default:
       return '❓'
   }

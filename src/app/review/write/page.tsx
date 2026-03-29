@@ -104,7 +104,7 @@ export default function ReviewWritePage() {
       routes.push({
         from: current.place_id,
         to: next.place_id,
-        transport: next.transport_type, // 🔥 다음 이동 기준
+        transport: next.transport_type, // 다음 이동 기준
       })
     }
 
