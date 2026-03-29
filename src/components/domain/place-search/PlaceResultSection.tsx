@@ -1,10 +1,15 @@
 import PlaceCategorySection from './PlaceCategorySection'
 import PlaceList from './PlaceList'
-import type { Trip, TripDetailItem } from './PlaceSearchSection'
+import type {
+  Trip,
+  TripDetailItem,
+  TripReviewSummary,
+} from './PlaceSearchSection'
 
 interface PlaceResultSectionProps {
   trips: Trip[]
   tripDetailsMap: Record<number, TripDetailItem[]>
+  tripReviewSummaryMap: Record<number, TripReviewSummary>
   isLoading?: boolean
   errorMessage?: string
   selectedCategory: string
@@ -14,6 +19,7 @@ interface PlaceResultSectionProps {
 export default function PlaceResultSection({
   trips,
   tripDetailsMap,
+  tripReviewSummaryMap,
   isLoading = false,
   errorMessage = '',
   selectedCategory,
@@ -33,7 +39,11 @@ export default function PlaceResultSection({
       {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
 
       {!isLoading && !errorMessage && (
-        <PlaceList trips={trips} tripDetailsMap={tripDetailsMap} />
+        <PlaceList
+          trips={trips}
+          tripDetailsMap={tripDetailsMap}
+          tripReviewSummaryMap={tripReviewSummaryMap}
+        />
       )}
     </section>
   )

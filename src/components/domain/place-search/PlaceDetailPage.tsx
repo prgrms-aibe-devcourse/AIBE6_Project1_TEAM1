@@ -17,7 +17,6 @@ import {
   Share2,
   Star,
 } from 'lucide-react'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -57,6 +56,15 @@ interface TripItemRow {
 
 interface TripDetailItem extends TripItemRow {
   place: Place | null
+}
+
+interface TripReview {
+  id: number
+  user_id: string | null
+  rating: number | null
+  content: string | null
+  created_at: string | null
+  trip_id: number
 }
 
 interface PlaceDetailPageProps {
@@ -275,6 +283,7 @@ function buildTimeline(
     }
   })
 }
+
 const SummaryCard = ({ icon: Icon, label, value }: SummaryCardProps) => (
   <div className="flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-white p-4 shadow-sm space-y-1">
     <Icon className="h-5 w-5 text-gray-400" />
@@ -383,9 +392,9 @@ const TimelineItem = ({ data, isLast }: TimelineItemProps) => (
 
 export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
   const router = useRouter()
-
   const [trip, setTrip] = useState<Trip | null>(null)
   const [detailItems, setDetailItems] = useState<TripDetailItem[]>([])
+  const [reviews, setReviews] = useState<TripReview[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -459,8 +468,17 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
           }),
         )
 
+        const { data: reviewRows, error: reviewsError } = await supabase
+          .from('reviews')
+          .select('id, user_id, rating, content, created_at, trip_id')
+          .eq('trip_id', tripId)
+          .order('created_at', { ascending: false })
+
+        if (reviewsError) throw reviewsError
+
         setTrip(tripRow)
         setDetailItems(mergedItems)
+        setReviews(reviewRows ?? [])
       } catch (error) {
         console.error(error)
         setErrorMessage(
@@ -539,6 +557,18 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
     },
   ]
 
+  const validRatings = reviews
+    .map((review) => review.rating)
+    .filter((rating): rating is number => rating != null)
+
+  const averageRating =
+    validRatings.length > 0
+      ? validRatings.reduce((sum, rating) => sum + rating, 0) /
+        validRatings.length
+      : 0
+
+  const averageRatingText = reviews.length > 0 ? averageRating.toFixed(1) : '-'
+
   return (
     <div className="min-h-screen bg-white pb-32">
       <div className="mx-auto max-w-7xl px-6">
@@ -551,7 +581,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
             탐색
           </button>
           <ChevronRight className="h-3 w-3" />
-          <span className="cursor-default hover:text-gray-700">{location}</span>
+          <span>{location}</span>
           <ChevronRight className="h-3 w-3" />
           <span className="font-medium text-gray-900">
             {trip.title || '제목 없는 일정'}
@@ -576,16 +606,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
             </div>
 
             <section className="group relative aspect-[16/9] w-full overflow-hidden rounded-2xl shadow-sm">
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200">
-                <Image
-                  src="/images/search/placeholder.png"
-                  alt={trip.title || '상세 일정 이미지'}
-                  fill
-                  className="object-cover opacity-20 transition-transform duration-700 group-hover:scale-105"
-                  priority
-                />
-              </div>
-
+              <div className="absolute inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-blue-200" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
 
               <div className="absolute bottom-6 left-8 space-y-2 text-white">
@@ -621,10 +642,10 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
 
                 <div className="flex items-center gap-4 text-sm font-medium">
                   <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 text-gray-400" />
-                    <span className="ml-1 font-bold">-</span>
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="ml-1 font-bold">{averageRatingText}</span>
                     <span className="font-normal text-gray-400">
-                      (리뷰 준비중)
+                      ({reviews.length}개 리뷰)
                     </span>
                   </div>
 
@@ -740,7 +761,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
               <div className="flex items-end gap-2">
                 <h2 className="text-xl font-bold text-gray-900">리뷰</h2>
                 <span className="mb-0.5 text-sm font-medium text-gray-400">
-                  0개
+                  {reviews.length}개
                 </span>
               </div>
 
@@ -771,58 +792,98 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
             </div>
 
             <div className="space-y-4">
-              <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-                <div className="flex justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-[10px] font-bold text-gray-400">
-                      -
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-gray-900">
-                        아직 리뷰가 없어요
+              {reviews.length > 0 ? (
+                reviews.map((review) => (
+                  <div
+                    key={review.id}
+                    className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+                  >
+                    <div className="flex justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-[10px] font-bold text-gray-400">
+                          U
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-gray-900">
+                            사용자
+                          </div>
+                          <div className="text-[10px] text-gray-400">
+                            {review.created_at
+                              ? new Date(review.created_at).toLocaleDateString(
+                                  'ko-KR',
+                                )
+                              : '-'}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-[10px] text-gray-400">
-                        첫 리뷰를 남겨보세요
+
+                      <div className="flex items-center gap-0.5">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-3 w-3 ${
+                              i < (review.rating ?? 0)
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'text-gray-200'
+                            }`}
+                          />
+                        ))}
+                        <span className="ml-1 text-xs font-bold text-gray-900">
+                          {review.rating != null
+                            ? review.rating.toFixed(1)
+                            : '-'}
+                        </span>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-0.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-3 w-3 text-gray-200" />
-                    ))}
-                    <span className="ml-1 text-xs font-bold text-gray-900">
-                      -
-                    </span>
-                  </div>
-                </div>
+                    <p className="text-xs leading-relaxed text-gray-600">
+                      {review.content || '리뷰 내용이 없습니다.'}
+                    </p>
 
-                <p className="text-xs leading-relaxed text-gray-600">
-                  아직 등록된 리뷰가 없습니다. 추후 리뷰 테이블이 연결되면 이
-                  영역에 실제 리뷰가 출력됩니다.
-                </p>
-
-                <div className="grid grid-cols-4 gap-2">
-                  {[0, 1, 2, 3].map((item) => (
-                    <div
-                      key={item}
-                      className="relative aspect-square overflow-hidden rounded-lg border border-gray-100 bg-gray-50 flex items-center justify-center"
-                    >
-                      <ImageIcon className="h-4 w-4 text-gray-200" />
+                    <div className="grid grid-cols-4 gap-2">
+                      {[0, 1, 2, 3].map((item) => (
+                        <div
+                          key={item}
+                          className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-gray-100 bg-gray-50"
+                        >
+                          <ImageIcon className="h-4 w-4 text-gray-200" />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))
+              ) : (
+                <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                  <div className="flex justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-[10px] font-bold text-gray-400">
+                        -
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-gray-900">
+                          아직 리뷰가 없어요
+                        </div>
+                        <div className="text-[10px] text-gray-400">
+                          첫 리뷰를 남겨보세요
+                        </div>
+                      </div>
+                    </div>
 
-                <div className="space-y-3 pt-2">
-                  <div className="text-[11px] font-bold text-gray-900">
-                    구간별 보행 환경 평가
+                    <div className="flex items-center gap-0.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="h-3 w-3 text-gray-200" />
+                      ))}
+                      <span className="ml-1 text-xs font-bold text-gray-900">
+                        -
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-[11px] text-gray-500">
-                    리뷰 기반 구간 분석 데이터가 아직 없습니다.
-                  </div>
+                  <p className="text-xs leading-relaxed text-gray-600">
+                    아직 등록된 리뷰가 없습니다.
+                  </p>
                 </div>
-              </div>
+              )}
 
               <button
                 type="button"

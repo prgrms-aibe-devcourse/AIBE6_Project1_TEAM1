@@ -2,16 +2,25 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import PlaceCard from './PlaceCard'
-import type { Trip, TripDetailItem } from './PlaceSearchSection'
+import type {
+  Trip,
+  TripDetailItem,
+  TripReviewSummary,
+} from './PlaceSearchSection'
 
 interface PlaceListProps {
   trips: Trip[]
   tripDetailsMap: Record<number, TripDetailItem[]>
+  tripReviewSummaryMap: Record<number, TripReviewSummary>
 }
 
 const ITEMS_PER_PAGE = 6
 
-export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
+export default function PlaceList({
+  trips,
+  tripDetailsMap,
+  tripReviewSummaryMap,
+}: PlaceListProps) {
   const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
@@ -25,6 +34,24 @@ export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
     const endIndex = startIndex + ITEMS_PER_PAGE
     return trips.slice(startIndex, endIndex)
   }, [currentPage, trips])
+
+  const hotTripIds = useMemo(() => {
+    const rankedTrips = trips
+      .map((trip) => ({
+        id: trip.id,
+        reviewCount: tripReviewSummaryMap[trip.id]?.reviewCount ?? 0,
+      }))
+      .filter((trip) => trip.reviewCount > 0)
+      .sort((a, b) => b.reviewCount - a.reviewCount)
+
+    if (rankedTrips.length === 0) {
+      return new Set<number>()
+    }
+
+    const hotCount = Math.max(1, Math.ceil(rankedTrips.length * 0.1))
+
+    return new Set(rankedTrips.slice(0, hotCount).map((trip) => trip.id))
+  }, [trips, tripReviewSummaryMap])
 
   const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1))
@@ -50,6 +77,13 @@ export default function PlaceList({ trips, tripDetailsMap }: PlaceListProps) {
             key={trip.id}
             trip={trip}
             detailItems={tripDetailsMap[trip.id] ?? []}
+            reviewSummary={
+              tripReviewSummaryMap[trip.id] ?? {
+                averageRating: 0,
+                reviewCount: 0,
+              }
+            }
+            isHot={hotTripIds.has(trip.id)}
           />
         ))}
       </div>

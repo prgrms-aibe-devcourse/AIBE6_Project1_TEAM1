@@ -1,32 +1,25 @@
 'use client'
 
-import { Bookmark, Clock3, Flame, MapPin, Route, Wallet } from 'lucide-react'
-import Image from 'next/image'
+import {
+  Bookmark,
+  Clock3,
+  CreditCard,
+  Flame,
+  MapPin,
+  Route,
+} from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import type { Trip, TripDetailItem } from './PlaceSearchSection'
+import type {
+  Trip,
+  TripDetailItem,
+  TripReviewSummary,
+} from './PlaceSearchSection'
 
 interface PlaceCardProps {
   trip: Trip
   detailItems: TripDetailItem[]
-}
-
-function getTripDurationDays(
-  startDate?: string | null,
-  endDate?: string | null,
-) {
-  if (!startDate || !endDate) return null
-
-  const start = new Date(`${startDate}T00:00:00`)
-  const end = new Date(`${endDate}T00:00:00`)
-
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return null
-  }
-
-  const diffMs = end.getTime() - start.getTime()
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1
-
-  return diffDays > 0 ? diffDays : null
+  reviewSummary: TripReviewSummary
+  isHot?: boolean
 }
 
 function formatTravelTime(value?: number | null) {
@@ -168,14 +161,6 @@ function buildFeatureBadges(detailItems: TripDetailItem[]) {
   }
 
   if (
-    categoriesText.includes('카페') ||
-    categoriesText.includes('실내') ||
-    categoriesText.includes('복합')
-  ) {
-    badges.push('그늘 충분함')
-  }
-
-  if (
     categoriesText.includes('공원') ||
     categoriesText.includes('해안') ||
     categoriesText.includes('바다')
@@ -183,21 +168,15 @@ function buildFeatureBadges(detailItems: TripDetailItem[]) {
     badges.push('계단 없음')
   }
 
-  if (badges.length === 0) {
-    badges.push('추천 코스')
+  if (
+    categoriesText.includes('카페') ||
+    categoriesText.includes('실내') ||
+    categoriesText.includes('복합')
+  ) {
+    badges.push('그늘 충분함')
   }
 
   return badges.slice(0, 3)
-}
-
-function getPreviewImage(detailItems: TripDetailItem[]) {
-  const firstPlace = detailItems.find((item) => item.place)?.place
-
-  if (!firstPlace) {
-    return '/images/search/placeholder.png'
-  }
-
-  return '/images/search/placeholder.png'
 }
 
 function getLocationLabel(detailItems: TripDetailItem[]) {
@@ -210,33 +189,47 @@ function getLocationLabel(detailItems: TripDetailItem[]) {
   return parts.slice(0, 2).join(' ')
 }
 
-export default function PlaceCard({ trip, detailItems }: PlaceCardProps) {
+export default function PlaceCard({
+  trip,
+  detailItems,
+  reviewSummary,
+  isHot = false,
+}: PlaceCardProps) {
   const router = useRouter()
 
   const categoryLabel = inferMainCategory(detailItems)
   const tags = buildTags(detailItems)
   const featureBadges = buildFeatureBadges(detailItems)
-  const imageUrl = getPreviewImage(detailItems)
   const locationLabel = getLocationLabel(detailItems)
+
+  const ratingText =
+    reviewSummary.reviewCount > 0 ? reviewSummary.averageRating.toFixed(1) : '-'
+
+  const reviewCountText =
+    reviewSummary.reviewCount > 0 ? `(${reviewSummary.reviewCount})` : '(0)'
 
   const handleMoveDetail = () => {
     router.push(`/search/${trip.id}`)
   }
 
+  const handleCardKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleMoveDetail()
+    }
+  }
+
   return (
     <article className="overflow-hidden rounded-[28px] border border-gray-200 bg-[#f6f6f8] shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={handleMoveDetail}
-        className="block w-full text-left"
+        onKeyDown={handleCardKeyDown}
+        className="block w-full cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-[#6c3cff] focus:ring-offset-2"
       >
         <div className="relative aspect-[16/11] w-full overflow-hidden rounded-t-[28px]">
-          <Image
-            src={imageUrl}
-            alt={trip.title || '일정 이미지'}
-            fill
-            className="object-cover"
-          />
+          <div className="absolute inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-blue-200" />
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-black/5 to-transparent" />
 
@@ -244,10 +237,13 @@ export default function PlaceCard({ trip, detailItems }: PlaceCardProps) {
             <span className="rounded-full bg-white px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm">
               {categoryLabel}
             </span>
-            <span className="inline-flex items-center rounded-full bg-orange-500 px-3 py-2 text-sm font-bold text-white shadow-sm">
-              <Flame className="mr-1 h-4 w-4 fill-white text-white" />
-              HOT 코스
-            </span>
+
+            {isHot && (
+              <span className="inline-flex items-center rounded-full bg-orange-500 px-3 py-2 text-sm font-bold text-white shadow-sm">
+                <Flame className="mr-1 h-4 w-4 fill-white text-white" />
+                HOT 코스
+              </span>
+            )}
           </div>
 
           <button
@@ -260,16 +256,18 @@ export default function PlaceCard({ trip, detailItems }: PlaceCardProps) {
             <Bookmark className="h-6 w-6" />
           </button>
 
-          <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-            {featureBadges.map((badge) => (
-              <span
-                key={badge}
-                className="rounded-md bg-black/65 px-2.5 py-1.5 text-xs font-semibold text-white backdrop-blur-[2px]"
-              >
-                {badge}
-              </span>
-            ))}
-          </div>
+          {featureBadges.length > 0 && (
+            <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
+              {featureBadges.map((badge) => (
+                <span
+                  key={badge}
+                  className="rounded-md bg-black/65 px-2.5 py-1.5 text-xs font-semibold text-white backdrop-blur-[2px]"
+                >
+                  {badge}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="space-y-4 px-5 pb-5 pt-4">
@@ -278,6 +276,7 @@ export default function PlaceCard({ trip, detailItems }: PlaceCardProps) {
               <h3 className="line-clamp-2 text-[18px] font-extrabold leading-snug text-[#1f2650]">
                 {trip.title || '제목 없는 일정'}
               </h3>
+
               <p className="mt-1 text-sm font-medium text-gray-400">
                 {locationLabel}
               </p>
@@ -287,9 +286,11 @@ export default function PlaceCard({ trip, detailItems }: PlaceCardProps) {
               <div className="flex items-center gap-1 text-[#f4b400]">
                 <span className="text-[22px] leading-none">★</span>
                 <span className="text-[16px] font-extrabold text-[#1f2650]">
-                  4.2
+                  {ratingText}
                 </span>
-                <span className="text-sm font-medium text-gray-400">(128)</span>
+                <span className="text-sm font-medium text-gray-400">
+                  {reviewCountText}
+                </span>
               </div>
             </div>
           </div>
@@ -311,13 +312,13 @@ export default function PlaceCard({ trip, detailItems }: PlaceCardProps) {
             </span>
 
             <span className="inline-flex items-center gap-1.5">
-              <Wallet className="h-4 w-4" />
+              <CreditCard className="h-4 w-4" />
               {formatCost(trip.total_cost)}
             </span>
 
             <span className="inline-flex items-center gap-1.5">
               <Bookmark className="h-4 w-4" />
-              {trip.is_saved ? '저장됨' : '1024'}
+              {trip.is_saved ? '저장됨' : '-'}
             </span>
           </div>
 
@@ -342,7 +343,7 @@ export default function PlaceCard({ trip, detailItems }: PlaceCardProps) {
             </span>
           </div>
         </div>
-      </button>
+      </div>
     </article>
   )
 }

@@ -40,6 +40,20 @@ export interface Place {
   displayCategory?: string | null
 }
 
+export interface TripReview {
+  id: number
+  user_id: string | null
+  rating: number | null
+  content: string | null
+  created_at: string | null
+  trip_id: number
+}
+
+export interface TripReviewSummary {
+  averageRating: number
+  reviewCount: number
+}
+
 export interface TripDetailItem extends TripItem {
   place: Place | null
 }
@@ -138,6 +152,9 @@ export default function PlaceSearchSection() {
   const [tripDetailsMap, setTripDetailsMap] = useState<
     Record<number, TripDetailItem[]>
   >({})
+  const [tripReviewSummaryMap, setTripReviewSummaryMap] = useState<
+    Record<number, TripReviewSummary>
+  >({})
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryOption>('전체')
   const [errorMessage, setErrorMessage] = useState('')
@@ -161,6 +178,7 @@ export default function PlaceSearchSection() {
     if (!supabase) {
       setTrips([])
       setTripDetailsMap({})
+      setTripReviewSummaryMap({})
       setErrorMessage('Supabase 환경변수가 설정되지 않았습니다.')
       return
     }
@@ -178,7 +196,6 @@ export default function PlaceSearchSection() {
         )
         .order('start_date', { ascending: true })
 
-      // 기존 제목 검색은 DB 쿼리에서 먼저 유지
       if (trimmedKeyword) {
         tripsQuery = tripsQuery.ilike('title', `%${trimmedKeyword}%`)
       }
@@ -188,7 +205,6 @@ export default function PlaceSearchSection() {
 
       if (titleTripsError) throw titleTripsError
 
-      // 장소명/주소 매칭을 위해 전체 trips도 한 번 가져옴
       const { data: allTripsRows, error: allTripsError } = await supabase
         .from('trips')
         .select(
@@ -204,10 +220,10 @@ export default function PlaceSearchSection() {
       if (allTripIds.length === 0) {
         setTrips([])
         setTripDetailsMap({})
+        setTripReviewSummaryMap({})
         return
       }
 
-      // 실제 테이블명이 trip_itemps면 여기만 바꿔
       const { data: tripItemsRows, error: tripItemsError } = await supabase
         .from('trip_items')
         .select(
@@ -261,7 +277,6 @@ export default function PlaceSearchSection() {
         })
       })
 
-      // 장소명/주소 기준 검색으로 걸리는 trip id 찾기
       const placeMatchedTripIds = new Set<number>()
 
       if (trimmedKeyword) {
@@ -281,7 +296,6 @@ export default function PlaceSearchSection() {
         })
       }
 
-      // 기존 제목 검색 결과 유지 + 장소명/주소 검색 결과 추가
       const titleMatchedIds = new Set(
         (titleMatchedTrips ?? []).map((trip) => trip.id),
       )
@@ -293,7 +307,6 @@ export default function PlaceSearchSection() {
           )
         : allTrips
 
-      // 카테고리 필터는 기존처럼 유지
       const categoryFilteredTrips =
         category === '전체'
           ? mergedTrips
@@ -303,12 +316,58 @@ export default function PlaceSearchSection() {
               ),
             )
 
+      const filteredTripIds = categoryFilteredTrips.map((trip) => trip.id)
+
+      let nextTripReviewSummaryMap: Record<number, TripReviewSummary> = {}
+
+      if (filteredTripIds.length > 0) {
+        const { data: reviewRows, error: reviewsError } = await supabase
+          .from('reviews')
+          .select('id, user_id, rating, content, created_at, trip_id')
+          .in('trip_id', filteredTripIds)
+
+        if (reviewsError) throw reviewsError
+
+        const groupedReviews = new Map<number, TripReview[]>()
+
+        ;(reviewRows ?? []).forEach((review) => {
+          const current = groupedReviews.get(review.trip_id) ?? []
+          current.push(review)
+          groupedReviews.set(review.trip_id, current)
+        })
+
+        nextTripReviewSummaryMap = Object.fromEntries(
+          filteredTripIds.map((tripId) => {
+            const reviews = groupedReviews.get(tripId) ?? []
+            const ratings = reviews
+              .map((review) => review.rating)
+              .filter((rating): rating is number => rating != null)
+
+            const averageRating =
+              ratings.length > 0
+                ? ratings.reduce((sum, rating) => sum + rating, 0) /
+                  ratings.length
+                : 0
+
+            return [
+              tripId,
+              {
+                averageRating,
+                reviewCount: reviews.length,
+              },
+            ]
+          }),
+        )
+      }
+
       setTrips(categoryFilteredTrips)
       setTripDetailsMap(nextTripDetailsMap)
+      setTripReviewSummaryMap(nextTripReviewSummaryMap)
     } catch (error) {
       console.error(error)
       setTrips([])
       setTripDetailsMap({})
+      setTripReviewSummaryMap({})
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -328,6 +387,7 @@ export default function PlaceSearchSection() {
       <PlaceResultSection
         trips={trips}
         tripDetailsMap={tripDetailsMap}
+        tripReviewSummaryMap={tripReviewSummaryMap}
         errorMessage={errorMessage}
         isLoading={isLoading}
         selectedCategory={selectedCategory}
