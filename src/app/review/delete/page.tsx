@@ -1,6 +1,6 @@
 'use client'
 
-import DeleteReview from '@/components/domain/review/DeleteReview'
+import { deleteReview } from '@/components/domain/review/useDeleteReview' // 함수형으로 변경
 import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -13,7 +13,6 @@ import { useEffect } from 'react'
 export default function ReviewDeletePage() {
   // url 형식 : /review/delete?reviewId="리뷰번호"
 
-  //////////////////// 다른 페이지에서 구현될 내용 + 디버깅용 코드 //////////////////////////
   const supabase = createClient()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -21,6 +20,7 @@ export default function ReviewDeletePage() {
   const reviewId = reviewIdParam ? Number(reviewIdParam) : null
   const { openModal } = useModalStore()
 
+  // 리뷰 존재 여부 체크
   useEffect(() => {
     const checkReview = async () => {
       if (!reviewId) return
@@ -32,25 +32,29 @@ export default function ReviewDeletePage() {
         .single()
 
       if (!data) {
-        alert('리뷰가 없습니다')
-        //router.push('/')
+        openModal({
+          type: 'alert',
+          variant: 'danger',
+          title: '리뷰 없음',
+          description: '리뷰가 없습니다',
+          onConfirm: () => {
+            router.push('/')
+          },
+        })
       }
     }
     checkReview()
-  }, [reviewId])
-  ///////////////////////////////////////////////////////////////////////////////
+  }, [reviewId, openModal, router, supabase])
 
-  /////////////////////////// DeleteReview 사용 예시 /////////////////////////////
+  /////////////////////////// 삭제 버튼 /////////////////////////////
   const handleDelete = async () => {
     if (!reviewId) return
-    await DeleteReview(supabase, reviewId)
-    // 삭제 후 라우팅 어디로?
-    router.push('/')
+    await deleteReview(supabase, reviewId, openModal, router)
   }
 
   return (
     <button
-      className="w-1/3 cursor-pointer"
+      className="w-1/3 cursor-pointer bg-red-500 text-white px-4 py-2 rounded"
       onClick={() =>
         openModal({
           type: 'confirm',

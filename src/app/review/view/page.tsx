@@ -1,5 +1,6 @@
 'use client'
 
+import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -21,16 +22,26 @@ export default function ReviewViewPage() {
   const supabase = createClient()
   const router = useRouter()
   const searchParams = useSearchParams()
-
-  const reviewId = Number(searchParams.get('reviewId'))
-
   const [loading, setLoading] = useState(true)
-
   const [review, setReview] = useState<any>(null)
   const [routes, setRoutes] = useState<Route[]>([])
   const [routeOptions, setRouteOptions] = useState<RouteOption[]>([])
   const [images, setImages] = useState<{ file_url: string }[]>([])
   const [placeMap, setPlaceMap] = useState<Record<number, string>>({})
+  const { openModal } = useModalStore()
+
+  const reviewIdParam = searchParams.get('reviewId')
+  const reviewId = reviewIdParam ? Number(reviewIdParam) : null
+  if (!reviewId) {
+    openModal({
+      type: 'alert',
+      variant: 'danger',
+      title: '잘못된 접근',
+      description: '리뷰 ID가 존재하지 않습니다.',
+      onConfirm: () => router.push('/'),
+    })
+    return null
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,7 +58,15 @@ export default function ReviewViewPage() {
 
       if (reviewError) {
         console.error(reviewError)
-        return alert('리뷰 조회 실패')
+        openModal({
+          type: 'alert',
+          variant: 'danger',
+          title: '리뷰 조회 실패',
+          description: '리뷰 조회에 실패했습니다.',
+          onConfirm: () => {
+            router.push('/')
+          },
+        })
       }
 
       setReview(reviewData)
@@ -59,9 +78,18 @@ export default function ReviewViewPage() {
         .eq('review_id', reviewId)
         .order('order', { ascending: true })
 
-      if (routeError) {
+      if (routeError || !routeData) {
         console.error(routeError)
-        return alert('경로 조회 실패')
+        openModal({
+          type: 'alert',
+          variant: 'danger',
+          title: '경로 조회 실패',
+          description: '경로 조회에 실패했습니다.',
+          onConfirm: () => {
+            router.push('/')
+          },
+        })
+        return
       }
 
       // 👉 routes / options 분리
@@ -94,7 +122,9 @@ export default function ReviewViewPage() {
 
       // ✅ 4. place 이름 매핑
       const ids = Array.from(
-        new Set(routeData.flatMap((r: any) => [r.start, r.end])),
+        new Set(
+          routeData.flatMap((r: any) => [r.start, r.end].filter(Boolean)),
+        ),
       )
 
       if (ids.length > 0) {
