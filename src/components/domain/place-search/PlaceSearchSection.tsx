@@ -7,11 +7,15 @@ import PlaceResultSection from './PlaceResultSection'
 
 export interface Trip {
   id: number
+  user_id: string | null
   title: string | null
   start_date: string | null
   end_date: string | null
   is_public: boolean | null
-  user_id?: string | null
+  total_travel_time: number | null
+  total_cost: number | null
+  total_distance: number | null
+  is_saved: boolean | null
 }
 
 export interface TripItem {
@@ -169,7 +173,9 @@ export default function PlaceSearchSection() {
 
       let tripsQuery = supabase
         .from('trips')
-        .select('id, title, start_date, end_date, is_public, user_id')
+        .select(
+          'id, user_id, title, start_date, end_date, is_public, total_travel_time, total_cost, total_distance, is_saved',
+        )
         .order('start_date', { ascending: true })
 
       // 기존 제목 검색은 DB 쿼리에서 먼저 유지
@@ -185,7 +191,9 @@ export default function PlaceSearchSection() {
       // 장소명/주소 매칭을 위해 전체 trips도 한 번 가져옴
       const { data: allTripsRows, error: allTripsError } = await supabase
         .from('trips')
-        .select('id, title, start_date, end_date, is_public, user_id')
+        .select(
+          'id, user_id, title, start_date, end_date, is_public, total_travel_time, total_cost, total_distance, is_saved',
+        )
         .order('start_date', { ascending: true })
 
       if (allTripsError) throw allTripsError
