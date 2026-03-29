@@ -1,6 +1,7 @@
 'use client'
 
 import DeleteReview from '@/components/domain/review/DeleteReview'
+import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
@@ -16,9 +17,9 @@ export default function ReviewDeletePage() {
   const supabase = createClient()
   const searchParams = useSearchParams()
   const router = useRouter()
-
   const reviewIdParam = searchParams.get('reviewId')
   const reviewId = reviewIdParam ? Number(reviewIdParam) : null
+  const { openModal } = useModalStore()
 
   useEffect(() => {
     const checkReview = async () => {
@@ -40,15 +41,28 @@ export default function ReviewDeletePage() {
   ///////////////////////////////////////////////////////////////////////////////
 
   /////////////////////////// DeleteReview 사용 예시 /////////////////////////////
-  const handleClick = async () => {
+  const handleDelete = async () => {
     if (!reviewId) return
-
     await DeleteReview(supabase, reviewId)
+    // 삭제 후 라우팅 어디로?
     router.push('/')
   }
 
   return (
-    <button className="w-1/3 cursor-pointer" onClick={handleClick}>
+    <button
+      className="w-1/3 cursor-pointer"
+      onClick={() =>
+        openModal({
+          type: 'confirm',
+          variant: 'danger',
+          title: '리뷰를 삭제하시겠습니까?',
+          description: '삭제된 데이터는 복구할 수 없습니다.',
+          confirmText: '삭제',
+          cancelText: '취소',
+          onConfirm: handleDelete,
+        })
+      }
+    >
       리뷰 삭제
     </button>
   )
