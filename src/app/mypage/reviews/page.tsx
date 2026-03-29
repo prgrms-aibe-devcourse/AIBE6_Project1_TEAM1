@@ -161,15 +161,13 @@ export default function ReviewsPage() {
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
-            <Link
-              href="/mypage"
+            <Link 
+              href="/mypage" 
               className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/5 hover:bg-gray-50 transition-colors"
             >
               <ChevronLeft className="h-6 w-6 text-gray-600" />
             </Link>
-            <h1 className="text-xl font-bold tracking-tight text-gray-900">
-              작성한 리뷰
-            </h1>
+            <h1 className="text-xl font-bold tracking-tight text-gray-900">작성한 리뷰</h1>
           </div>
         </div>
       </header>
@@ -339,14 +337,12 @@ export default function ReviewsPage() {
             <div className="bg-gray-100 p-8 rounded-full mb-6">
               <MessageSquare className="h-12 w-12 text-gray-300" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              작성한 리뷰가 없습니다
-            </h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">작성한 리뷰가 없습니다</h3>
             <p className="text-gray-500 mb-8 max-w-xs px-4">
               다녀온 여행지에 대한 소중한 후기를 남겨주세요!
             </p>
-            <Link
-              href="/mypage/triplogs"
+            <Link 
+              href="/mypage/triplogs" 
               className="px-8 py-3.5 bg-purple-600 text-white font-bold rounded-2xl shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all hover:scale-[1.02]"
             >
               내 기록 확인하러 가기
@@ -355,5 +351,5 @@ export default function ReviewsPage() {
         )}
       </main>
     </div>
-  )
+  );
 }
