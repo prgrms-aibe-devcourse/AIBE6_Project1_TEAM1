@@ -60,7 +60,7 @@ export default function TimelineList({
     )
 
   return (
-    <div className="flex flex-col w-full h-full bg-transparent overflow-y-auto">
+    <div className="flex flex-col w-full h-full bg-transparent overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       <div className="flex items-center justify-between mb-4 mt-1 px-2">
         <div className="flex items-center gap-2">
           <h2 className="text-[15px] font-bold text-gray-900">타임라인</h2>

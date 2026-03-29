@@ -116,7 +116,7 @@ export default function PlaceSearchModal({
         </div>
 
         {/* 결과 리스트 영역 */}
-        <div className="flex-1 overflow-y-auto p-3 bg-white">
+        <div className="flex-1 overflow-y-auto p-3 bg-white [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {results.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-300">
               <Search className="w-10 h-10 mb-3 opacity-20" />
