@@ -7,11 +7,15 @@ import PlaceResultSection from './PlaceResultSection'
 
 export interface Trip {
   id: number
+  user_id: string | null
   title: string | null
   start_date: string | null
   end_date: string | null
   is_public: boolean | null
-  user_id?: string | null
+  total_travel_time: number | null
+  total_cost: number | null
+  total_distance: number | null
+  is_saved: boolean | null
 }
 
 export interface TripItem {
@@ -36,13 +40,26 @@ export interface Place {
   displayCategory?: string | null
 }
 
+export interface TripReview {
+  id: number
+  user_id: string | null
+  rating: number | null
+  content: string | null
+  created_at: string | null
+  trip_id: number
+}
+
+export interface TripReviewSummary {
+  averageRating: number
+  reviewCount: number
+}
+
 export interface TripDetailItem extends TripItem {
   place: Place | null
 }
 
 const CATEGORY_OPTIONS = [
   '전체',
-  '당일치기',
   '음식점',
   '카페',
   '숙박',
@@ -127,25 +144,6 @@ function includesKeyword(value: string | null | undefined, keyword: string) {
   return value.toLowerCase().includes(keyword.toLowerCase())
 }
 
-function getTripDurationDays(
-  startDate?: string | null,
-  endDate?: string | null,
-) {
-  if (!startDate || !endDate) return null
-
-  const start = new Date(`${startDate}T00:00:00`)
-  const end = new Date(`${endDate}T00:00:00`)
-
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return null
-  }
-
-  const diffMs = end.getTime() - start.getTime()
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1
-
-  return diffDays > 0 ? diffDays : null
-}
-
 export default function PlaceSearchSection() {
   const searchParams = useSearchParams()
   const queryFromUrl = searchParams.get('query') ?? ''
@@ -153,6 +151,9 @@ export default function PlaceSearchSection() {
   const [trips, setTrips] = useState<Trip[]>([])
   const [tripDetailsMap, setTripDetailsMap] = useState<
     Record<number, TripDetailItem[]>
+  >({})
+  const [tripReviewSummaryMap, setTripReviewSummaryMap] = useState<
+    Record<number, TripReviewSummary>
   >({})
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryOption>('전체')
@@ -177,6 +178,7 @@ export default function PlaceSearchSection() {
     if (!supabase) {
       setTrips([])
       setTripDetailsMap({})
+      setTripReviewSummaryMap({})
       setErrorMessage('Supabase 환경변수가 설정되지 않았습니다.')
       return
     }
@@ -189,7 +191,9 @@ export default function PlaceSearchSection() {
 
       let tripsQuery = supabase
         .from('trips')
-        .select('id, title, start_date, end_date, is_public, user_id')
+        .select(
+          'id, user_id, title, start_date, end_date, is_public, total_travel_time, total_cost, total_distance, is_saved',
+        )
         .order('start_date', { ascending: true })
 
       if (trimmedKeyword) {
@@ -203,7 +207,9 @@ export default function PlaceSearchSection() {
 
       const { data: allTripsRows, error: allTripsError } = await supabase
         .from('trips')
-        .select('id, title, start_date, end_date, is_public, user_id')
+        .select(
+          'id, user_id, title, start_date, end_date, is_public, total_travel_time, total_cost, total_distance, is_saved',
+        )
         .order('start_date', { ascending: true })
 
       if (allTripsError) throw allTripsError
@@ -214,6 +220,7 @@ export default function PlaceSearchSection() {
       if (allTripIds.length === 0) {
         setTrips([])
         setTripDetailsMap({})
+        setTripReviewSummaryMap({})
         return
       }
 
@@ -303,24 +310,64 @@ export default function PlaceSearchSection() {
       const categoryFilteredTrips =
         category === '전체'
           ? mergedTrips
-          : category === '당일치기'
-            ? mergedTrips.filter(
-                (trip) =>
-                  getTripDurationDays(trip.start_date, trip.end_date) === 1,
-              )
-            : mergedTrips.filter((trip) =>
-                (nextTripDetailsMap[trip.id] ?? []).some(
-                  (item) =>
-                    inferPlaceCategory(item.place?.category) === category,
-                ),
-              )
+          : mergedTrips.filter((trip) =>
+              (nextTripDetailsMap[trip.id] ?? []).some(
+                (item) => inferPlaceCategory(item.place?.category) === category,
+              ),
+            )
+
+      const filteredTripIds = categoryFilteredTrips.map((trip) => trip.id)
+
+      let nextTripReviewSummaryMap: Record<number, TripReviewSummary> = {}
+
+      if (filteredTripIds.length > 0) {
+        const { data: reviewRows, error: reviewsError } = await supabase
+          .from('reviews')
+          .select('id, user_id, rating, content, created_at, trip_id')
+          .in('trip_id', filteredTripIds)
+
+        if (reviewsError) throw reviewsError
+
+        const groupedReviews = new Map<number, TripReview[]>()
+
+        ;(reviewRows ?? []).forEach((review) => {
+          const current = groupedReviews.get(review.trip_id) ?? []
+          current.push(review)
+          groupedReviews.set(review.trip_id, current)
+        })
+
+        nextTripReviewSummaryMap = Object.fromEntries(
+          filteredTripIds.map((tripId) => {
+            const reviews = groupedReviews.get(tripId) ?? []
+            const ratings = reviews
+              .map((review) => review.rating)
+              .filter((rating): rating is number => rating != null)
+
+            const averageRating =
+              ratings.length > 0
+                ? ratings.reduce((sum, rating) => sum + rating, 0) /
+                  ratings.length
+                : 0
+
+            return [
+              tripId,
+              {
+                averageRating,
+                reviewCount: reviews.length,
+              },
+            ]
+          }),
+        )
+      }
 
       setTrips(categoryFilteredTrips)
       setTripDetailsMap(nextTripDetailsMap)
+      setTripReviewSummaryMap(nextTripReviewSummaryMap)
     } catch (error) {
       console.error(error)
       setTrips([])
       setTripDetailsMap({})
+      setTripReviewSummaryMap({})
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -340,6 +387,7 @@ export default function PlaceSearchSection() {
       <PlaceResultSection
         trips={trips}
         tripDetailsMap={tripDetailsMap}
+        tripReviewSummaryMap={tripReviewSummaryMap}
         errorMessage={errorMessage}
         isLoading={isLoading}
         selectedCategory={selectedCategory}

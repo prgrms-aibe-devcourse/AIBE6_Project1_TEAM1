@@ -1,0 +1,900 @@
+'use client'
+
+import { createClient } from '@supabase/supabase-js'
+import {
+  Bookmark,
+  Bus,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  CreditCard,
+  Flame,
+  Footprints,
+  ImageIcon,
+  MapPin,
+  Route,
+  Share2,
+  Star,
+} from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+
+interface Place {
+  id: number
+  kakao_place_id: string | null
+  place_name: string | null
+  category: string | null
+  latitude: number | null
+  longitude: number | null
+  is_near_station: boolean | null
+  address: string | null
+}
+
+interface Trip {
+  id: number
+  user_id: string | null
+  title: string | null
+  start_date: string | null
+  end_date: string | null
+  is_public: boolean | null
+  total_travel_time: number | null
+  total_cost: number | null
+  total_distance: number | null
+  is_saved: boolean | null
+}
+
+interface TripItemRow {
+  id: number
+  trip_id: number
+  place_id: number
+  visit_order: number | null
+  transport_type: string | null
+  travel_time: number | null
+  visit_day: number | null
+}
+
+interface TripDetailItem extends TripItemRow {
+  place: Place | null
+}
+
+interface TripReview {
+  id: number
+  user_id: string | null
+  rating: number | null
+  content: string | null
+  created_at: string | null
+  trip_id: number
+}
+
+interface PlaceDetailPageProps {
+  tripId: number
+}
+
+interface SummaryCardProps {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  value: string | number
+}
+
+interface EnvStatBarProps {
+  label: string
+  value: number
+  level: string
+  min: string
+  max: string
+}
+
+interface TimelineItemProps {
+  data: {
+    id: number
+    day: number | null
+    name: string
+    desc: string
+    type: 'start' | 'spot' | 'end'
+    transport: {
+      type: 'walk' | 'bus' | null
+      time?: string
+      dist?: string
+      lines?: string[]
+    } | null
+  }
+  isLast: boolean
+}
+
+function formatDistance(value?: number | null) {
+  if (value == null) return '-'
+  return `${value.toLocaleString()}km`
+}
+
+function formatTravelTime(value?: number | null) {
+  if (value == null) return '-'
+
+  if (value < 60) return `약 ${value}분`
+
+  const hour = Math.floor(value / 60)
+  const minute = value % 60
+
+  if (minute === 0) return `약 ${hour}시간`
+  return `약 ${hour}시간 ${minute}분`
+}
+
+function formatCost(value?: number | null) {
+  if (value == null) return '-'
+  return `약 ${value.toLocaleString()}원`
+}
+
+function formatSaveCount(isSaved?: boolean | null) {
+  return isSaved ? '저장됨' : '-'
+}
+
+function getTripDurationDays(
+  startDate?: string | null,
+  endDate?: string | null,
+) {
+  if (!startDate || !endDate) return null
+
+  const start = new Date(`${startDate}T00:00:00`)
+  const end = new Date(`${endDate}T00:00:00`)
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return null
+  }
+
+  const diffMs = end.getTime() - start.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1
+
+  return diffDays > 0 ? diffDays : null
+}
+
+function getTripDurationLabel(
+  startDate?: string | null,
+  endDate?: string | null,
+) {
+  const days = getTripDurationDays(startDate, endDate)
+
+  if (!days) return '-'
+  if (days === 1) return '당일치기'
+
+  return `${days} Days`
+}
+
+function inferPlaceCategory(rawCategory?: string | null) {
+  const category = rawCategory ?? ''
+
+  if (!category) return '기타'
+
+  if (
+    category.includes('카페') ||
+    category.includes('커피') ||
+    category.includes('디저트') ||
+    category.includes('베이커리')
+  ) {
+    return '카페'
+  }
+
+  if (
+    category.includes('음식점') ||
+    category.includes('식당') ||
+    category.includes('맛집') ||
+    category.includes('한식') ||
+    category.includes('중식') ||
+    category.includes('일식') ||
+    category.includes('양식') ||
+    category.includes('분식')
+  ) {
+    return '음식점'
+  }
+
+  if (
+    category.includes('호텔') ||
+    category.includes('모텔') ||
+    category.includes('펜션') ||
+    category.includes('게스트하우스') ||
+    category.includes('숙박')
+  ) {
+    return '숙박'
+  }
+
+  if (
+    category.includes('박물관') ||
+    category.includes('미술관') ||
+    category.includes('공연') ||
+    category.includes('전시') ||
+    category.includes('문화')
+  ) {
+    return '문화시설'
+  }
+
+  if (
+    category.includes('공원') ||
+    category.includes('관광') ||
+    category.includes('명소') ||
+    category.includes('전망대') ||
+    category.includes('해수욕장') ||
+    category.includes('랜드마크')
+  ) {
+    return '관광명소'
+  }
+
+  return category
+}
+
+function extractLocation(detailItems: TripDetailItem[]) {
+  const firstAddress = detailItems.find((item) => item.place?.address)?.place
+    ?.address
+
+  if (!firstAddress) return '위치 정보 없음'
+
+  const parts = firstAddress.split(' ')
+  return parts.slice(0, 2).join(' ')
+}
+
+function buildTags(detailItems: TripDetailItem[]) {
+  const categories = detailItems
+    .map((item) => inferPlaceCategory(item.place?.category))
+    .filter(Boolean)
+
+  return [...new Set(categories)].slice(0, 4)
+}
+
+function buildTimeline(
+  detailItems: TripDetailItem[],
+): TimelineItemProps['data'][] {
+  return detailItems.map((item, index) => {
+    const isFirst = index === 0
+    const isLast = index === detailItems.length - 1
+
+    let transport: TimelineItemProps['data']['transport'] = null
+    let itemType: TimelineItemProps['data']['type'] = 'spot'
+
+    if (isFirst) {
+      itemType = 'start'
+    } else if (isLast) {
+      itemType = 'end'
+    }
+
+    if (!isLast) {
+      if (item.transport_type === 'walk') {
+        transport = {
+          type: 'walk',
+          time: item.travel_time != null ? `${item.travel_time}분` : '-',
+          dist: '-',
+        }
+      } else if (item.transport_type) {
+        transport = {
+          type: 'bus',
+          lines: [
+            item.travel_time != null
+              ? `${item.travel_time}분 · ${item.transport_type}`
+              : item.transport_type,
+          ],
+        }
+      }
+    }
+
+    return {
+      id: item.visit_order ?? index + 1,
+      day: item.visit_day ?? null,
+      name: item.place?.place_name || '장소 이름 없음',
+      desc: item.place?.address || '주소 정보 없음',
+      type: itemType,
+      transport,
+    }
+  })
+}
+
+const SummaryCard = ({ icon: Icon, label, value }: SummaryCardProps) => (
+  <div className="flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-white p-4 shadow-sm space-y-1">
+    <Icon className="h-5 w-5 text-gray-400" />
+    <span className="text-[10px] font-medium text-gray-400">{label}</span>
+    <span className="text-sm font-bold text-gray-900">{value}</span>
+  </div>
+)
+
+const EnvStatBar = ({ label, value, level, min, max }: EnvStatBarProps) => (
+  <div className="space-y-2">
+    <div className="flex items-end justify-between">
+      <span className="flex items-center gap-1 text-sm font-bold text-gray-900">
+        {label === '경사도' && <Route className="h-3.5 w-3.5 rotate-45" />}
+        {label === '계단' && (
+          <ChevronRight className="h-3.5 w-3.5 rotate-[-90deg]" />
+        )}
+        {label === '그늘' && <Flame className="h-3.5 w-3.5" />}
+        {label}
+      </span>
+      <span className="text-sm font-bold text-gray-900">{level}</span>
+    </div>
+
+    <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-gray-100">
+      <div
+        className="absolute left-0 top-0 h-full rounded-full bg-black transition-all duration-1000"
+        style={{ width: `${value}%` }}
+      />
+    </div>
+
+    <div className="flex justify-between text-[10px] text-gray-400">
+      <span>{min}</span>
+      <span>{max}</span>
+    </div>
+  </div>
+)
+
+const TimelineItem = ({ data, isLast }: TimelineItemProps) => (
+  <div className="relative pl-8">
+    {!isLast && (
+      <div className="absolute left-[13px] top-7 bottom-[-28px] w-[2px] border-l-2 border-dashed border-gray-300 bg-gray-100" />
+    )}
+
+    <div className="absolute left-0 top-1 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black text-[12px] font-bold text-white">
+      {data.id}
+    </div>
+
+    <div className="group flex items-center justify-between">
+      <div className="mr-4 flex grow items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-100">
+          <MapPin className="h-5 w-5 text-gray-300" />
+        </div>
+
+        <div className="min-w-0">
+          {data.day != null && (
+            <p className="mb-1 text-[11px] font-semibold text-purple-600">
+              Day {data.day}
+            </p>
+          )}
+          <h4 className="text-sm font-bold text-gray-900">{data.name}</h4>
+          <p className="truncate text-[11px] text-gray-400">{data.desc}</p>
+        </div>
+      </div>
+
+      <div className="shrink-0 text-right">
+        <span
+          className={`rounded px-2.5 py-1 text-[10px] font-bold ${
+            data.type === 'start'
+              ? 'bg-gray-100 text-gray-500'
+              : data.type === 'end'
+                ? 'bg-gray-100 text-gray-500'
+                : 'border border-gray-200 bg-white text-gray-600'
+          }`}
+        >
+          {data.type === 'start'
+            ? '출발'
+            : data.type === 'end'
+              ? '도착'
+              : '포토존'}
+        </span>
+      </div>
+    </div>
+
+    {data.transport && !isLast && (
+      <div className="my-6 space-y-1">
+        {data.transport.type === 'walk' ? (
+          <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+            <Footprints className="h-3 w-3" />
+            <span>
+              도보 {data.transport.time} · {data.transport.dist}
+            </span>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1 text-[11px] text-gray-400">
+            {(data.transport.lines ?? []).map((line, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <Bus className="h-3 w-3" />
+                <span>{line}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+)
+
+export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
+  const router = useRouter()
+  const [trip, setTrip] = useState<Trip | null>(null)
+  const [detailItems, setDetailItems] = useState<TripDetailItem[]>([])
+  const [reviews, setReviews] = useState<TripReview[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
+
+  const supabase = useMemo(() => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseAnonKey) return null
+
+    return createClient(supabaseUrl, supabaseAnonKey)
+  }, [])
+
+  useEffect(() => {
+    const fetchTripDetail = async () => {
+      if (!supabase) {
+        setErrorMessage('Supabase 환경변수가 설정되지 않았습니다.')
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        setErrorMessage('')
+
+        const { data: tripRow, error: tripError } = await supabase
+          .from('trips')
+          .select(
+            'id, user_id, title, start_date, end_date, is_public, total_travel_time, total_cost, total_distance, is_saved',
+          )
+          .eq('id', tripId)
+          .single()
+
+        if (tripError) throw tripError
+
+        const { data: tripItemsRows, error: tripItemsError } = await supabase
+          .from('trip_items')
+          .select(
+            'id, trip_id, place_id, visit_order, transport_type, travel_time, visit_day',
+          )
+          .eq('trip_id', tripId)
+          .order('visit_day', { ascending: true })
+          .order('visit_order', { ascending: true })
+
+        if (tripItemsError) throw tripItemsError
+
+        const placeIds = [
+          ...new Set((tripItemsRows ?? []).map((item) => item.place_id)),
+        ]
+
+        let placeMap = new Map<number, Place>()
+
+        if (placeIds.length > 0) {
+          const { data: placeRows, error: placesError } = await supabase
+            .from('places')
+            .select(
+              'id, kakao_place_id, place_name, category, latitude, longitude, is_near_station, address',
+            )
+            .in('id', placeIds)
+
+          if (placesError) throw placesError
+
+          placeMap = new Map(
+            (placeRows ?? []).map((place) => [place.id, place]),
+          )
+        }
+
+        const mergedItems: TripDetailItem[] = (tripItemsRows ?? []).map(
+          (item) => ({
+            ...item,
+            place: placeMap.get(item.place_id) ?? null,
+          }),
+        )
+
+        const { data: reviewRows, error: reviewsError } = await supabase
+          .from('reviews')
+          .select('id, user_id, rating, content, created_at, trip_id')
+          .eq('trip_id', tripId)
+          .order('created_at', { ascending: false })
+
+        if (reviewsError) throw reviewsError
+
+        setTrip(tripRow)
+        setDetailItems(mergedItems)
+        setReviews(reviewRows ?? [])
+      } catch (error) {
+        console.error(error)
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : '상세 일정을 불러오는 중 오류가 발생했습니다.',
+        )
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchTripDetail()
+  }, [supabase, tripId])
+
+  if (isLoading) {
+    return (
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <p className="text-sm text-gray-500">
+          상세 일정을 불러오는 중입니다...
+        </p>
+      </section>
+    )
+  }
+
+  if (errorMessage) {
+    return (
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <p className="text-sm text-red-500">{errorMessage}</p>
+      </section>
+    )
+  }
+
+  if (!trip) {
+    return (
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <p className="text-sm text-gray-500">해당 일정을 찾을 수 없습니다.</p>
+      </section>
+    )
+  }
+
+  const durationLabel = getTripDurationLabel(trip.start_date, trip.end_date)
+  const location = extractLocation(detailItems)
+  const tags = buildTags(detailItems)
+  const timeline = buildTimeline(detailItems)
+
+  const summary = {
+    distance: formatDistance(trip.total_distance),
+    time: formatTravelTime(trip.total_travel_time),
+    spotCount: detailItems.length,
+    cost: formatCost(trip.total_cost),
+    saveCount: formatSaveCount(trip.is_saved),
+  }
+
+  const envStats: EnvStatBarProps[] = [
+    {
+      label: '경사도',
+      value: 40,
+      level: '정보 없음',
+      min: '평지',
+      max: '급경사',
+    },
+    {
+      label: '계단',
+      value: 40,
+      level: '정보 없음',
+      min: '없음',
+      max: '매우 많음',
+    },
+    {
+      label: '그늘',
+      value: 40,
+      level: '정보 없음',
+      min: '없음',
+      max: '충분함',
+    },
+  ]
+
+  const validRatings = reviews
+    .map((review) => review.rating)
+    .filter((rating): rating is number => rating != null)
+
+  const averageRating =
+    validRatings.length > 0
+      ? validRatings.reduce((sum, rating) => sum + rating, 0) /
+        validRatings.length
+      : 0
+
+  const averageRatingText = reviews.length > 0 ? averageRating.toFixed(1) : '-'
+
+  return (
+    <div className="min-h-screen bg-white pb-32">
+      <div className="mx-auto max-w-7xl px-6">
+        <nav className="flex items-center space-x-2 py-4 text-xs text-gray-500">
+          <button
+            type="button"
+            onClick={() => router.push('/search')}
+            className="cursor-pointer hover:text-gray-700"
+          >
+            탐색
+          </button>
+          <ChevronRight className="h-3 w-3" />
+          <span>{location}</span>
+          <ChevronRight className="h-3 w-3" />
+          <span className="font-medium text-gray-900">
+            {trip.title || '제목 없는 일정'}
+          </span>
+        </nav>
+
+        <div className="mt-2 grid grid-cols-1 gap-10 lg:grid-cols-12">
+          <div className="space-y-10 lg:col-span-8">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                뒤로가기
+              </button>
+
+              <span className="rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700">
+                {durationLabel}
+              </span>
+            </div>
+
+            <section className="group relative aspect-[16/9] w-full overflow-hidden rounded-2xl shadow-sm">
+              <div className="absolute inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-blue-200" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
+
+              <div className="absolute bottom-6 left-8 space-y-2 text-white">
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-black px-2 py-0.5 text-[10px] font-bold text-white">
+                    일정 코스
+                  </span>
+                  <span className="text-[11px] font-medium text-gray-300">
+                    {tags[0] || '여행 일정'}
+                  </span>
+                </div>
+
+                <h1 className="text-3xl font-bold">
+                  {trip.title || '제목 없는 일정'}
+                </h1>
+
+                <div className="flex flex-wrap gap-2 pt-1 pb-2">
+                  {tags.length > 0 ? (
+                    tags.map((tag, i) => (
+                      <span
+                        key={`${tag}-${i}`}
+                        className="text-xs text-gray-300 before:content-['#']"
+                      >
+                        {tag}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-gray-300 before:content-['#']">
+                      여행
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-4 text-sm font-medium">
+                  <div className="flex items-center gap-1">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="ml-1 font-bold">{averageRatingText}</span>
+                    <span className="font-normal text-gray-400">
+                      ({reviews.length}개 리뷰)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4 text-gray-300" />
+                    <span className="text-gray-300">{location}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+              <SummaryCard
+                icon={Route}
+                label="총 거리"
+                value={summary.distance}
+              />
+              <SummaryCard
+                icon={Clock}
+                label="소요 시간"
+                value={summary.time}
+              />
+              <SummaryCard
+                icon={MapPin}
+                label="장소 수"
+                value={`${summary.spotCount}곳`}
+              />
+              <SummaryCard
+                icon={CreditCard}
+                label="총 이동 비용"
+                value={summary.cost}
+              />
+              <SummaryCard
+                icon={Bookmark}
+                label="저장 여부"
+                value={summary.saveCount}
+              />
+            </section>
+
+            <section className="space-y-6">
+              <div className="flex items-center justify-between px-2">
+                <h2 className="text-xl font-bold text-gray-900">
+                  코스 타임라인
+                </h2>
+                <span className="text-xs font-medium text-gray-400">
+                  총 {timeline.length}개 장소
+                </span>
+              </div>
+
+              <div className="space-y-4 pt-2">
+                {timeline.length > 0 ? (
+                  timeline.map((item, index) => (
+                    <TimelineItem
+                      key={`${item.id}-${index}`}
+                      data={item}
+                      isLast={index === timeline.length - 1}
+                    />
+                  ))
+                ) : (
+                  <div className="rounded-2xl border border-gray-100 bg-white p-6 text-sm text-gray-500 shadow-sm">
+                    등록된 장소가 없습니다.
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section className="space-y-8 rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+              <div className="space-y-1">
+                <h2 className="text-xl font-bold text-gray-900">
+                  보행 환경 분석
+                </h2>
+                <p className="text-xs text-gray-400">
+                  아직 분석 데이터가 없습니다.
+                </p>
+              </div>
+
+              <div className="space-y-8">
+                {envStats.map((stat, i) => (
+                  <EnvStatBar key={i} {...stat} />
+                ))}
+              </div>
+            </section>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-black font-bold text-white shadow-lg transition-all hover:bg-gray-900 active:scale-[0.98]"
+                >
+                  <Bus className="h-5 w-5" />
+                  일정에 추가하기
+                </button>
+
+                <button
+                  type="button"
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl border border-gray-100 bg-white text-gray-900 transition-all hover:bg-gray-50 active:scale-[0.98]"
+                >
+                  <Bookmark className="h-6 w-6" />
+                </button>
+
+                <button
+                  type="button"
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl border border-gray-100 bg-white text-gray-900 transition-all hover:bg-gray-50 active:scale-[0.98]"
+                >
+                  <Share2 className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6 lg:col-span-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-end gap-2">
+                <h2 className="text-xl font-bold text-gray-900">리뷰</h2>
+                <span className="mb-0.5 text-sm font-medium text-gray-400">
+                  {reviews.length}개
+                </span>
+              </div>
+
+              <button
+                type="button"
+                className="rounded-lg bg-gray-900 px-4 py-2 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-black active:scale-95"
+              >
+                리뷰 쓰기
+              </button>
+            </div>
+
+            <div className="flex gap-4 border-b border-gray-100 pb-3">
+              <button type="button" className="text-xs font-bold text-gray-900">
+                최신순
+              </button>
+              <button
+                type="button"
+                className="text-xs font-semibold text-gray-400 hover:text-gray-600"
+              >
+                평점순
+              </button>
+              <button
+                type="button"
+                className="text-xs font-semibold text-gray-400 hover:text-gray-600"
+              >
+                사진순
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {reviews.length > 0 ? (
+                reviews.map((review) => (
+                  <div
+                    key={review.id}
+                    className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+                  >
+                    <div className="flex justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-[10px] font-bold text-gray-400">
+                          U
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-gray-900">
+                            사용자
+                          </div>
+                          <div className="text-[10px] text-gray-400">
+                            {review.created_at
+                              ? new Date(review.created_at).toLocaleDateString(
+                                  'ko-KR',
+                                )
+                              : '-'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-0.5">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-3 w-3 ${
+                              i < (review.rating ?? 0)
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'text-gray-200'
+                            }`}
+                          />
+                        ))}
+                        <span className="ml-1 text-xs font-bold text-gray-900">
+                          {review.rating != null
+                            ? review.rating.toFixed(1)
+                            : '-'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="text-xs leading-relaxed text-gray-600">
+                      {review.content || '리뷰 내용이 없습니다.'}
+                    </p>
+
+                    <div className="grid grid-cols-4 gap-2">
+                      {[0, 1, 2, 3].map((item) => (
+                        <div
+                          key={item}
+                          className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-gray-100 bg-gray-50"
+                        >
+                          <ImageIcon className="h-4 w-4 text-gray-200" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                  <div className="flex justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-[10px] font-bold text-gray-400">
+                        -
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-gray-900">
+                          아직 리뷰가 없어요
+                        </div>
+                        <div className="text-[10px] text-gray-400">
+                          첫 리뷰를 남겨보세요
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-0.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="h-3 w-3 text-gray-200" />
+                      ))}
+                      <span className="ml-1 text-xs font-bold text-gray-900">
+                        -
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs leading-relaxed text-gray-600">
+                    아직 등록된 리뷰가 없습니다.
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-1 rounded-xl border border-gray-100 bg-white py-3 text-xs font-bold text-gray-500 transition-colors hover:bg-gray-50"
+              >
+                리뷰 더보기 <ChevronDown className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
