@@ -26,6 +26,7 @@ import {
   MapPin,
   Search,
   Sparkles,
+  Wallet,
 } from 'lucide-react'
 
 // ─── 상수 정의 ───
@@ -36,25 +37,19 @@ const STEPS = [
   { num: 3, label: '시간 설정' },
 ]
 
-const POPULAR_STATIONS = [
-  { name: '을지로3가역', line: '2·3호선' },
-  { name: '성수역', line: '2호선' },
-  { name: '연남동역', line: '경의중앙선' },
-  { name: '익선동역', line: '1·3·5호선' },
-  { name: '망원역', line: '6호선' },
-]
+// POPULAR_STATIONS은 이제 Gemini에서 동적으로 로드
 
 const THEME_TAGS = [
   { emoji: '☕', label: '카페 투어' },
-  { emoji: '📸', label: '사진 맛집' },
+  { emoji: '📸', label: 'SNS 핫플레이스' },
   { emoji: '🌿', label: '공원 산책' },
   { emoji: '🍜', label: '미식 투어' },
   { emoji: '🏛️', label: '문화 체험' },
   { emoji: '🎨', label: '예술 갤러리' },
   { emoji: '🛍️', label: '쇼핑 거리' },
   { emoji: '🌙', label: '야경 명소' },
-  { emoji: '📚', label: '독립서점' },
-  { emoji: '🧘', label: '힐링 코스' },
+  { emoji: '📚', label: '서점' },
+  { emoji: '🏃', label: '자연 , 운동' },
 ]
 
 const DUMMY_RESULTS = [
@@ -65,6 +60,7 @@ const DUMMY_RESULTS = [
     desc: '2호선 성수역 3번 출구에서 시작합니다.',
     duration: '5분',
     walkInfo: null,
+    transitFare: null,
   },
   {
     order: 2,
@@ -73,6 +69,7 @@ const DUMMY_RESULTS = [
     desc: '성수동 대표 복합문화공간으로 전시와 카페를 함께 즐길 수 있습니다.',
     duration: '30분',
     walkInfo: '도보 8분 (0.5km)',
+    transitFare: 0,
   },
   {
     order: 3,
@@ -81,6 +78,7 @@ const DUMMY_RESULTS = [
     desc: '감성적인 인테리어와 핸드드립 커피로 유명한 성수동 인기 카페입니다.',
     duration: '40분',
     walkInfo: '도보 5분 (0.3km)',
+    transitFare: 0,
   },
   {
     order: 4,
@@ -89,6 +87,7 @@ const DUMMY_RESULTS = [
     desc: '도심 속 자연을 만끽할 수 있는 대규모 공원으로 산책과 사진 촬영에 최적입니다.',
     duration: '40분',
     walkInfo: '도보 12분 (0.9km)',
+    transitFare: 0,
   },
   {
     order: 5,
@@ -97,6 +96,7 @@ const DUMMY_RESULTS = [
     desc: '레트로 감성의 필름 사진관으로 여행의 마무리를 특별하게 남길 수 있습니다.',
     duration: '25분',
     walkInfo: '도보 10분 (0.7km)',
+    transitFare: 0,
   },
 ]
 
@@ -106,7 +106,7 @@ export default function AIPage() {
   const [station, setStation] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedThemes, setSelectedThemes] = useState<string[]>([])
-  const [totalMinutes, setTotalMinutes] = useState(150)
+  const [totalMinutes, setTotalMinutes] = useState(240)
   const [includeMeal, setIncludeMeal] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [aiResult, setAiResult] = useState<AIRecommendResponse | null>(null)
@@ -115,8 +115,43 @@ export default function AIPage() {
     { place_name: string; address_name: string }[]
   >([])
   const [showDropdown, setShowDropdown] = useState(false)
+  const [popularStations, setPopularStations] = useState<
+    { name: string; access: string }[]
+  >([])
+  const [isLoadingPopular, setIsLoadingPopular] = useState(true)
 
-  // ─── 지하철역 검색 debounce ───
+  // ─── 인기 출발지 로드 (Step 1 마운트 시) ───
+  useEffect(() => {
+    setIsLoadingPopular(true)
+    fetch('/api/ai-recommend')
+      .then((r) => r.json())
+      .then((data) => {
+        console.log('[AI Page] Popular stations response:', data)
+        // Check if response is an error object
+        if (data.error) {
+          console.error(
+            '[AI Page] API Error:',
+            data.error,
+            'Type:',
+            data.errorType,
+          )
+          setPopularStations(data.fallbackLocations ?? [])
+        } else if (Array.isArray(data)) {
+          // Direct array response
+          setPopularStations(data)
+        } else {
+          console.warn('[AI Page] Unexpected response format:', data)
+          setPopularStations([])
+        }
+        setIsLoadingPopular(false)
+      })
+      .catch((err) => {
+        console.error('[AI Page] Fetch error:', err)
+        setIsLoadingPopular(false)
+      })
+  }, [])
+
+  // ─── 출발지 검색 debounce ───
   useEffect(() => {
     if (searchKeyword.length < 1) {
       setSearchResults([])
@@ -125,18 +160,11 @@ export default function AIPage() {
     }
     const timer = setTimeout(async () => {
       try {
-        const keyword = searchKeyword.includes('역')
-          ? searchKeyword
-          : `${searchKeyword}역`
         const res = await fetch(
-          `/api/places?query=${encodeURIComponent(keyword)}&size=15`,
+          `/api/places?query=${encodeURIComponent(searchKeyword)}&size=15`,
         )
         const data = await res.json()
-        const stations = (data.documents ?? []).filter(
-          (doc: { category_name: string }) =>
-            doc.category_name?.includes('지하철'),
-        )
-        setSearchResults(stations.slice(0, 5))
+        setSearchResults((data.documents ?? []).slice(0, 5))
         setShowDropdown(true)
       } catch {
         setSearchResults([])
@@ -188,6 +216,7 @@ export default function AIPage() {
   }
 
   const formatTime = (min: number) => {
+    if (min >= 720) return '하루 (약 12시간)'
     const h = Math.floor(min / 60)
     const m = min % 60
     return m > 0 ? `약 ${h}시간 ${m}분` : `약 ${h}시간`
@@ -216,12 +245,9 @@ export default function AIPage() {
         {/* ── Step 1: 출발지 선택 ── */}
         {step === 1 && (
           <div className="flex flex-col items-center">
-            <h2 className="text-2xl font-extrabold text-gray-900 mb-2">
+            <h2 className="text-2xl font-extrabold text-gray-900 mb-8">
               어디서 출발하시나요?
             </h2>
-            <p className="text-sm text-gray-500 mb-8">
-              가까운 지하철역을 검색해주세요
-            </p>
 
             {/* 검색창 */}
             <div className="relative w-full max-w-md mb-8">
@@ -229,7 +255,7 @@ export default function AIPage() {
                 <Search className="w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="지하철역 이름을 입력하세요"
+                  placeholder="출발지를 검색해주세요"
                   value={searchKeyword}
                   onChange={(e) => {
                     setSearchKeyword(e.target.value)
@@ -286,28 +312,49 @@ export default function AIPage() {
             {/* 인기 출발지 */}
             <div className="w-full max-w-md">
               <p className="text-sm font-semibold text-gray-500 mb-3">
-                인기 출발지
+                AI 추천 인기 출발지 ✨
               </p>
-              <div className="divide-y divide-gray-100">
-                {POPULAR_STATIONS.map((s) => (
-                  <button
-                    key={s.name}
-                    onClick={() => {
-                      setStation(s.name)
-                      setStep(2)
-                    }}
-                    className="w-full flex items-center justify-between py-4 hover:bg-gray-50 transition-colors cursor-pointer px-1"
-                  >
-                    <div className="flex items-center gap-3">
-                      <MapPin className="w-4 h-4 text-gray-400" />
-                      <span className="font-semibold text-gray-900">
-                        {s.name}
-                      </span>
+              {isLoadingPopular ? (
+                <div className="divide-y divide-gray-100">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div
+                      key={i}
+                      className="w-full flex items-center justify-between py-4 px-1 animate-pulse"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 bg-gray-200 rounded" />
+                        <div className="w-24 h-4 bg-gray-200 rounded" />
+                      </div>
+                      <div className="w-16 h-3 bg-gray-200 rounded" />
                     </div>
-                    <span className="text-xs text-gray-400">{s.line}</span>
-                  </button>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : popularStations.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  {popularStations.map((s) => (
+                    <button
+                      key={s.name}
+                      onClick={() => {
+                        setStation(s.name)
+                        setStep(2)
+                      }}
+                      className="w-full flex items-center justify-between py-4 hover:bg-gray-50 transition-colors cursor-pointer px-1"
+                    >
+                      <div className="flex items-center gap-3 shrink-0">
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                        <span className="font-semibold text-gray-900">
+                          {s.name}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-400 truncate ml-4 text-right">
+                        {s.access}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">로드 실패</p>
+              )}
             </div>
 
             {/* 다음 버튼 */}
@@ -451,7 +498,7 @@ export default function AIPage() {
             </div>
 
             {/* 결과 요약 통계 */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-4 gap-3 mb-6">
               <div className="border border-gray-200 rounded-xl p-4 bg-white">
                 <Footprints className="w-4 h-4 text-gray-500 mb-1" />
                 <p className="text-xs text-gray-400">총 도보 거리</p>
@@ -473,6 +520,15 @@ export default function AIPage() {
                   {aiResult?.totalPlaces ?? DUMMY_RESULTS.length}곳
                 </p>
               </div>
+              <div className="border border-gray-200 rounded-xl p-4 bg-white">
+                <Wallet className="w-4 h-4 text-gray-500 mb-1" />
+                <p className="text-xs text-gray-400">교통비</p>
+                <p className="text-sm font-bold text-gray-900">
+                  {aiResult?.totalTransitFare != null
+                    ? `${aiResult.totalTransitFare.toLocaleString()}원`
+                    : '...'}
+                </p>
+              </div>
             </div>
 
             {/* 추천 코스 리스트 */}
@@ -486,20 +542,17 @@ export default function AIPage() {
             </div>
 
             {/* 하단 버튼 */}
-            <div className="flex items-center gap-3 mt-8">
-              <button className="flex-1 py-3.5 bg-gray-900 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-800 transition cursor-pointer">
-                📋 일정 저장하기
-              </button>
+            <div className="mt-8">
               <button
                 onClick={() => {
                   setStep(1)
                   setStation('')
                   setSelectedThemes([])
-                  setTotalMinutes(150)
+                  setTotalMinutes(240)
                   setAiResult(null)
                   setAiError(null)
                 }}
-                className="py-3.5 px-5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer flex items-center gap-2"
+                className="w-full py-3.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer flex items-center justify-center gap-2"
               >
                 🔄 다시 추천받기
               </button>
