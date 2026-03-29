@@ -1,7 +1,15 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { Calendar as CalendarIcon, Globe, Lock, Map, Plus, X } from 'lucide-react'
+import {
+  Calendar as CalendarIcon,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Map,
+  Plus,
+  X,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 interface MyTripsSidebarProps {
@@ -22,28 +30,72 @@ export default function MyTripsSidebar({
   const [trips, setTrips] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
+  const fetchTrips = async (isSilent = false) => {
+    if (!userId) return
+    if (!isSilent) setIsLoading(true)
+    const supabase = createClient()
+
+    const { data, error } = await supabase.from('trips').select(`
+        *,
+        travelers (
+          has_visited, 
+          status,
+          user_id
+        )
+      `)
+      .eq('user_id', userId)
+      .order('id', { ascending: false }) // 최신순 정렬
+
+    if (!error && data) {
+      setTrips(data)
+    }
+    setIsLoading(false)
+  }
+
   // 사이드바가 열릴 때마다 사용자의 여행 목록을 DB에서 최신화하여 불러옵니다.
   useEffect(() => {
-    if (!isOpen || !userId) return
+    if (isOpen && userId) {
+      fetchTrips()
+    }
+  }, [isOpen, userId])
 
-    const fetchTrips = async () => {
-      setIsLoading(true)
-      const supabase = createClient()
-      
-      const { data, error } = await supabase
-        .from('trips')
-        .select('*')
-        .eq('user_id', userId)
-        .order('id', { ascending: false }) // 최신순 정렬
+  const handleToggleVisited = async (
+    e: React.MouseEvent,
+    tripId: string,
+    currentVisited: boolean,
+  ) => {
+    e.stopPropagation() // 부모의 onClick(일정 선택) 이벤트 전파 방지
+    if (!userId) return
 
-      if (!error && data) {
-        setTrips(data)
-      }
-      setIsLoading(false)
+    const supabase = createClient()
+
+    // 1. 해당 유저의 traveler 레코드가 있는지 확인
+    const { data: traveler } = await supabase
+      .from('travelers')
+      .select('id')
+      .eq('trip_id', tripId)
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (traveler) {
+      // 2. 기존 레코드가 있으면 업데이트
+      await supabase
+        .from('travelers')
+        .update({ has_visited: !currentVisited })
+        .eq('id', traveler.id)
+    } else {
+      // 3. 없으면 새로 생성
+      await supabase.from('travelers').insert({
+        trip_id: tripId,
+        user_id: userId,
+        has_visited: !currentVisited,
+        status: !currentVisited ? 'completed' : 'ongoing',
+      })
     }
 
-    fetchTrips()
-  }, [isOpen, userId])
+    // 4. 최신 데이터로 리스트 갱신 (리스트가 깜빡이지 않도록 isSilent = true 적용)
+    await fetchTrips(true)
+  }
 
   return (
     <>
@@ -76,8 +128,7 @@ export default function MyTripsSidebar({
 
         {/* 내 일정 리스트 */}
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#fafafa]">
-          
-          <button 
+          <button
             onClick={() => onSelectTrip('new')}
             className="w-full flex items-center justify-center gap-2 py-3.5 bg-gray-900 text-white rounded-xl font-bold text-[13px] shadow-sm hover:bg-gray-800 transition-colors mb-2"
           >
@@ -100,41 +151,112 @@ export default function MyTripsSidebar({
               <p className="mt-1">지금 바로 첫 여행을 기획해보세요!</p>
             </div>
           ) : (
-            trips.map((trip) => (
-              <div
-                key={trip.id}
-                onClick={() => onSelectTrip(trip.id)}
-                className={`p-4 rounded-xl cursor-pointer transition-all border ${
-                  currentTripId == trip.id
-                    ? 'bg-purple-50/50 border-purple-300 shadow-sm'
-                    : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-2.5 gap-2">
-                  <h3
-                    className={`font-bold text-[14px] leading-snug break-keep ${
-                      currentTripId == trip.id
-                        ? 'text-purple-900'
-                        : 'text-gray-900'
+            trips.map((trip) => {
+              const now = new Date()
+              const today = now.toISOString().split('T')[0]
+
+              // 현재 로그인한 사용자의 traveler 정보를 찾습니다.
+              const myTravelerInfo = trip.travelers?.find(
+                (t: any) => t.user_id === userId,
+              )
+
+              // travelers 테이블의 has_visited 컬럼을 우선적으로 사용합니다.
+              const isFinished = myTravelerInfo?.has_visited === true
+              // 여행 중 상태는 status가 'ongoing'이거나 날짜 범위 내에 있을 때로 판별합니다.
+              const isActive =
+                myTravelerInfo?.status === 'ongoing' ||
+                (today >= trip.start_date &&
+                  today <= trip.end_date &&
+                  !isFinished)
+
+              return (
+                <div
+                  key={trip.id}
+                  onClick={() => onSelectTrip(trip.id)}
+                  className={`p-4 rounded-xl cursor-pointer transition-all border ${
+                    currentTripId == trip.id
+                      ? 'bg-purple-50/50 border-purple-300 shadow-sm'
+                      : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2.5 gap-2">
+                    <div className="flex flex-col gap-1.5 flex-1">
+                      {isFinished ? (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                          <CheckCircle2 className="w-3 h-3" /> 코스 완주
+                        </span>
+                      ) : isActive ? (
+                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100 animate-pulse">
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-purple-500"></span>
+                          </span>
+                          코스 탐방
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                          코스 대기
+                        </span>
+                      )}
+                      <h3
+                        className={`font-bold text-[14px] leading-snug break-keep ${
+                          currentTripId == trip.id
+                            ? 'text-purple-900'
+                            : isFinished
+                              ? 'text-gray-500'
+                              : 'text-gray-900'
+                        }`}
+                      >
+                        {trip.title}
+                      </h3>
+                    </div>
+                    <div className="flex flex-col items-end gap-2 mt-0.5 shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        {trip.is_public ? (
+                          <span className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold border border-blue-100 flex-shrink-0">
+                            <Eye className="w-3 h-3" /> 공개
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 text-gray-400 rounded text-[10px] font-bold border border-gray-100 flex-shrink-0">
+                            <EyeOff className="w-3 h-3" /> 비공개
+                          </span>
+                        )}
+                        {/* 다녀옴 체크박스 버튼 디자인 변경 */}
+                        <button
+                          onClick={(e) =>
+                            handleToggleVisited(e, trip.id, isFinished)
+                          }
+                          title={
+                            isFinished ? '미방문으로 표시' : '다녀옴으로 표시'
+                          }
+                          className={`group/btn w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 border ${
+                            isFinished
+                              ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm shadow-emerald-200 active:scale-95'
+                              : 'bg-white border-gray-200 text-transparent hover:border-emerald-500 hover:bg-emerald-50/50 active:scale-110'
+                          }`}
+                        >
+                          <CheckCircle2 className={`w-4 h-4 transition-transform duration-300 ${isFinished ? 'scale-100 fill-white' : 'scale-0 group-hover/btn:scale-110 group-hover/btn:text-emerald-500/50'}`} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`flex items-center gap-1.5 text-[11px] font-medium w-fit px-2 py-1 rounded-md ${
+                      isFinished
+                        ? 'bg-gray-50 text-gray-400 border border-gray-100'
+                        : 'bg-gray-50 text-gray-500'
                     }`}
                   >
-                    {trip.title}
-                  </h3>
-                  {trip.is_public ? (
-                    <span title="공개됨"><Globe className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" /></span>
-                  ) : (
-                    <span title="나만 보기"><Lock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" /></span>
-                  )}
+                    <CalendarIcon className="w-3.5 h-3.5" />
+                    <span>
+                      {trip.start_date.replace(/-/g, '.')} ~{' '}
+                      {trip.end_date.replace(/-/g, '.')}
+                    </span>
+                  </div>
                 </div>
-                
-                <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium bg-gray-50 w-fit px-2 py-1 rounded-md">
-                  <CalendarIcon className="w-3.5 h-3.5" />
-                  <span>
-                    {trip.start_date.replace(/-/g, '.')} ~ {trip.end_date.replace(/-/g, '.')}
-                  </span>
-                </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
       </div>
