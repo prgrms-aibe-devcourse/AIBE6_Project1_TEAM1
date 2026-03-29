@@ -227,14 +227,14 @@ export default function AIPage() {
 
     setIsAddingToSchedule(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
         alert('일정을 저장하려면 로그인이 필요합니다.')
         router.push('/login')
         return
       }
 
-      const userId = session.user.id
+      const userId = user.id
       const courseItems = aiResult?.course ?? DUMMY_RESULTS
       
       // 1. 추천된 장소들의 상세 정보(좌표, ID 등)를 카카오 API를 통해 확보합니다.

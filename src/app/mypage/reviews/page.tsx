@@ -203,9 +203,11 @@ export default function ReviewsPage() {
                                 />
                               ))}
                             </div>
-                            <span className="text-[11px] font-bold text-gray-400">
-                                {new Date(review.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')}
-                            </span>
+                              <div className="text-xs text-gray-400">
+                                {review.created_at 
+                                  ? new Date(review.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')
+                                  : '-'}
+                              </div>
                           </div>
                         </div>
 

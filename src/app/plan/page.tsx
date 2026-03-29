@@ -157,20 +157,25 @@ function PlanPageContent() {
 
   // 인증 검사 로직 (마운트 시점 1회 실행)
   useEffect(() => {
-    const checkAuth = async () => {
+    async function checkAuth() {
       const supabase = createClient()
       const {
-        data: { session },
-      } = await supabase.auth.getSession()
+        data: { user },
+      } = await supabase.auth.getUser()
 
-      if (!session) {
-        // 비회원이면 뒤로가기 불가능한 대체(replace) 방식으로 로그인 창 이동
-        router.replace('/login')
-      } else {
-        // 회원이면 고유 ID 저장 후 로딩 해제
-        setUserId(session.user.id)
+      if (!user) {
         setIsAuthChecking(false)
+        openModal({
+          type: 'alert',
+          variant: 'danger',
+          title: '로그인 필요',
+          description: '일정을 작성하려면 로그인이 필요합니다.',
+          onConfirm: () => router.push('/login'),
+        })
+        return
       }
+      setUserId(user.id)
+      setIsAuthChecking(false)
     }
 
     checkAuth()

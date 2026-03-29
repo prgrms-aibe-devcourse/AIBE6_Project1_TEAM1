@@ -1,6 +1,6 @@
 'use client'
 
-import { Place } from '@/app/plan/page'
+import { type Place } from '@/utils/tripUtils'
 import { LocateFixed, Minus, Plus } from 'lucide-react'
 import Script from 'next/script'
 import { useEffect, useRef, useState } from 'react'

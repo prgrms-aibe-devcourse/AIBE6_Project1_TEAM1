@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 // @ts-ignore : Typescript 지원이 완벽하게 안 될 것을 방지하기 위해 드래그 앤 드롭 타입체킹 무시
-import { Place } from '@/app/plan/page'
+import { type Place } from '@/utils/tripUtils'
 import {
   DragDropContext,
   Draggable,
@@ -14,7 +14,7 @@ import CommonButton from '@/components/common/CommonButton'
 import FilterBadge from './FilterBadge'
 import TransitIndicator from './TransitIndicator'
 
-import { TransportType, calcTravelMinutes } from '@/app/plan/page'
+import { type TransportType, calcTravelMinutes } from '@/utils/tripUtils'
 
 // calcTravelMinutes(shared)를 래핑하여 화면 표시용 포맷 문자열 반환
 const getEstimatedTransit = (p1: Place, p2: Place, type: TransportType = 'transit') => {

@@ -181,7 +181,9 @@ export default function MyTripsSidebar({
               // 여행 중 상태는 status가 'ongoing'이거나 날짜 범위 내에 있을 때로 판별합니다.
               const isActive =
                 myTravelerInfo?.status === 'ongoing' ||
-                (today >= trip.start_date &&
+                (trip.start_date &&
+                  trip.end_date &&
+                  today >= trip.start_date &&
                   today <= trip.end_date &&
                   !isFinished)
 
@@ -276,8 +278,8 @@ export default function MyTripsSidebar({
                       >
                         <CalendarIcon className="w-2.5 h-2.5" />
                         <span className="text-[10px]">
-                          {trip.start_date.replace(/-/g, '.')} ~{' '}
-                          {trip.end_date.replace(/-/g, '.')}
+                          {trip.start_date ? trip.start_date.replace(/-/g, '.') : '-'} ~{' '}
+                          {trip.end_date ? trip.end_date.replace(/-/g, '.') : '-'}
                         </span>
                       </div>
 
