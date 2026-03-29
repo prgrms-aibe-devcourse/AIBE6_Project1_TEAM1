@@ -21,9 +21,7 @@ export default function MenuList() {
         <button 
           key={idx} 
           onClick={() => {
-            if (label === "내 여행 기록") {
-              router.push(route);
-            }
+            router.push(route);
           }}
           className="flex items-center justify-between w-full px-4 py-[18px] hover:bg-gray-50 transition-colors group rounded-xl"
         >

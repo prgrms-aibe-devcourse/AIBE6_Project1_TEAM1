@@ -1,89 +1,107 @@
 'use client'
 
 import TravelCard from '@/components/display/TravelCard';
+import { createClient } from '@/utils/supabase/client';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, Filter } from 'lucide-react';
+import { ChevronLeft, Filter, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
-
-// Dummy data for saved courses
-const SAVED_COURSES = [
-  {
-    id: '1',
-    title: '영도 흰여울문화마을 산책 코스',
-    location: '부산 영도구',
-    time: '2시간 30분',
-    category: 'Coast',
-    imageUrl: '/images/jeju-east.png',
-    distance: 3.2,
-    rating: 4.2,
-    reviewCount: 128,
-  },
-  {
-    id: '2',
-    title: '서울 숲 힐링 산책로',
-    location: '서울 성동구',
-    time: '1시간 40분',
-    category: 'Forest',
-    imageUrl: '/images/jeju-east.png',
-    distance: 2.5,
-    rating: 4.8,
-    reviewCount: 320,
-  },
-  {
-    id: '3',
-    title: '광화문 역사 밤거리 걷기',
-    location: '서울 종로구',
-    time: '2시간',
-    category: 'City',
-    imageUrl: '/images/jeju-east.png',
-    distance: 4.0,
-    rating: 4.5,
-    reviewCount: 210,
-  },
-  {
-    id: '4',
-    title: '제주 사려니숲길 삼나무 코스',
-    location: '제주 제주시',
-    time: '3시간',
-    category: 'Forest',
-    imageUrl: '/images/jeju-east.png',
-    distance: 5.2,
-    rating: 4.9,
-    reviewCount: 450,
-  },
-  {
-    id: '5',
-    title: '경주 대릉원 돌담길',
-    location: '경북 경주시',
-    time: '1시간 20분',
-    category: 'City',
-    imageUrl: '/images/jeju-east.png',
-    distance: 1.8,
-    rating: 4.7,
-    reviewCount: 180,
-  },
-  {
-    id: '6',
-    title: '강릉 안목해변 커피거리 산책',
-    location: '강원 강릉시',
-    time: '1시간 50분',
-    category: 'Coast',
-    imageUrl: '/images/jeju-east.png',
-    distance: 3.0,
-    rating: 4.6,
-    reviewCount: 290,
-  },
-];
+import { useEffect, useState, useMemo } from 'react';
 
 const FILTERS = ['All', 'Forest', 'City', 'Coast'];
 
-export default function BookmarksPage() {
-  const [activeFilter, setActiveFilter] = useState('All');
+interface SavedCourse {
+  id: string;
+  title: string;
+  location: string;
+  time: string;
+  category: string;
+  imageUrl: string;
+  distance: number;
+  rating: number;
+  reviewCount: number;
+}
 
-  const filteredCourses = activeFilter === 'All' 
-    ? SAVED_COURSES 
-    : SAVED_COURSES.filter(course => course.category === activeFilter);
+export default function BookmarksPage() {
+  const [courses, setCourses] = useState<SavedCourse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const supabase = createClient();
+
+  useEffect(() => {
+    const fetchBookmarks = async () => {
+      try {
+        setLoading(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const userId = session.user.id;
+
+        // Fetch trips that are 'saved' by this user
+        // Using is_saved for now as there's no dedicated bookmarks table yet
+        const { data: tripsData, error: tripsError } = await supabase
+          .from('trips')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('is_saved', true)
+          .order('start_date', { ascending: false });
+
+        if (tripsError) throw tripsError;
+
+        if (!tripsData || tripsData.length === 0) {
+          setCourses([]);
+          return;
+        }
+
+        const tripIds = tripsData.map(t => t.id);
+
+        // Fetch reviews for these trips
+        const { data: reviewsData, error: reviewsError } = await supabase
+          .from('reviews')
+          .select('trip_id, rating')
+          .in('trip_id', tripIds);
+
+        if (reviewsError) throw reviewsError;
+
+        const transformed: SavedCourse[] = tripsData.map(trip => {
+          const tripReviews = reviewsData?.filter(rev => rev.trip_id === trip.id) || [];
+          const avgRating = tripReviews.length > 0 
+            ? tripReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / tripReviews.length 
+            : 0;
+
+          // Format time
+          const totalMinutes = trip.total_travel_time || 0;
+          const hours = Math.floor(totalMinutes / 60);
+          const mins = totalMinutes % 60;
+          const timeStr = hours > 0 ? `${hours}시간 ${mins > 0 ? `${mins}분` : ''}` : `${mins}분`;
+
+          return {
+            id: String(trip.id),
+            title: trip.title || '제목 없는 여행',
+            location: '도심', // Fallback as trips doesn't have category/location yet
+            time: timeStr,
+            category: 'City', // Fallback
+            imageUrl: '/images/jeju-east.png',
+            distance: trip.total_distance || 0,
+            rating: Number(avgRating.toFixed(1)),
+            reviewCount: tripReviews.length
+          };
+        });
+
+        setCourses(transformed);
+      } catch (err) {
+        console.error('Error fetching bookmarks:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookmarks();
+  }, []);
+
+  const filteredCourses = useMemo(() => {
+    if (activeFilter === 'All') return courses;
+    return courses.filter(course => course.category === activeFilter);
+  }, [courses, activeFilter]);
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20">
@@ -100,7 +118,7 @@ export default function BookmarksPage() {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold tracking-tight text-gray-900">저장한 여행</h1>
               <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-sm font-bold text-purple-700">
-                {SAVED_COURSES.length}
+                {!loading ? courses.length : '-'}
               </span>
             </div>
           </div>
@@ -135,51 +153,53 @@ export default function BookmarksPage() {
         </div>
 
         {/* Grid Layout */}
-        <motion.div 
-          layout
-          className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-        >
-          <AnimatePresence mode='popLayout'>
-            {filteredCourses.map((course, index) => (
-              <motion.div
-                key={course.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-              >
-                <TravelCard
-                  id={course.id}
-                  title={course.title}
-                  imageUrl={course.imageUrl}
-                  category={course.category === 'Forest' ? '숲 산책' : course.category === 'City' ? '도심 산책' : '해안 산책'}
-                  isHot={index < 2}
-                  summary={{
-                    totalDistance: course.distance,
-                    totalTime: course.time,
-                    spotCount: 5,
-                    estimatedCost: 2400,
-                    saveCount: 1024,
-                  }}
-                  avgStats={{
-                    incline: '완만',
-                    stairs: '적음',
-                    shade: '보통',
-                  }}
-                  rating={course.rating}
-                  reviewCount={course.reviewCount}
-                  isKept={true}
-                  onKeep={(id) => console.log('Keep toggle:', id)}
-                  onClick={() => console.log('Navigate to:', course.id)}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {loading ? (
+             <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-400">
+                <Loader2 className="h-10 w-10 text-purple-500 animate-spin mb-4" />
+                <p>불러오는 중...</p>
+             </div>
+          ) : (
+            <AnimatePresence mode='popLayout'>
+              {filteredCourses.map((course, index) => (
+                <motion.div
+                  key={course.id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                >
+                  <TravelCard
+                    id={course.id}
+                    title={course.title}
+                    imageUrl={course.imageUrl}
+                    category={course.category === 'Forest' ? '숲 산책' : course.category === 'City' ? '도심 산책' : '해안 산책'}
+                    isHot={index < 2}
+                    summary={{
+                      totalDistance: course.distance,
+                      totalTime: course.time,
+                      spotCount: 5,
+                      estimatedCost: 2400,
+                      saveCount: 1024,
+                    }}
+                    avgStats={{
+                      incline: '완만',
+                      stairs: '적음',
+                      shade: '보통',
+                    }}
+                    rating={course.rating}
+                    reviewCount={course.reviewCount}
+                    isKept={true}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          )}
+        </div>
         
         {/* Empty State */}
-        {filteredCourses.length === 0 && (
+        {!loading && filteredCourses.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="mb-4 rounded-full bg-gray-100 p-6">
               <Filter className="h-10 w-10 text-gray-300" />

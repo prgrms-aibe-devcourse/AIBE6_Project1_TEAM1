@@ -1,9 +1,10 @@
 'use client'
 
 import TravelCard from '@/components/display/TravelCard';
+import StatCardGroup from '@/components/domain/my-page/StatCardGroup';
 import { createClient } from '@/utils/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Footprints, Route, Search, Trophy, Loader2 } from 'lucide-react';
+import { ChevronLeft, Search, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 
@@ -64,7 +65,7 @@ export default function TriplogsPage() {
         // 3. Fetch reviews to get ratings
         const { data: reviewsData, error: reviewsError } = await supabase
           .from('reviews')
-          .select('trip_id, rating')
+          .select('*') // Get all fields to calculate count properly
           .in('trip_id', tripIds);
 
         if (reviewsError) throw reviewsError;
@@ -88,9 +89,9 @@ export default function TriplogsPage() {
             id: String(trip.id),
             title: trip.title || '제목 없는 여행',
             date: trip.start_date ? new Date(trip.start_date).toLocaleDateString() : '-',
-            memo: '', // Database doesn't have a direct memo field in main table yet
+            memo: '', 
             status: 'Completed',
-            imageUrl: '/images/jeju-east.png', // Placeholder or add logic for first place image
+            imageUrl: '/images/jeju-east.png', 
             distance: trip.total_distance || 0,
             time: timeStr,
             spotCount: tripItems.length,
@@ -111,20 +112,16 @@ export default function TriplogsPage() {
     fetchTrips();
   }, []);
 
-  const stats = useMemo(() => {
+  const overallStats = useMemo(() => {
     const totalDistance = trips.reduce((sum, t) => sum + t.distance, 0);
-    const completedCourses = trips.length;
-    // Total time calculation (simplified to hours for display)
-    const totalHours = trips.reduce((sum, t) => {
-      const match = t.time.match(/(\d+)시간/);
-      return sum + (match ? parseInt(match[1]) : 0);
-    }, 0);
+    const tripCount = trips.length;
+    const reviewCount = trips.reduce((sum, t) => sum + t.reviewCount, 0);
 
-    return [
-      { label: '총 거리', value: totalDistance.toFixed(1), unit: 'km', icon: Route, color: 'text-purple-600', bgColor: 'bg-purple-50' },
-      { label: '완주한 코스', value: String(completedCourses), unit: '코스', icon: Trophy, color: 'text-blue-500', bgColor: 'bg-blue-50' },
-      { label: '총 이동시간', value: String(totalHours), unit: '시간', icon: Footprints, color: 'text-pink-500', bgColor: 'bg-pink-50' },
-    ];
+    return {
+      triplogCount: tripCount,
+      totalDistance: Number(totalDistance.toFixed(1)),
+      reviewCount
+    };
   }, [trips]);
 
   const filteredHistory = trips.filter(item => 
@@ -149,31 +146,13 @@ export default function TriplogsPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-        {/* 2. Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {stats.map((stat, i) => {
-            const Icon = stat.icon;
-            return (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="flex flex-col items-center justify-center p-8 rounded-3xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-              >
-                <div className={`mb-6 p-4 rounded-2xl ${stat.bgColor} ${stat.color}`}>
-                  <Icon className="h-8 w-8" />
-                </div>
-                <div className="text-center">
-                  <span className="block text-sm font-bold text-gray-400 mb-1 uppercase tracking-tight">{stat.label}</span>
-                  <div className="flex items-baseline justify-center gap-1.5">
-                    <span className="text-4xl font-extrabold text-gray-900 tracking-tight">{stat.value}</span>
-                    <span className="text-xs font-bold text-gray-400">{stat.unit}</span>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+        {/* 2. Stats Section - Unified design */}
+        <div className="mb-12">
+            <StatCardGroup 
+                triplogCount={overallStats.triplogCount}
+                totalDistance={overallStats.totalDistance}
+                reviewCount={overallStats.reviewCount}
+            />
         </div>
 
         {/* 3. List Container */}
