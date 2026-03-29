@@ -37,13 +37,7 @@ const STEPS = [
   { num: 3, label: '시간 설정' },
 ]
 
-const POPULAR_STATIONS = [
-  { name: '을지로3가역', line: '2·3호선' },
-  { name: '성수역', line: '2호선' },
-  { name: '연남동역', line: '경의중앙선' },
-  { name: '익선동역', line: '1·3·5호선' },
-  { name: '망원역', line: '6호선' },
-]
+// POPULAR_STATIONS은 이제 Gemini에서 동적으로 로드
 
 const THEME_TAGS = [
   { emoji: '☕', label: '카페 투어' },
@@ -121,6 +115,41 @@ export default function AIPage() {
     { place_name: string; address_name: string }[]
   >([])
   const [showDropdown, setShowDropdown] = useState(false)
+  const [popularStations, setPopularStations] = useState<
+    { name: string; access: string }[]
+  >([])
+  const [isLoadingPopular, setIsLoadingPopular] = useState(true)
+
+  // ─── 인기 출발지 로드 (Step 1 마운트 시) ───
+  useEffect(() => {
+    setIsLoadingPopular(true)
+    fetch('/api/ai-recommend')
+      .then((r) => r.json())
+      .then((data) => {
+        console.log('[AI Page] Popular stations response:', data)
+        // Check if response is an error object
+        if (data.error) {
+          console.error(
+            '[AI Page] API Error:',
+            data.error,
+            'Type:',
+            data.errorType,
+          )
+          setPopularStations(data.fallbackLocations ?? [])
+        } else if (Array.isArray(data)) {
+          // Direct array response
+          setPopularStations(data)
+        } else {
+          console.warn('[AI Page] Unexpected response format:', data)
+          setPopularStations([])
+        }
+        setIsLoadingPopular(false)
+      })
+      .catch((err) => {
+        console.error('[AI Page] Fetch error:', err)
+        setIsLoadingPopular(false)
+      })
+  }, [])
 
   // ─── 출발지 검색 debounce ───
   useEffect(() => {
@@ -283,28 +312,49 @@ export default function AIPage() {
             {/* 인기 출발지 */}
             <div className="w-full max-w-md">
               <p className="text-sm font-semibold text-gray-500 mb-3">
-                인기 출발지
+                AI 추천 인기 출발지 ✨
               </p>
-              <div className="divide-y divide-gray-100">
-                {POPULAR_STATIONS.map((s) => (
-                  <button
-                    key={s.name}
-                    onClick={() => {
-                      setStation(s.name)
-                      setStep(2)
-                    }}
-                    className="w-full flex items-center justify-between py-4 hover:bg-gray-50 transition-colors cursor-pointer px-1"
-                  >
-                    <div className="flex items-center gap-3">
-                      <MapPin className="w-4 h-4 text-gray-400" />
-                      <span className="font-semibold text-gray-900">
-                        {s.name}
-                      </span>
+              {isLoadingPopular ? (
+                <div className="divide-y divide-gray-100">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div
+                      key={i}
+                      className="w-full flex items-center justify-between py-4 px-1 animate-pulse"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 bg-gray-200 rounded" />
+                        <div className="w-24 h-4 bg-gray-200 rounded" />
+                      </div>
+                      <div className="w-16 h-3 bg-gray-200 rounded" />
                     </div>
-                    <span className="text-xs text-gray-400">{s.line}</span>
-                  </button>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : popularStations.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  {popularStations.map((s) => (
+                    <button
+                      key={s.name}
+                      onClick={() => {
+                        setStation(s.name)
+                        setStep(2)
+                      }}
+                      className="w-full flex items-center justify-between py-4 hover:bg-gray-50 transition-colors cursor-pointer px-1"
+                    >
+                      <div className="flex items-center gap-3 shrink-0">
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                        <span className="font-semibold text-gray-900">
+                          {s.name}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-400 truncate ml-4 text-right">
+                        {s.access}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">로드 실패</p>
+              )}
             </div>
 
             {/* 다음 버튼 */}

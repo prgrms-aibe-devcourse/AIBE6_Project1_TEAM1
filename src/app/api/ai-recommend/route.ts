@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+
+export const revalidate = 0 // 10분 캐싱 (테스트용)
 
 // ─── 타입 정의 (프론트에서도 import 가능) ───
 export interface AIPlace {
@@ -113,5 +115,61 @@ export async function POST(request: Request) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[ai-recommend] Error:', message)
     return NextResponse.json({ error: `API 에러: ${message}` }, { status: 500 })
+  }
+}
+
+// ─── GET: 인기 출발지 추천 (10분 캐싱) ───
+export async function GET(request: NextRequest) {
+  const seed = Math.floor(Math.random() * 10000)
+
+  try {
+    const prompt = `서울 여행 출발지 추천 (시드:${seed})
+다음 4가지 카테고리에서 각각 1~2곳씩 골라, 총 5곳의 여행 시작점을 추천하세요. 동일한 유형이 중복되지 않도록 완벽히 섞어주세요.
+
+카테고리:
+1. 교통중심지
+2. 힙한 상권, MZ 핫플레이스
+3. 맛집 밀집 지역, 시장
+4. 쇼핑, 패션, 마켓
+
+주의사항:
+- 지하철역만 5곳이거나 시장만 5곳이면 안 됩니다. 위 4개 카테고리가 모두 최소 1개씩 포함되게 하세요.
+- access(교통정보)는 반드시 15자 이내로 아주 짧게 핵심만 요약하세요. (예: "1·4호선, KTX", "강남역 도보 5분", "버스 환승센터")
+- 한국관광공사 데이터를 활용할 것 
+반드시 이 형식으로만 응답: {"locations":[{"name":"장소명","access":"교통정보"}]}`
+
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-3.1-flash-lite-preview',
+      generationConfig: {
+        temperature: 1.5,
+        maxOutputTokens: 500,
+        responseMimeType: 'application/json',
+      },
+    })
+
+    const result = await model.generateContent(prompt)
+    const raw = result.response.text()
+    const data = JSON.parse(raw)
+
+    return NextResponse.json(data.locations ?? [])
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    const stack = err instanceof Error ? err.stack : ''
+    console.error('[ai-popular] Error:', message)
+    console.error('[ai-popular] Stack:', stack)
+    console.error('[ai-popular] Full error:', err)
+
+    // 디버깅용: 에러도 함께 반환 (프로덕션에서는 제거)
+    return NextResponse.json({
+      error: message,
+      errorType: err instanceof Error ? err.constructor.name : typeof err,
+      fallbackLocations: [
+        { name: '을지로3가역', access: '2·3호선' },
+        { name: '성수역', access: '2호선' },
+        { name: '경복궁', access: '3호선 경복궁역' },
+        { name: '강남역', access: '2호선' },
+        { name: '홍대', access: '2호선 홍대입구역' },
+      ],
+    })
   }
 }
