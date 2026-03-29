@@ -41,15 +41,15 @@ const STEPS = [
 
 const THEME_TAGS = [
   { emoji: '☕', label: '카페 투어' },
-  { emoji: '📸', label: '사진 맛집' },
+  { emoji: '📸', label: 'SNS 핫플레이스' },
   { emoji: '🌿', label: '공원 산책' },
   { emoji: '🍜', label: '미식 투어' },
   { emoji: '🏛️', label: '문화 체험' },
   { emoji: '🎨', label: '예술 갤러리' },
   { emoji: '🛍️', label: '쇼핑 거리' },
   { emoji: '🌙', label: '야경 명소' },
-  { emoji: '📚', label: '독립서점' },
-  { emoji: '🧘', label: '힐링 코스' },
+  { emoji: '📚', label: '서점' },
+  { emoji: '🏃', label: '자연 , 운동' },
 ]
 
 const DUMMY_RESULTS = [
