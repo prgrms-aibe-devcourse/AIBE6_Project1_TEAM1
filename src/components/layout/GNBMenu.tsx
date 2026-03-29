@@ -2,7 +2,6 @@
 
 import { createClient } from '@/utils/supabase/client'
 import {
-  Bookmark,
   CalendarDays,
   Compass,
   Home,
@@ -65,13 +64,6 @@ export default function GNBMenu() {
       >
         <CalendarDays className="w-5 h-5" />
         <span className="text-[11px]">일정</span>
-      </Link>
-      <Link
-        href="/saved"
-        className="flex flex-col items-center gap-1 hover:text-black hover:font-medium transition-colors"
-      >
-        <Bookmark className="w-5 h-5" />
-        <span className="text-[11px]">저장</span>
       </Link>
 
       {isLogin ? (
