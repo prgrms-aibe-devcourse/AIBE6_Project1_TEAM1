@@ -67,6 +67,25 @@ interface TripReview {
   trip_id: number
 }
 
+interface ReviewRouteRow {
+  id: number
+  trip_id: number
+  start: number
+  end: number
+  slope: string | null
+  stairs: string | null
+  shade: string | null
+  user_id: string | null
+  transport_type: string | null
+  review_id: number
+  order: number
+}
+
+interface ReviewRoute extends ReviewRouteRow {
+  startPlaceName: string
+  endPlaceName: string
+}
+
 interface PlaceDetailPageProps {
   tripId: number
 }
@@ -284,8 +303,40 @@ function buildTimeline(
   })
 }
 
+function getInitials(userId?: string | null) {
+  if (!userId) return 'U'
+  return userId.slice(0, 2).toUpperCase()
+}
+
+function getDisplayName(userId?: string | null) {
+  if (!userId) return '사용자'
+  return `뚜벅이_${userId.slice(0, 4)}`
+}
+
+function getRouteLabel(route: ReviewRoute) {
+  return `${route.startPlaceName} → ${route.endPlaceName}`
+}
+
+function normalizeSlopeLabel(value?: string | null) {
+  if (!value) return '정보 없음'
+  if (value === '낮음') return '완만'
+  if (value === '높음') return '급경사'
+  return value
+}
+
+function normalizeStairsLabel(value?: string | null) {
+  if (!value) return '정보 없음'
+  if (value === '적음') return '약간'
+  return value
+}
+
+function normalizeShadeLabel(value?: string | null) {
+  if (!value) return '정보 없음'
+  return value
+}
+
 const SummaryCard = ({ icon: Icon, label, value }: SummaryCardProps) => (
-  <div className="flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-white p-4 shadow-sm space-y-1">
+  <div className="flex flex-col items-center justify-center space-y-1 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
     <Icon className="h-5 w-5 text-gray-400" />
     <span className="text-[10px] font-medium text-gray-400">{label}</span>
     <span className="text-sm font-bold text-gray-900">{value}</span>
@@ -395,6 +446,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
   const [trip, setTrip] = useState<Trip | null>(null)
   const [detailItems, setDetailItems] = useState<TripDetailItem[]>([])
   const [reviews, setReviews] = useState<TripReview[]>([])
+  const [reviewRoutes, setReviewRoutes] = useState<ReviewRoute[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -408,16 +460,28 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
   }, [])
 
   useEffect(() => {
-    const fetchTripDetail = async () => {
-      if (!supabase) {
-        setErrorMessage('Supabase 환경변수가 설정되지 않았습니다.')
-        setIsLoading(false)
-        return
-      }
+    if (!supabase) {
+      setErrorMessage('Supabase 환경변수가 설정되지 않았습니다.')
+      setIsLoading(false)
+      return
+    }
 
+    if (!tripId || Number.isNaN(Number(tripId))) {
+      setErrorMessage('유효하지 않은 일정 ID입니다.')
+      setIsLoading(false)
+      return
+    }
+
+    let isMounted = true
+
+    const fetchTripDetail = async () => {
       try {
+        if (!isMounted) return
+
         setIsLoading(true)
         setErrorMessage('')
+
+        console.log('[fetchTripDetail] start', { tripId })
 
         const { data: tripRow, error: tripError } = await supabase
           .from('trips')
@@ -425,9 +489,22 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
             'id, user_id, title, start_date, end_date, is_public, total_travel_time, total_cost, total_distance, is_saved',
           )
           .eq('id', tripId)
-          .single()
+          .maybeSingle()
 
-        if (tripError) throw tripError
+        if (tripError) {
+          console.error('[fetchTripDetail] trip query error:', tripError)
+          throw tripError
+        }
+
+        if (!tripRow) {
+          if (!isMounted) return
+          setTrip(null)
+          setDetailItems([])
+          setReviews([])
+          setReviewRoutes([])
+          setErrorMessage('')
+          return
+        }
 
         const { data: tripItemsRows, error: tripItemsError } = await supabase
           .from('trip_items')
@@ -438,10 +515,20 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
           .order('visit_day', { ascending: true })
           .order('visit_order', { ascending: true })
 
-        if (tripItemsError) throw tripItemsError
+        if (tripItemsError) {
+          console.error(
+            '[fetchTripDetail] trip_items query error:',
+            tripItemsError,
+          )
+          throw tripItemsError
+        }
 
         const placeIds = [
-          ...new Set((tripItemsRows ?? []).map((item) => item.place_id)),
+          ...new Set(
+            (tripItemsRows ?? [])
+              .map((item) => item.place_id)
+              .filter((id): id is number => typeof id === 'number'),
+          ),
         ]
 
         let placeMap = new Map<number, Place>()
@@ -454,7 +541,10 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
             )
             .in('id', placeIds)
 
-          if (placesError) throw placesError
+          if (placesError) {
+            console.error('[fetchTripDetail] places query error:', placesError)
+            throw placesError
+          }
 
           placeMap = new Map(
             (placeRows ?? []).map((place) => [place.id, place]),
@@ -474,24 +564,121 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
           .eq('trip_id', tripId)
           .order('created_at', { ascending: false })
 
-        if (reviewsError) throw reviewsError
+        if (reviewsError) {
+          console.error('[fetchTripDetail] reviews query error:', reviewsError)
+          throw reviewsError
+        }
+
+        const { data: routeRows, error: routesError } = await supabase
+          .from('routes')
+          .select(
+            'id, trip_id, start, end, slope, stairs, shade, user_id, transport_type, review_id, order',
+          )
+          .eq('trip_id', tripId)
+          .eq('transport_type', 'walk')
+          .order('order', { ascending: true })
+
+        if (routesError) {
+          console.error('[fetchTripDetail] routes query error:', routesError)
+          throw routesError
+        }
+
+        const routePlaceIds = [
+          ...new Set(
+            (routeRows ?? [])
+              .flatMap((route) => [route.start, route.end])
+              .filter((id): id is number => typeof id === 'number'),
+          ),
+        ]
+
+        let routePlaceMap = new Map<number, Place>()
+
+        if (routePlaceIds.length > 0) {
+          const { data: routePlaceRows, error: routePlacesError } =
+            await supabase
+              .from('places')
+              .select(
+                'id, kakao_place_id, place_name, category, latitude, longitude, is_near_station, address',
+              )
+              .in('id', routePlaceIds)
+
+          if (routePlacesError) {
+            console.error(
+              '[fetchTripDetail] route places query error:',
+              routePlacesError,
+            )
+            throw routePlacesError
+          }
+
+          routePlaceMap = new Map(
+            (routePlaceRows ?? []).map((place) => [place.id, place]),
+          )
+        }
+
+        const mappedReviewRoutes: ReviewRoute[] = (
+          (routeRows ?? []) as ReviewRouteRow[]
+        ).map((route) => ({
+          ...route,
+          startPlaceName:
+            routePlaceMap.get(route.start)?.place_name || '출발지 정보 없음',
+          endPlaceName:
+            routePlaceMap.get(route.end)?.place_name || '도착지 정보 없음',
+        }))
+
+        if (!isMounted) return
+
+        console.log('[fetchTripDetail] success', {
+          trip: tripRow,
+          tripItemsCount: mergedItems.length,
+          reviewsCount: (reviewRows ?? []).length,
+          routesCount: mappedReviewRoutes.length,
+        })
 
         setTrip(tripRow)
         setDetailItems(mergedItems)
         setReviews(reviewRows ?? [])
-      } catch (error) {
-        console.error(error)
+        setReviewRoutes(mappedReviewRoutes)
+      } catch (error: unknown) {
+        console.error('[fetchTripDetail] raw error:', error)
+
+        if (error instanceof Error) {
+          console.error('[fetchTripDetail] message:', error.message)
+          console.error('[fetchTripDetail] stack:', error.stack)
+        }
+
+        const supabaseError = error as {
+          message?: string
+          details?: string
+          hint?: string
+          code?: string
+        }
+
+        console.error('[fetchTripDetail] parsed error:', {
+          message: supabaseError?.message,
+          details: supabaseError?.details,
+          hint: supabaseError?.hint,
+          code: supabaseError?.code,
+        })
+
+        if (!isMounted) return
+
         setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : '상세 일정을 불러오는 중 오류가 발생했습니다.',
+          supabaseError?.message ||
+            supabaseError?.details ||
+            '상세 일정을 불러오는 중 오류가 발생했습니다.',
         )
       } finally {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
     fetchTripDetail()
+
+    return () => {
+      isMounted = false
+    }
   }, [supabase, tripId])
 
   if (isLoading) {
@@ -623,7 +810,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                   {trip.title || '제목 없는 일정'}
                 </h1>
 
-                <div className="flex flex-wrap gap-2 pt-1 pb-2">
+                <div className="flex flex-wrap gap-2 pb-2 pt-1">
                   {tags.length > 0 ? (
                     tags.map((tag, i) => (
                       <span
@@ -773,85 +960,151 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
               </button>
             </div>
 
-            <div className="flex gap-4 border-b border-gray-100 pb-3">
-              <button type="button" className="text-xs font-bold text-gray-900">
+            <div className="flex gap-3 pb-3">
+              <button
+                type="button"
+                className="rounded-xl px-3 py-1.5 text-sm font-bold text-gray-900"
+              >
                 최신순
               </button>
               <button
                 type="button"
-                className="text-xs font-semibold text-gray-400 hover:text-gray-600"
+                className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700"
               >
                 평점순
               </button>
               <button
                 type="button"
-                className="text-xs font-semibold text-gray-400 hover:text-gray-600"
+                className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700"
               >
                 사진순
               </button>
             </div>
-
-            <div className="space-y-4">
+            <div className="space-y-6">
               {reviews.length > 0 ? (
-                reviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
-                  >
-                    <div className="flex justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-[10px] font-bold text-gray-400">
-                          U
-                        </div>
-                        <div>
-                          <div className="text-sm font-bold text-gray-900">
-                            사용자
+                reviews.map((review) => {
+                  const routesForReview = reviewRoutes.filter(
+                    (route) => route.review_id === review.id,
+                  )
+
+                  return (
+                    <div
+                      key={review.id}
+                      className="space-y-4 rounded-[26px] border border-gray-300 bg-white p-5 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-100 text-base font-bold text-gray-400">
+                            {getInitials(review.user_id)}
                           </div>
-                          <div className="text-[10px] text-gray-400">
-                            {review.created_at
-                              ? new Date(review.created_at).toLocaleDateString(
-                                  'ko-KR',
-                                )
-                              : '-'}
+
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-3">
+                              <div className="text-lg font-bold leading-tight text-gray-900">
+                                {getDisplayName(review.user_id)}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {review.created_at
+                                  ? new Date(
+                                      review.created_at,
+                                    ).toLocaleDateString('ko-KR')
+                                  : '-'}
+                              </div>
+                            </div>
+
+                            <p className="text-sm leading-6 text-gray-600">
+                              {review.content || '리뷰 내용이 없습니다.'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0">
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-5 w-5 ${
+                                  i < (review.rating ?? 0)
+                                    ? 'fill-yellow-400 text-yellow-400'
+                                    : 'text-gray-200'
+                                }`}
+                              />
+                            ))}
+                            <span className="ml-2 text-3xl font-bold text-gray-900">
+                              {review.rating != null
+                                ? review.rating.toFixed(1)
+                                : '-'}
+                            </span>
                           </div>
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-0.5">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-3 w-3 ${
-                              i < (review.rating ?? 0)
-                                ? 'fill-yellow-400 text-yellow-400'
-                                : 'text-gray-200'
-                            }`}
-                          />
+                      <div className="grid grid-cols-4 gap-2.5">
+                        {[0, 1, 2, 3].map((item, index) => (
+                          <div
+                            key={item}
+                            className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-gray-100"
+                          >
+                            {index === 3 ? (
+                              <span className="text-xl font-bold text-gray-500">
+                                +4
+                              </span>
+                            ) : (
+                              <ImageIcon className="h-6 w-6 text-gray-300" />
+                            )}
+                          </div>
                         ))}
-                        <span className="ml-1 text-xs font-bold text-gray-900">
-                          {review.rating != null
-                            ? review.rating.toFixed(1)
-                            : '-'}
-                        </span>
+                      </div>
+
+                      <div className="border-t border-gray-200 pt-5">
+                        <h4 className="mb-3 text-base font-bold text-gray-800">
+                          구간별 보행 환경 평가
+                        </h4>
+
+                        <div className="space-y-3">
+                          {routesForReview.length > 0 ? (
+                            routesForReview.map((route) => (
+                              <div
+                                key={route.id}
+                                className="rounded-2xl bg-gray-50 px-4 py-4"
+                              >
+                                <div className="mb-2 text-sm font-semibold leading-6 text-gray-900">
+                                  {getRouteLabel(route)}
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-600">
+                                  <span>
+                                    ↗ 경사{' '}
+                                    <strong className="font-bold text-gray-900">
+                                      {normalizeSlopeLabel(route.slope)}
+                                    </strong>
+                                  </span>
+
+                                  <span>
+                                    ↑ 계단{' '}
+                                    <strong className="font-bold text-gray-900">
+                                      {normalizeStairsLabel(route.stairs)}
+                                    </strong>
+                                  </span>
+
+                                  <span>
+                                    ♤ 그늘{' '}
+                                    <strong className="font-bold text-gray-900">
+                                      {normalizeShadeLabel(route.shade)}
+                                    </strong>
+                                  </span>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="rounded-2xl bg-gray-50 px-4 py-4 text-sm text-gray-500">
+                              연결된 보행 환경 평가가 없습니다.
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-
-                    <p className="text-xs leading-relaxed text-gray-600">
-                      {review.content || '리뷰 내용이 없습니다.'}
-                    </p>
-
-                    <div className="grid grid-cols-4 gap-2">
-                      {[0, 1, 2, 3].map((item) => (
-                        <div
-                          key={item}
-                          className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-gray-100 bg-gray-50"
-                        >
-                          <ImageIcon className="h-4 w-4 text-gray-200" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))
+                  )
+                })
               ) : (
                 <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
                   <div className="flex justify-between">
