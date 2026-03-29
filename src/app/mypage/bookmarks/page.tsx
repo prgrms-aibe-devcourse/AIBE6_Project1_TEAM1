@@ -78,7 +78,7 @@ const SAVED_COURSES = [
 
 const FILTERS = ['All', 'Forest', 'City', 'Coast'];
 
-export default function KeepPage() {
+export default function BookmarksPage() {
   const [activeFilter, setActiveFilter] = useState('All');
 
   const filteredCourses = activeFilter === 'All' 
