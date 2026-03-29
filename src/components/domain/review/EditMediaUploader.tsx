@@ -1,53 +1,58 @@
+import { Camera, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 type MediaItem = {
   id?: number
   url: string
   path: string
-  file_type?: string
-  isNew: boolean
-  toDelete?: boolean
+  isNew?: boolean
 }
 
-export default function MediaUploader({
+type Props = {
+  supabase: any
+  images: MediaItem[]
+  onUpload: (files: { url: string; path: string }[]) => void
+  onRemove: (files: { url: string; path: string }[]) => void
+  onCleanup?: React.MutableRefObject<(() => Promise<void>) | undefined>
+}
+
+export default function EditMediaUploader({
   supabase,
-  initialMedia = [],
-  onChange,
-}: any) {
+  images,
+  onUpload,
+  onRemove,
+  onCleanup,
+}: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null)
-  const [images, setImages] = useState<MediaItem[]>([])
   const [uploading, setUploading] = useState(false)
 
   const MAX_SIZE = 20 * 1024 * 1024 // 20MB
   const MAX_COUNT = 5
 
-  // 초기 데이터 세팅 (수정 화면)
-  useEffect(() => {
-    const mapped = initialMedia.map((item: any) => ({
-      id: item.id,
-      url: item.file_url,
-      path: extractPathFromUrl(item.file_url, 'media-storage') ?? '',
-      file_type: item.file_type,
-      isNew: false,
-    }))
-    setImages(mapped)
-  }, [initialMedia])
-
-  // URL → path 추출
-  function extractPathFromUrl(url: string, bucket: string) {
-    const parts = url.split(`/storage/v1/object/public/${bucket}/`)
-    if (parts.length < 2) return null
-    return parts[1].split('?')[0]
+  const cleanup = async () => {
+    const newFiles = images.filter((img) => img.isNew)
+    for (const f of newFiles) {
+      await supabase.storage.from('media-storage').remove([f.path])
+    }
   }
+
+  useEffect(() => {
+    if (onCleanup) {
+      // 부모 ref에 cleanup 함수 전달
+      onCleanup.current = cleanup
+    }
+  }, [images])
 
   // 업로드
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
+
     if (images.length + files.length > MAX_COUNT) {
       alert(`파일은 최대 ${MAX_COUNT}개까지 업로드 가능합니다.`)
       return
     }
+
     const validFiles = Array.from(files).filter((file) => {
       if (file.size > MAX_SIZE) {
         alert(`${file.name} 용량 초과`)
@@ -57,18 +62,17 @@ export default function MediaUploader({
     })
 
     setUploading(true)
-    const uploaded: MediaItem[] = []
-    for (const file of Array.from(validFiles)) {
+
+    const uploaded: { url: string; path: string }[] = []
+
+    for (const file of validFiles) {
       const fileName = `${crypto.randomUUID()}.${file.name.split('.').pop()}`
 
       const { error } = await supabase.storage
         .from('media-storage')
         .upload(fileName, file)
 
-      if (error) {
-        console.log(error)
-        continue
-      }
+      if (error) continue
 
       const { data } = supabase.storage
         .from('media-storage')
@@ -77,54 +81,21 @@ export default function MediaUploader({
       uploaded.push({
         url: data.publicUrl,
         path: fileName,
-        file_type: file.type,
-        isNew: true,
       })
     }
 
-    setImages((prev) => {
-      const updated = [...prev, ...uploaded]
-      onChange?.(updated)
-      return updated
-    })
+    onUpload(uploaded) // ✅ 부모에게만 전달
 
     setUploading(false)
     e.target.value = ''
   }
 
   // 삭제
-  const handleRemove = async (index: number) => {
-    const target = images[index]
+  const handleRemove = (path: string) => {
+    const updated = images.filter((img) => img.path !== path)
 
-    if (target.isNew) {
-      // 새 파일 → 바로 storage 삭제
-      await supabase.storage.from('media-storage').remove([target.path])
-
-      const updated = images.filter((_, i) => i !== index)
-      setImages(updated)
-      onChange?.(updated)
-    } else {
-      // 기존 파일 → 삭제 예약
-      const updated = images.map((item, i) =>
-        i === index ? { ...item, toDelete: true } : item,
-      )
-
-      setImages(updated)
-      onChange?.(updated)
-    }
+    onRemove(updated) // ✅ UI만 변경
   }
-
-  // 수정 취소 시 cleanup
-  const cleanupNewFiles = async () => {
-    const newFiles = images.filter((item) => item.isNew)
-
-    for (const file of newFiles) {
-      await supabase.storage.from('media-storage').remove([file.path])
-    }
-  }
-
-  // UI에서 보여줄 것만 필터
-  const visibleImages = images.filter((item) => !item.toDelete)
 
   return (
     <div>
@@ -133,6 +104,7 @@ export default function MediaUploader({
         onClick={() => !uploading && inputRef.current?.click()}
         className="w-full border rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer text-gray-500"
       >
+        <Camera />
         {uploading
           ? '업로드 중...'
           : '사진을 업로드하세요(jpg, png / 20MB까지)'}
@@ -149,14 +121,14 @@ export default function MediaUploader({
 
       {/* 이미지 리스트 */}
       <div className="flex gap-2 mt-3">
-        {visibleImages.map((item, i) => (
+        {images.map((item) => (
           <div key={item.path} className="relative">
             <img src={item.url} className="w-16 h-16 object-cover rounded-md" />
             <button
-              onClick={() => handleRemove(i)}
-              className="absolute -top-2 -right-2 bg-black text-white rounded-full p-1"
+              onClick={() => handleRemove(item.path)}
+              className="absolute -top-2 -right-2 bg-black text-white rounded-full p-1 cursor-pointer"
             >
-              X
+              <X size={14} />
             </button>
           </div>
         ))}

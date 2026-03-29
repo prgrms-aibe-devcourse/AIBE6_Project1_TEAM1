@@ -163,12 +163,12 @@ export default function ReviewWritePage() {
   const handleSubmit = async () => {
     if (loading) return
     if (!rating) return alert('별점을 선택해주세요')
-    // ✅ routes와 options 개수 체크
+    // routes와 options 개수 체크
     if (routes.length !== routeOptions.length) {
       return alert('경로 옵션이 모두 선택되지 않았습니다')
     }
 
-    // ✅ walk 경로만 검사
+    // walk 경로만 검사
     const hasEmpty = routes.some((route, index) => {
       if (route.transport !== 'walk') return false
 

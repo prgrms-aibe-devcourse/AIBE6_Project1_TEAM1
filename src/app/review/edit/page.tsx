@@ -12,19 +12,30 @@ type RouteOption = {
   shade: string
 }
 
-import MediaUploader from '@/components/domain/review/MediaUploader'
+type MediaItem = {
+  id?: number
+  url: string
+  path: string
+  isNew?: boolean
+}
+
+import EditMediaUploader from '@/components/domain/review/EditMediaUploader'
 import RatingSelector from '@/components/domain/review/RatingSelector'
 import RouteOptionSelector from '@/components/domain/review/RouteOptionSelector'
 import { createClient } from '@/utils/supabase/client'
 
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export default function ReviewWritePage() {
   const [rating, setRating] = useState(0)
   const [content, setContent] = useState('')
-  const [images, setImages] = useState<{ url: string; path: string }[]>([])
+  const [images, setImages] = useState<MediaItem[]>([])
+  const [originalImages, setOriginalImages] = useState<
+    { url: string; path: string }[]
+  >([])
+  const mediaCleanupRef = useRef<(() => Promise<void>) | undefined>(undefined)
 
   const [userId, setUserId] = useState<string | null>(null)
   const [tripTitle, setTriptitle] = useState<string | null>(null)
@@ -60,7 +71,7 @@ export default function ReviewWritePage() {
     const fetchReview = async () => {
       setLoading(true)
 
-      // 1️⃣ 리뷰
+      // 1. 리뷰
       const { data: reviewData, error: reviewError } = await supabase
         .from('reviews')
         .select('*')
@@ -76,7 +87,7 @@ export default function ReviewWritePage() {
       setRating(reviewData.rating)
       setContent(reviewData.content)
 
-      // 2️⃣ routes
+      // 2. routes
       const { data: routeData, error: routeError } = await supabase
         .from('routes')
         .select('*')
@@ -88,7 +99,7 @@ export default function ReviewWritePage() {
         return alert('경로 불러오기 실패')
       }
 
-      // routes 세팅
+      // 3. routes 세팅
       const formattedRoutes = routeData.map((r: any) => ({
         from: r.start,
         to: r.end,
@@ -96,7 +107,7 @@ export default function ReviewWritePage() {
       }))
       setRoutes(formattedRoutes)
 
-      // options 세팅
+      // 4. options 세팅
       const formattedOptions = routeData.map((r: any) => ({
         slope: r.slope || '',
         stairs: r.stairs || '',
@@ -104,20 +115,21 @@ export default function ReviewWritePage() {
       }))
       setRouteOptions(formattedOptions)
 
-      // 3️⃣ images
+      // 5. images 세팅
       const { data: imageData } = await supabase
         .from('images')
-        .select('*')
+        .select('file_url, file_path')
         .eq('review_id', reviewId)
 
-      if (imageData) {
-        setImages(
-          imageData.map((img: any) => ({
-            url: img.file_url,
-            path: img.file_path,
-          })),
-        )
-      }
+      const formattedImages =
+        imageData?.map((img: any) => ({
+          url: img.file_url,
+          path: img.file_path,
+          isNew: false,
+        })) ?? []
+
+      setImages(formattedImages)
+      setOriginalImages(formattedImages)
 
       setLoading(false)
     }
@@ -194,7 +206,7 @@ export default function ReviewWritePage() {
 
     setLoading(true)
 
-    // ✅ 1️⃣ reviews 업데이트
+    // reviews 업데이트
     const { error: reviewError } = await supabase
       .from('reviews')
       .update({
@@ -209,7 +221,7 @@ export default function ReviewWritePage() {
       return alert('리뷰 수정 실패')
     }
 
-    // ✅ 2️⃣ 기존 routes 삭제 후 재삽입 (간단하고 안전)
+    // 기존 routes 삭제 후 재삽입
     await supabase.from('routes').delete().eq('review_id', reviewId)
 
     const routeRows = routes.map((route, index) => {
@@ -240,7 +252,26 @@ export default function ReviewWritePage() {
       return alert('경로 수정 실패')
     }
 
-    // ✅ 3️⃣ images (같은 방식)
+    // images 삭제 후 재삽입
+    // 🔥 1. 삭제된 이미지 찾기
+    const deletedImages = originalImages.filter(
+      (orig) => !images.find((img) => img.path === orig.path),
+    )
+
+    // 🔥 2. storage에서 실제 삭제
+    if (deletedImages.length > 0) {
+      const { error: storageError } = await supabase.storage
+        .from('media-storage')
+        .remove(deletedImages.map((img) => img.path))
+
+      if (storageError) {
+        console.error(storageError)
+        setLoading(false)
+        return alert('이미지 삭제 실패')
+      }
+    }
+
+    // 🔥 3. DB는 기존처럼 전체 교체 (간단하고 안전)
     await supabase.from('images').delete().eq('review_id', reviewId)
 
     if (images.length > 0) {
@@ -272,7 +303,10 @@ export default function ReviewWritePage() {
         <div className="py-4">
           <button
             className="text-2xl p-2 cursor-pointer"
-            onClick={() => router.back()}
+            onClick={async () => {
+              if (mediaCleanupRef.current) await mediaCleanupRef.current()
+              router.back()
+            }}
           >
             ←
           </button>
@@ -320,22 +354,36 @@ export default function ReviewWritePage() {
 
         <div className="text-xl font-bold py-4">사진 첨부</div>
         <div className="mb-6">
-          <MediaUploader
+          <EditMediaUploader
             supabase={supabase}
-            onUpload={(urls: { url: string; path: string }[]) =>
-              setImages((prev) => [...prev, ...urls])
+            images={images}
+            onUpload={(uploaded: { url: string; path: string }[]) =>
+              setImages((prev) => [
+                ...prev,
+                ...uploaded.map((f) => ({ ...f, isNew: true })),
+              ])
             }
-            onRemove={(urls: { url: string; path: string }[]) =>
-              setImages(urls)
+            onRemove={(updated: { url: string; path: string }[]) =>
+              setImages(updated)
             }
+            onCleanup={mediaCleanupRef}
           />
         </div>
 
         <button
-          className="w-full bg-black text-white py-3 rounded-lg mb-6 cursor-pointer"
+          className="w-1/2 bg-black text-white py-3 rounded-lg mb-6 cursor-pointer"
           onClick={handleSubmit}
         >
           {loading ? '수정 중...' : '리뷰 수정'}
+        </button>
+        <button
+          className="w-1/2 bg-white text-black py-3 rounded-lg mb-6 cursor-pointer border"
+          onClick={async () => {
+            if (mediaCleanupRef.current) await mediaCleanupRef.current()
+            router.back()
+          }}
+        >
+          수정 취소
         </button>
       </div>
     </div>
