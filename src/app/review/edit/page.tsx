@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from 'react'
 import EditMediaUploader from '@/components/domain/review/EditMediaUploader'
 import RatingSelector from '@/components/domain/review/RatingSelector'
 import RouteOptionSelector from '@/components/domain/review/RouteOptionSelector'
-import GlobalHeader from '@/components/layout/GlobalHeader'
 import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 
@@ -293,7 +292,6 @@ export default function ReviewEditPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
       <div className="flex-col w-auto self-center">
-        <GlobalHeader />
         <div className="py-4 flex items-center gap-2">
           <button
             className="text-2xl p-2 cursor-pointer"

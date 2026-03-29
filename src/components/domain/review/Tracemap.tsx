@@ -1,6 +1,6 @@
 'use client'
 import { createClient } from '@/utils/supabase/client'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const supabase = createClient()
 
@@ -194,48 +194,105 @@ interface KakaoTripMapProps {
 
 export default function TraceMap({ userId }: KakaoTripMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
+  const [trips, setTrips] = useState<Trips>({}) // trips 상태 추가
+  const [mapInstance, setMapInstance] = useState<any>(null) // 지도 인스턴스 저장용
+
+  const loadKakaoMap = () => {
+    return new Promise<void>((resolve) => {
+      // 이미 로드되어 있다면 바로 해결
+      if (window.kakao && window.kakao.maps && window.kakao.maps.LatLng) {
+        return resolve()
+      }
+
+      const script = document.createElement('script')
+      // 핵심: URL 끝에 &autoload=false 추가
+      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_APP_KEY}&libraries=services,clusterer&autoload=false`
+      script.async = true
+
+      script.onload = () => {
+        // autoload=false일 때는 반드시 kakao.maps.load 콜백 안에서 로직을 실행해야 함
+        window.kakao.maps.load(() => {
+          resolve()
+        })
+      }
+
+      document.head.appendChild(script)
+    })
+  }
 
   useEffect(() => {
     if (!mapRef.current) return
 
-    const loadKakaoMap = () => {
-      return new Promise<void>((resolve) => {
-        // 이미 로드되어 있다면 바로 해결
-        if (window.kakao && window.kakao.maps && window.kakao.maps.LatLng) {
-          return resolve()
-        }
-
-        const script = document.createElement('script')
-        // 핵심: URL 끝에 &autoload=false 추가
-        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_APP_KEY}&libraries=services,clusterer&autoload=false`
-        script.async = true
-
-        script.onload = () => {
-          // autoload=false일 때는 반드시 kakao.maps.load 콜백 안에서 로직을 실행해야 함
-          window.kakao.maps.load(() => {
-            resolve()
-          })
-        }
-
-        document.head.appendChild(script)
-      })
-    }
-
     const initMap = async () => {
+      // 1. 카카오맵 로드 (기존 loadKakaoMap 함수 호출 부분은 생략, 로직은 동일)
       await loadKakaoMap()
-      if (!mapRef.current) return
 
       const map = new window.kakao.maps.Map(mapRef.current, {
         center: new window.kakao.maps.LatLng(37.5665, 126.978),
         level: 5,
       })
+      setMapInstance(map)
 
-      const trips = await getUserTripItemsWithCoords(userId)
-      showTripsOnMap(map, trips)
+      // 2. 데이터 가져오기 및 상태 저장
+      const fetchedTrips = await getUserTripItemsWithCoords(userId)
+      setTrips(fetchedTrips)
+
+      // 3. 지도에 표시
+      showTripsOnMap(map, fetchedTrips)
     }
 
     initMap()
   }, [userId])
 
-  return <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+  return (
+    // 전체 컨테이너: flex를 사용해 가로 배치
+    <div className="flex w-full h-full border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+      {/* 왼쪽 패널: 여행 목록 */}
+      <aside className="w-1/4 min-w-[200px] bg-white border-r border-gray-200 overflow-y-auto p-4">
+        <h2 className="text-lg font-bold mb-4">여행 일정 목록</h2>
+        <div className="space-y-3">
+          {Object.keys(trips).length === 0 ? (
+            <p className="text-sm text-gray-400">등록된 일정이 없습니다.</p>
+          ) : (
+            Object.keys(trips).map((tripId) => (
+              <div
+                key={tripId}
+                className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
+                onClick={() => {
+                  // 클릭 시 해당 여행의 첫 번째 장소로 지도 이동 (선택 사항)
+                  const firstItem = trips[tripId][0]
+                  if (mapInstance && firstItem) {
+                    mapInstance.panTo(
+                      new window.kakao.maps.LatLng(
+                        firstItem.latitude,
+                        firstItem.longitude,
+                      ),
+                    )
+                  }
+                }}
+              >
+                {/* Polyline 색상과 동일한 원 표시 */}
+                <div
+                  className="w-4 h-4 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: getColorByTripId(tripId) }}
+                />
+                <span className="text-sm font-medium truncate">
+                  여행 ID: {tripId.slice(0, 8)}...{' '}
+                  {/* 실제 데이터가 있다면 여행 제목으로 변경 */}
+                </span>
+                <span className="text-[10px] text-gray-400 ml-auto">
+                  {trips[tripId].length}곳
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </aside>
+
+      {/* 오른쪽 영역: 지도 */}
+      <div className="flex-1 relative">
+        <div ref={mapRef} className="w-full h-full" />
+      </div>
+    </div>
+  )
 }

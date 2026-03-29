@@ -1,6 +1,5 @@
 'use client'
 
-import GlobalHeader from '@/components/layout/GlobalHeader'
 import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
@@ -171,7 +170,6 @@ export default function ReviewViewPage() {
   return (
     <div className="min-h-screen flex flex-col items-center">
       <div className="flex-col w-auto self-center">
-        <GlobalHeader />
         <div className="py-4">
           <button
             className="text-2xl p-2 cursor-pointer"

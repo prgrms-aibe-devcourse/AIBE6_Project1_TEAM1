@@ -1,7 +1,6 @@
 'use client'
 
 import TraceMap from '@/components/domain/review/Tracemap'
-import GlobalHeader from '@/components/layout/GlobalHeader'
 import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
 
@@ -22,7 +21,6 @@ export default function TracemapPage() {
 
   return (
     <>
-      <GlobalHeader />
       <div
         style={{
           width: '100vw',

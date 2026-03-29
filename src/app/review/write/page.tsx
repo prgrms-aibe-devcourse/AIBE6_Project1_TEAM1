@@ -3,7 +3,6 @@
 import MediaUploader from '@/components/domain/review/MediaUploader'
 import RatingSelector from '@/components/domain/review/RatingSelector'
 import RouteOptionSelector from '@/components/domain/review/RouteOptionSelector'
-import GlobalHeader from '@/components/layout/GlobalHeader'
 import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 
@@ -226,7 +225,6 @@ export default function ReviewWritePage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
       <div className="flex-col w-auto self-center">
-        <GlobalHeader />
         <div className="py-4">
           <button
             className="text-2xl p-2 cursor-pointer"
