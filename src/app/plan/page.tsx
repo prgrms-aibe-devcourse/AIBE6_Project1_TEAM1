@@ -7,7 +7,6 @@ import MyTripsSidebar from '@/components/domain/plan/MyTripsSidebar'
 import PlaceSearchModal from '@/components/domain/plan/PlaceSearchModal'
 import SaveTripModal from '@/components/domain/plan/SaveTripModal'
 import TimelineList from '@/components/domain/plan/TimelineList'
-import GlobalHeader from '@/components/layout/GlobalHeader'
 import PageContainer from '@/components/layout/PageContainer'
 import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
@@ -645,7 +644,6 @@ function PlanPageContent() {
           }}
         />
       )}
-      <GlobalHeader />
 
       {/* 내 일정 서랍형 사이드바 (Sidebar) */}
       <MyTripsSidebar
