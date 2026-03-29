@@ -12,6 +12,7 @@ declare global {
 
 type TripItem = {
   trip_id: string
+  title: string
   visit_order: number
   latitude: number
   longitude: number
@@ -84,7 +85,8 @@ async function getUserTripItemsWithCoords(userId: string): Promise<Trips> {
     .from('trip_items')
     .select(
       `
-      trip_id, 
+      trip_id,
+      trips ( title ), 
       visit_order, 
       place_id,
       places (
@@ -106,8 +108,10 @@ async function getUserTripItemsWithCoords(userId: string): Promise<Trips> {
     // places 데이터가 있는지 안전하게 확인
     if (item.places) {
       if (!trips[item.trip_id]) trips[item.trip_id] = []
+      const tripTitle = item.trips?.title || '제목 없는 여행'
       trips[item.trip_id].push({
         trip_id: item.trip_id,
+        title: tripTitle,
         visit_order: item.visit_order,
         latitude: item.places.latitude,
         longitude: item.places.longitude,
@@ -245,54 +249,69 @@ export default function TraceMap({ userId }: KakaoTripMapProps) {
   }, [userId])
 
   return (
-    // 전체 컨테이너: flex를 사용해 가로 배치
-    <div className="flex w-full h-full border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-      {/* 왼쪽 패널: 여행 목록 */}
-      <aside className="w-1/4 min-w-[200px] bg-white border-r border-gray-200 overflow-y-auto p-4">
-        <h2 className="text-lg font-bold mb-4">여행 일정 목록</h2>
-        <div className="space-y-3">
+    // 1. 전체 컨테이너: 화면 중앙 80%, 높이 600px
+    <div className="relative w-4/5 max-w-6xl h-full mx-auto border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
+      {/* 2. 지도 영역: 전체 컨테이너의 80%만 차지하며 오른쪽에 배치 */}
+      <div className="absolute inset-y-0 right-0 w-4/5 z-0">
+        <div ref={mapRef} className="w-full h-full" />
+      </div>
+
+      {/* 3. 오버레이 패널: 왼쪽에서 시작하며 지도를 살짝 덮는 형태 */}
+      {/* w-72(약 280px) 정도면 전체 너비가 좁을 때 지도를 적절히 가리며 리스트를 보여줍니다. */}
+      <aside className="absolute top-6 left-6 z-10 w-72 max-h-[calc(100%-3rem)] bg-white/95 backdrop-blur shadow-2xl rounded-2xl border border-gray-100 flex flex-col overflow-hidden">
+        <div className="p-5 border-b border-gray-50 bg-white">
+          <h2 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
+            <span className="w-1.5 h-5 bg-blue-500 rounded-full"></span>
+            여행 발자취
+          </h2>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
           {Object.keys(trips).length === 0 ? (
-            <p className="text-sm text-gray-400">등록된 일정이 없습니다.</p>
+            <div className="py-10 text-center">
+              <p className="text-sm text-gray-400">등록된 일정이 없습니다.</p>
+            </div>
           ) : (
-            Object.keys(trips).map((tripId) => (
-              <div
-                key={tripId}
-                className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
-                onClick={() => {
-                  // 클릭 시 해당 여행의 첫 번째 장소로 지도 이동 (선택 사항)
-                  const firstItem = trips[tripId][0]
-                  if (mapInstance && firstItem) {
-                    mapInstance.panTo(
-                      new window.kakao.maps.LatLng(
-                        firstItem.latitude,
-                        firstItem.longitude,
-                      ),
-                    )
-                  }
-                }}
-              >
-                {/* Polyline 색상과 동일한 원 표시 */}
+            Object.keys(trips).map((tripId) => {
+              const currentTripItems = trips[tripId]
+              const displayTitle = currentTripItems[0]?.title || '제목 없음'
+
+              return (
                 <div
-                  className="w-4 h-4 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: getColorByTripId(tripId) }}
-                />
-                <span className="text-sm font-medium truncate">
-                  여행 ID: {tripId.slice(0, 8)}...{' '}
-                  {/* 실제 데이터가 있다면 여행 제목으로 변경 */}
-                </span>
-                <span className="text-[10px] text-gray-400 ml-auto">
-                  {trips[tripId].length}곳
-                </span>
-              </div>
-            ))
+                  key={tripId}
+                  className="group flex flex-col gap-2 p-3.5 hover:bg-blue-50/50 rounded-xl transition-all cursor-pointer border border-slate-50 hover:border-blue-100 bg-white shadow-sm"
+                  onClick={() => {
+                    const firstItem = currentTripItems[0]
+                    if (mapInstance && firstItem) {
+                      mapInstance.panTo(
+                        new window.kakao.maps.LatLng(
+                          firstItem.latitude,
+                          firstItem.longitude,
+                        ),
+                      )
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="w-2.5 h-2.5 rounded-full ring-4 ring-slate-50"
+                      style={{ backgroundColor: getColorByTripId(tripId) }}
+                    />
+                    <span className="text-sm font-bold text-gray-700 truncate group-hover:text-blue-600 transition-colors">
+                      {displayTitle}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pl-5">
+                    <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">
+                      {currentTripItems.length}곳
+                    </span>
+                  </div>
+                </div>
+              )
+            })
           )}
         </div>
       </aside>
-
-      {/* 오른쪽 영역: 지도 */}
-      <div className="flex-1 relative">
-        <div ref={mapRef} className="w-full h-full" />
-      </div>
     </div>
   )
 }
