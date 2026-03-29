@@ -242,10 +242,26 @@ export default function AIPage() {
       
       for (const item of courseItems) {
         try {
-          // 출발지 혹은 추천 장소 검색
-          const res = await fetch(`/api/places?query=${encodeURIComponent(item.name)}&size=1`)
-          const data = await res.json()
-          const doc = data.documents?.[0]
+          // 1차 시도: 장소 이름으로 검색
+          let query = item.name
+          let res = await fetch(`/api/places?query=${encodeURIComponent(query)}&size=1`)
+          
+          if (!res.ok) {
+            console.error(`카카오 API 1차 검색 실패 (${query}):`, res.status)
+          }
+
+          let data = await res.json().catch(() => ({ documents: [] }))
+          let doc = data.documents?.[0]
+
+          // 2차 시도: 결과가 없으면 역 이름을 붙여서 검색 (맥락 추가)
+          if (!doc && station) {
+            query = `${station} ${item.name}`
+            res = await fetch(`/api/places?query=${encodeURIComponent(query)}&size=1`)
+            if (res.ok) {
+              data = await res.json().catch(() => ({ documents: [] }))
+              doc = data.documents?.[0]
+            }
+          }
           
           if (doc) {
             resolvedPlaces.push({
@@ -259,11 +275,10 @@ export default function AIPage() {
               transportType: 'transit'
             })
           } else {
-            // 검색 결과가 없는 경우 최소한의 정보로 유지 (이후 플래너에서 수정 가능)
-            console.warn(`장소를 찾을 수 없음: ${item.name}`)
+            console.warn(`장소를 최종적으로 찾을 수 없음: ${item.name}`)
           }
         } catch (err) {
-          console.error(`장소 검색 오류 (${item.name}):`, err)
+          console.error(`장소 처리 중 예외 발생 (${item.name}):`, err)
         }
       }
 
