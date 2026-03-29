@@ -12,6 +12,21 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+const getRelativeTime = (dateStr: string) => {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffInMs = now.getTime() - date.getTime()
+  const diffInMins = Math.floor(diffInMs / (1000 * 60))
+  const diffInHours = Math.floor(diffInMins / 60)
+  const diffInDays = Math.floor(diffInHours / 24)
+
+  if (diffInMins < 1) return '방금 전'
+  if (diffInMins < 60) return `${diffInMins}분 전`
+  if (diffInHours < 24) return `${diffInHours}시간 전`
+  if (diffInDays < 7) return `${diffInDays}일 전`
+  return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+}
+
 interface MyTripsSidebarProps {
   isOpen: boolean
   onClose: () => void
@@ -44,7 +59,7 @@ export default function MyTripsSidebar({
         )
       `)
       .eq('user_id', userId)
-      .order('id', { ascending: false }) // 최신순 정렬
+      .order('updated_at', { ascending: false }) // 최신 수정순 정렬
 
     if (!error && data) {
       setTrips(data)
@@ -253,6 +268,23 @@ export default function MyTripsSidebar({
                       {trip.start_date.replace(/-/g, '.')} ~{' '}
                       {trip.end_date.replace(/-/g, '.')}
                     </span>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-gray-50 flex items-center justify-between text-[10px] text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <span className="opacity-70">작성</span>
+                      <span>{new Date(trip.created_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="opacity-70">수정</span>
+                      <span className={`font-semibold ${
+                        (new Date().getTime() - new Date(trip.updated_at).getTime()) < 3600000 
+                        ? 'text-purple-500' 
+                        : 'text-gray-500'
+                      }`}>
+                        {getRelativeTime(trip.updated_at)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )
