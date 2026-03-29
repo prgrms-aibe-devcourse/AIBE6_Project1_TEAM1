@@ -1,6 +1,6 @@
 'use client'
 
-import { X, Upload, ImageIcon, Loader2 } from 'lucide-react'
+import { X, Upload, ImageIcon, Loader2, Hash } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
@@ -13,6 +13,7 @@ interface SaveTripModalProps {
     endDate: string,
     isPublic: boolean,
     imgUrl: string,
+    tags: string,
   ) => Promise<void>
   totalDays: number // 자동으로 종료일을 계산하기 위해 추가
   userId: string | null // 이미지 업로드 경로 생성을 위해 추가
@@ -23,6 +24,7 @@ interface SaveTripModalProps {
     endDate: string
     isPublic: boolean
     imgUrl?: string
+    tags?: string
   }
 }
 
@@ -44,6 +46,7 @@ export default function SaveTripModal({
   )
   const [isPublic, setIsPublic] = useState(initialData?.isPublic ?? true)
   const [imgUrl, setImgUrl] = useState(initialData?.imgUrl || '')
+  const [tags, setTags] = useState(initialData?.tags || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
 
@@ -128,7 +131,7 @@ export default function SaveTripModal({
     setIsSubmitting(true)
     try {
       // 부모 컴포넌트(Page)가 넘겨준 실제 DB 저장 함수 호출
-      await onSave(title, startDate, endDate, isPublic, imgUrl)
+      await onSave(title, startDate, endDate, isPublic, imgUrl, tags)
       onClose() // 저장이 완전히 성공하면 모달 닫기
     } catch (error) {
       console.error(error)
@@ -230,6 +233,27 @@ export default function SaveTripModal({
               className="w-full px-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-[14px] text-gray-900 shadow-sm transition-all"
               autoFocus
             />
+          </div>
+
+          {/* 해시태그 입력 섹션 추가 */}
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="tags"
+              className="text-[13px] font-bold text-gray-700 flex items-center gap-2"
+            >
+              <Hash className="w-4 h-4 text-purple-600" /> 태그 입력
+            </label>
+            <input
+              id="tags"
+              type="text"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="#제주 #여행 #맛집 (공백으로 구분)"
+              className="w-full px-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-[14px] text-gray-900 shadow-sm transition-all"
+            />
+            <p className="text-[10px] text-gray-400 mt-0.5">
+              * 해시태그를 공백이나 #으로 구분하여 입력해주세요.
+            </p>
           </div>
 
           <div className="flex gap-4 w-full">

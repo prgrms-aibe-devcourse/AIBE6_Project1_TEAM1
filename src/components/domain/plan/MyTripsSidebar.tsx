@@ -6,9 +6,10 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
-  Map,
+  Map as MapIcon,
   Plus,
   X,
+  Hash,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -131,7 +132,7 @@ export default function MyTripsSidebar({
         {/* 헤더 */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-white">
           <h2 className="font-bold text-gray-900 text-[16px] flex items-center gap-2">
-            <Map className="w-5 h-5 text-purple-600" /> 내 보관함
+            <MapIcon className="w-5 h-5 text-purple-600" /> 내 보관함
           </h2>
           <button
             onClick={onClose}
@@ -279,6 +280,21 @@ export default function MyTripsSidebar({
                           {trip.end_date.replace(/-/g, '.')}
                         </span>
                       </div>
+
+                      {/* 해시태그 표시 영역 */}
+                      {trip.tags && (
+                        <div className="mt-2.5 flex flex-wrap gap-1">
+                          {trip.tags.split(/[#\s]+/).filter(Boolean).map((tag: string, idx: number) => (
+                            <span 
+                              key={idx} 
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-purple-50 text-[9px] font-bold text-purple-600 border border-purple-100/50"
+                            >
+                              <Hash className="w-2 h-2" />
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
