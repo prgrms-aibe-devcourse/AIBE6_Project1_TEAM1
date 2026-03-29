@@ -123,6 +123,7 @@ function PlanPageContent() {
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
     isPublic: true,
+    imgUrl: '',
   })
 
   // 1개짜리 배열에서 N박 M일을 지원하는 객체(Record) 형태로 확장
@@ -165,6 +166,7 @@ function PlanPageContent() {
           startDate: new Date().toISOString().split('T')[0],
           endDate: new Date().toISOString().split('T')[0],
           isPublic: true,
+          imgUrl: '',
         })
       } else {
         router.push(`/plan?id=${id}`)
@@ -222,7 +224,7 @@ function PlanPageContent() {
           .from('trips')
           .select(
             `
-            id, title, start_date, end_date, is_public,
+            id, title, start_date, end_date, is_public, img_url,
             trip_items (
               visit_day,
               visit_order,
@@ -256,6 +258,7 @@ function PlanPageContent() {
           startDate: tripData.start_date || '',
           endDate: tripData.end_date || '',
           isPublic: tripData.is_public ?? true,
+          imgUrl: tripData.img_url || '',
         })
 
         // 다른 여행을 클릭해서 넘어왔을 수도 있으니 강제로 찌꺼기를 세탁합니다.
@@ -474,6 +477,7 @@ function PlanPageContent() {
     startDate: string,
     endDate: string,
     isPublic: boolean,
+    imgUrl: string,
   ) => {
     if (!userId) {
       openModal({
@@ -519,6 +523,7 @@ function PlanPageContent() {
             total_cost: totalCost,
             total_distance: totalDistance,
             is_saved: true,
+            img_url: imgUrl,
           })
           .select()
           .single()
@@ -629,6 +634,7 @@ function PlanPageContent() {
         startDate,
         endDate,
         isPublic,
+        imgUrl,
       })
       // 저장 성공 후 수정 여부 초기화
       setIsModified(false)
@@ -689,6 +695,7 @@ function PlanPageContent() {
           onClose={() => setIsSaveModalOpen(false)}
           onSave={handleSaveTrip}
           totalDays={Object.keys(placesByDay).length} // 총 일수 전달
+          userId={userId} // 이미지 업로드용 유저 ID 전달
           initialData={editTripId ? tripMetadata : undefined} // 수정 시 초기값 전달
         />
       )}
