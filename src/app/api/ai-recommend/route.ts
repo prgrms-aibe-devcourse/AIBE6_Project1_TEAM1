@@ -88,7 +88,7 @@ export async function POST(request: Request) {
       model: 'gemini-3.1-flash-lite-preview',
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 6000,
+        maxOutputTokens: 2000,
         responseMimeType: 'application/json',
       },
     })

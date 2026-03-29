@@ -492,10 +492,7 @@ export default function AIPage() {
             </div>
 
             {/* 하단 버튼 */}
-            <div className="flex items-center gap-3 mt-8">
-              <button className="flex-1 py-3.5 bg-gray-900 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-800 transition cursor-pointer">
-                📋 일정 저장하기
-              </button>
+            <div className="mt-8">
               <button
                 onClick={() => {
                   setStep(1)
@@ -505,7 +502,7 @@ export default function AIPage() {
                   setAiResult(null)
                   setAiError(null)
                 }}
-                className="py-3.5 px-5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer flex items-center gap-2"
+                className="w-full py-3.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer flex items-center justify-center gap-2"
               >
                 🔄 다시 추천받기
               </button>
