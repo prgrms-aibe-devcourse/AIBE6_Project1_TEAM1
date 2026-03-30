@@ -1,8 +1,9 @@
 'use client'
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/utils/supabase/client'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import { useModalStore } from '@/store/useModalStore'
 import PlaceResultSection from './PlaceResultSection'
 
 export interface Trip {
@@ -159,17 +160,11 @@ export default function PlaceSearchSection() {
     useState<CategoryOption>('전체')
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [bookmarkedTripIds, setBookmarkedTripIds] = useState<Set<number>>(new Set())
 
-  const supabase = useMemo(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return null
-    }
-
-    return createClient(supabaseUrl, supabaseAnonKey)
-  }, [])
+  const { openModal } = useModalStore()
+  const supabase = createClient()
 
   const fetchTrips = async (
     searchKeyword = '',
@@ -382,6 +377,85 @@ export default function PlaceSearchSection() {
     fetchTrips(queryFromUrl, selectedCategory)
   }, [queryFromUrl, selectedCategory])
 
+  // 유저 정보 및 북마크 목록 가져오기
+  useEffect(() => {
+    const fetchUserAndBookmarks = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      const currentUserId = session?.user?.id ?? null
+      setUserId(currentUserId)
+
+      if (currentUserId) {
+        const { data: bookmarks } = await supabase
+          .from('bookmark')
+          .select('trips_id')
+          .eq('user_id', currentUserId)
+        
+        if (bookmarks) {
+          setBookmarkedTripIds(new Set(bookmarks.map(b => b.trips_id)))
+        }
+      }
+    }
+
+    fetchUserAndBookmarks()
+
+    // 인증 상태 변경 감지
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const currentUserId = session?.user?.id ?? null
+      setUserId(currentUserId)
+      if (!currentUserId) {
+        setBookmarkedTripIds(new Set())
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  const handleToggleBookmark = async (tripId: number) => {
+    if (!userId) {
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '로그인 필요',
+        description: '북마크 기능을 이용하려면 로그인이 필요합니다.',
+      })
+      return
+    }
+
+    const isBookmarked = bookmarkedTripIds.has(tripId)
+
+    if (isBookmarked) {
+      // 북마크 삭제
+      const { error } = await supabase
+        .from('bookmark')
+        .delete()
+        .eq('user_id', userId)
+        .eq('trips_id', tripId)
+      
+      if (!error) {
+        setBookmarkedTripIds(prev => {
+          const next = new Set(prev)
+          next.delete(tripId)
+          return next
+        })
+      }
+    } else {
+      // 북마크 추가
+      const { error } = await supabase
+        .from('bookmark')
+        .insert({ user_id: userId, trips_id: tripId })
+      
+      if (!error) {
+        setBookmarkedTripIds(prev => {
+          const next = new Set(prev)
+          next.add(tripId)
+          return next
+        })
+      }
+    }
+  }
+
   return (
     <section className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
       <PlaceResultSection
@@ -394,6 +468,8 @@ export default function PlaceSearchSection() {
         onSelectCategory={(category) =>
           setSelectedCategory(category as CategoryOption)
         }
+        bookmarkedTripIds={bookmarkedTripIds}
+        onToggleBookmark={handleToggleBookmark}
       />
     </section>
   )
