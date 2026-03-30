@@ -180,15 +180,22 @@ export default function TriplogsPage() {
     }
   }, [trips])
 
-  const filteredHistory = trips.filter((item) =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredHistory = useMemo(
+    () =>
+      trips.filter((item) =>
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [trips, searchQuery],
   )
 
-  // 화면에 보이는 카드들 tripId 배열
-
-  const filteredTripIds = filteredHistory.map((trip) => trip.id)
+  // 화면에 보이는 카드들의 tripId 배열도 useMemo로 계산
+  const filteredTripIds = useMemo(
+    () => filteredHistory.map((trip) => trip.id),
+    [filteredHistory],
+  )
 
   const handleGoTraceMap = () => {
+    if (filteredTripIds.length === 0) return
     router.push(
       `/mypage/triplogs/tracemap?tripIds=${filteredTripIds
         .map(encodeURIComponent)
@@ -269,7 +276,7 @@ export default function TriplogsPage() {
                   </p>
                 </div>
               ) : (
-                <AnimatePresence mode="wait">
+                <AnimatePresence mode="popLayout">
                   {filteredHistory.map((trip, index) => (
                     <motion.div
                       key={trip.id}
