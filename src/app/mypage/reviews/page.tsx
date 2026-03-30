@@ -54,7 +54,9 @@ function ReviewsPageContent() {
   const router = useRouter()
   const { openModal } = useModalStore()
   const searchParams = useSearchParams()
-  const tripId = searchParams.get('tripId')
+  // tripId를 숫자로 변환
+  const tripIdParam = searchParams.get('tripId')
+  const tripId = tripIdParam ? Number(tripIdParam) : undefined
 
   /**
    * 3. 데이터 패칭 (useEffect)
@@ -119,7 +121,12 @@ function ReviewsPageContent() {
             : [],
         }))
 
-        setReviews(processedReviews)
+        // tripId가 있으면 필터링 후 state에 설정
+        setReviews(
+          tripId
+            ? processedReviews.filter((review) => review.trip_id === tripId)
+            : processedReviews,
+        )
       } catch (err) {
         console.error('리뷰를 불러오는 중 오류가 발생했습니다:', err)
       } finally {
@@ -218,7 +225,9 @@ function ReviewsPageContent() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <MessageSquare className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">전체 리뷰</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                {tripId ? '해당 코스 리뷰' : '전체 리뷰'}
+              </h2>
               <span className="text-lg font-extrabold text-purple-600 dark:text-purple-400">
                 {reviews.length}
               </span>
