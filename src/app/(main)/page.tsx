@@ -312,6 +312,77 @@ export default function Main() {
         </div>
       </section>
 
+      {/* 4. AI 추천 섹션 (AI Recommendation Section): 뚜벅만의 차별화된 AI 기능 강조 */}
+      <section className="relative overflow-hidden bg-white py-24 md:py-32">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="rounded-[3rem] bg-gray-900 px-8 py-16 md:px-16 md:py-24 overflow-hidden relative group">
+            {/* 장식용 배경 효과 */}
+            <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-96 h-96 bg-purple-600/20 rounded-full blur-[100px] group-hover:bg-purple-600/30 transition-colors duration-700"></div>
+            <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-80 h-80 bg-blue-600/10 rounded-full blur-[80px]"></div>
+            
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+              <ScrollReveal direction="right">
+                <div className="inline-flex items-center gap-2 rounded-full bg-purple-500/10 px-4 py-1.5 text-sm font-bold text-purple-400 ring-1 ring-purple-500/20 mb-6">
+                  <Sparkles className="h-4 w-4" />
+                  <span>AI Powered Trip Assistant</span>
+                </div>
+                <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
+                  어디로 갈지 막막할 땐, <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-300 italic">
+                    AI 뚜벅이 코스
+                  </span>
+                </h2>
+                <p className="text-gray-400 text-lg md:text-xl leading-relaxed mb-10">
+                  내가 선호하는 여행 스타일, 걷고 싶은 거리, 보고 싶은 풍경만 말해주세요. <br className="hidden md:block" />
+                  당신만을 위한 최적의 도심 걷기 코스를 AI가 실시간으로 설계해 드립니다. 
+                  <br />
+                  복잡한 검색은 멈추고, 추천받은 코스로 바로 떠나보세요!
+                </p>
+                <button
+                  onClick={() => router.push('/ai')}
+                  className="group flex items-center gap-3 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-4 text-lg font-bold text-white transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/30"
+                >
+                  AI 맞춤 코스 추천받기
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </button>
+              </ScrollReveal>
+
+              <ScrollReveal direction="left" className="relative">
+                <div className="relative aspect-square md:aspect-video rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm p-6 flex flex-col justify-center items-center group/card overflow-hidden">
+                   {/* AI 연출 배경 */}
+                   <div className="absolute inset-0 opacity-20 pointer-events-none">
+                      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent animate-pulse"></div>
+                      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-pulse delay-700"></div>
+                   </div>
+
+                   <div className="flex flex-col items-center gap-6 relative z-10">
+                      <div className="relative">
+                         <div className="absolute inset-0 bg-purple-500 blur-2xl opacity-20 animate-pulse"></div>
+                         <div className="h-24 w-24 rounded-3xl bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center shadow-2xl">
+                           <Sparkles className="h-12 w-12 text-white" />
+                         </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex justify-center gap-1.5 mb-2">
+                           {[1, 2, 3, 4, 5].map((i) => (
+                             <motion.div
+                               key={i}
+                               animate={{ height: [8, 20, 8] }}
+                               transition={{ repeat: Infinity, duration: 1, delay: i * 0.1 }}
+                               className="w-1 bg-purple-400 rounded-full"
+                             />
+                           ))}
+                        </div>
+                        <p className="text-sm font-bold text-purple-300 tracking-widest uppercase">Analyzing your preference...</p>
+                      </div>
+                   </div>
+                </div>
+              </ScrollReveal>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 4. 하단 CTA 섹션 (Final CTA): 가입 유도 구역 */}
       <section className="relative overflow-hidden bg-purple-600 py-24 md:py-32">
         {/* 장식용 배경 원형 효과 */}
