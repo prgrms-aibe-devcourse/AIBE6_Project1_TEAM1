@@ -39,8 +39,7 @@ export default function BookmarksPage() {
         const userId = session.user.id;
 
         /**
-         * 1. 'bookmark' 테이블에서 현재 사용자가 저장한 trip_id 목록을 가져옵니다.
-         * 이때 'trips' 테이블을 조인(Join)하여 여행 정보를 한꺼번에 가져옵니다.
+         * 1. 'bookmark' 테이블에서 현재 사용자가 저장한 trips_id 목록을 가져옵니다.
          */
         const { data: bookmarkData, error: bookmarkError } = await supabase
           .from('bookmark')
@@ -91,7 +90,7 @@ export default function BookmarksPage() {
         if (reviewsError) throw reviewsError;
 
         /**
-         * 3. UI에 표시할 형식으로 데이터를 변환합니다.
+         * 4. UI에 표시할 형식으로 데이터를 변환합니다.
          */
         const transformed: SavedCourse[] = uniqueTrips.map(trip => {
           const tripReviews = reviewsData?.filter(rev => rev.trip_id === trip.id) || [];
@@ -104,7 +103,6 @@ export default function BookmarksPage() {
           const mins = totalMinutes % 60;
           const timeStr = hours > 0 ? `${hours}시간 ${mins > 0 ? `${mins}분` : ''}` : `${mins}분`;
 
-          // 태그 문자열을 배열로 변환
           const tagsArray = trip.tags ? trip.tags.split(/[#\s]+/).filter(Boolean) : [];
 
           return {
@@ -150,7 +148,7 @@ export default function BookmarksPage() {
         .from('bookmark')
         .delete()
         .eq('user_id', session.user.id)
-        .eq('trip_id', tripId);
+        .eq('trips_id', tripId);
 
       if (error) throw error;
 
