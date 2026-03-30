@@ -461,6 +461,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
     'latest',
   )
   const [visibleReviewsCount, setVisibleReviewsCount] = useState(3) // 초기 3개만 보여주기
+  const [isCompleted, setIsCompleted] = useState(false)
 
   const supabase = createClient()
 
@@ -605,6 +606,21 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
         if (user) {
           const userId = user.id
 
+          // 여행을 완료했는지 확인
+          const { data: travelerData, error: travelerError } = await supabase
+            .from('travelers')
+            .select('status')
+            .eq('user_id', userId)
+            .maybeSingle() // 하나만 가져오기
+          if (travelerError) {
+            console.error(
+              '[fetchTripDetail] travelers query error:',
+              travelerError,
+            )
+          } else if (travelerData?.status === 'completed') {
+            setIsCompleted(true)
+          }
+
           // ✅ 로그인한 유저의 리뷰 존재 확인
           const myReview = (reviewRows ?? []).find(
             (review) => review.user_id === userId,
@@ -615,6 +631,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
             setUserReviewId(null)
           }
         }
+
         if (!isMounted) return
 
         // 각 리뷰에 첨부된 이미지들 url 처리
@@ -1162,6 +1179,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
               </div>
 
               {userId &&
+                isCompleted &&
                 (userReviewId ? (
                   <button
                     type="button"
