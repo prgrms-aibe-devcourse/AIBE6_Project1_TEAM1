@@ -11,7 +11,7 @@ export default function TracemapPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const tripIdsParam = searchParams.get('tripIds') || ''
-  const tripIds = tripIdsParam.split(',').filter((id) => id)
+  const tripIds = tripIdsParam.split(',').filter(Boolean)
 
   useEffect(() => {
     const getUser = async () => {
