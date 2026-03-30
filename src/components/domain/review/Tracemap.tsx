@@ -178,9 +178,10 @@ function showTripsOnMap(map: any, trips: Trips) {
 // ---------------- TraceMap 컴포넌트
 interface KakaoTripMapProps {
   userId: string
+  tripIds: string[]
 }
 
-export default function TraceMap({ userId }: KakaoTripMapProps) {
+export default function TraceMap({ userId, tripIds }: KakaoTripMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const [trips, setTrips] = useState<Trips>({})
   const [mapInstance, setMapInstance] = useState<any>(null)
@@ -210,13 +211,17 @@ export default function TraceMap({ userId }: KakaoTripMapProps) {
       setMapInstance(map)
 
       const fetchedTrips = await getUserTripItemsWithCoords(userId)
-      setTrips(fetchedTrips)
+      const filteredTrips: Trips = {}
+      tripIds.forEach((id) => {
+        if (fetchedTrips[id]) filteredTrips[id] = fetchedTrips[id]
+      })
 
-      showTripsOnMap(map, fetchedTrips)
+      setTrips(filteredTrips)
+      showTripsOnMap(map, filteredTrips)
     }
 
     initMap()
-  }, [userId])
+  }, [userId, tripIds])
 
   return (
     <div className="relative w-4/5 max-w-6xl h-full mx-auto border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
