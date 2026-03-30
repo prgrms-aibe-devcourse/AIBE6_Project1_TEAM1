@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, Filter, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 
@@ -25,6 +26,7 @@ export default function BookmarksPage() {
   const [courses, setCourses] = useState<SavedCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'latest' | 'oldest'>('latest');
+  const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
@@ -227,6 +229,7 @@ export default function BookmarksPage() {
                     reviewCount={course.reviewCount}
                     isKept={true}
                     onKeep={handleToggleBookmark}
+                    onClick={() => router.push(`/search/${course.id}`)}
                     tags={course.tags}
                   />
                 </motion.div>
