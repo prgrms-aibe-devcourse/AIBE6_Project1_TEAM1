@@ -3,7 +3,6 @@
 import { removeMediaFile, uploadSingleImage } from "@/utils/mediaUploader";
 import { createClient } from "@/utils/supabase/client";
 import { ArrowLeft, Camera, User } from "lucide-react";
-import { useModalStore } from "@/store/useModalStore";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
@@ -110,46 +109,12 @@ export default function ProfileEditForm({ user, profile }: any) {
   // 화면에 보여줄 사진을 결정합니다: 방금 막 선택한 미리보기용(previewUrl)이 있다면 그걸 먼저 보여주고, 없다면 DB에 저장되어있던 사진(avatarUrl)을 보여줍니다.
   const currentDisplayAvatar = previewUrl || avatarUrl;
 
-  // 회원 탈퇴 처리를 수행하는 함수입니다.
-  const handleWithdraw = () => {
-    // 실수 방지를 위해 전역 모달을 띄워 한 번 더 물어봅니다.
-    useModalStore.getState().openModal({
-      type: "confirm",
-      variant: "danger",
-      title: "정말로 탈퇴하시겠습니까? 😢",
-      description: `탈퇴하시면 모든 데이터가 삭제되며 복구할 수 없습니다.\n확인을 위해 본인의 이메일 뒤에 /delete를 붙여 입력해 주세요.\n(예: ${user.email}/delete)`,
-      inputPlaceholder: "이메일/delete 를 입력하세요",
-      requiredInputText: `${user.email}/delete`, // 이 텍스트와 똑같이 입력해야 버튼이 활성화됩니다.
-      confirmText: "탈퇴하기",
-      cancelText: "취소",
-      onConfirm: async () => {
-        setIsLoading(true);
-        try {
-          const res = await fetch("/api/auth/withdraw", { method: "POST" });
-          if (res.ok) {
-            alert("그동안 뚜벅을 이용해 주셔서 감사합니다. 안녕히 가세요!");
-            // 로그아웃 처리 후 홈으로 이동
-            await supabase.auth.signOut();
-            router.push("/");
-            router.refresh();
-          } else {
-            const data = await res.json();
-            alert("탈퇴 처리 중 오류가 발생했습니다: " + data.error);
-          }
-        } catch (error) {
-          alert("네트워크 오류로 탈퇴 처리에 실패했습니다.");
-        } finally {
-          setIsLoading(false);
-        }
-      },
-    });
-  };
 
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 h-14 flex items-center justify-between max-w-2xl mx-auto">
-        <button onClick={() => router.back()} className="p-2 -ml-2 text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
+      <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-900 px-4 h-14 flex items-center justify-between max-w-2xl mx-auto">
+        <button onClick={() => router.back()} className="p-2 -ml-2 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <h1 className="text-[17px] font-bold text-gray-900 absolute left-1/2 -translate-x-1/2">프로필 수정</h1>
@@ -166,20 +131,20 @@ export default function ProfileEditForm({ user, profile }: any) {
         {/* 1️⃣ 프로필 사진 수정(Avatar Edit) 섹션 */}
         {/* 설명: 사용자가 동그란 프로필 사진 영역을 클릭(onClick)하면 숨겨져 있는 파일 입력창(fileInputRef)이 대신 클릭된 것처럼 이벤트를 전달합니다. */}
         <div className="relative mb-8 group cursor-pointer hover:scale-105 transition-transform" onClick={() => fileInputRef.current?.click()}>
-          <div className="w-[100px] h-[100px] rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
+          <div className="w-[100px] h-[100px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-700">
             {currentDisplayAvatar ? (
                /* eslint-disable-next-line @next/next/no-img-element */
               <img src={currentDisplayAvatar} alt="아바타" className="w-full h-full object-cover" />
             ) : (
-              <User className="w-12 h-12 text-gray-400" />
+              <User className="w-12 h-12 text-gray-400 dark:text-gray-500" />
             )}
             {/* 비유: 사진 변경 필터 이미지 느낌 - Hover 시 오버레이 */}
             <div className="absolute inset-0 bg-black/20 hidden group-hover:flex items-center justify-center transition-all">
               <Camera className="w-6 h-6 text-white" />
             </div>
           </div>
-          <div className="absolute bottom-0 right-0 bg-white border border-gray-200 rounded-full p-2 shadow-sm">
-            <Camera className="w-4 h-4 text-gray-700" />
+          <div className="absolute bottom-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-full p-2 shadow-sm">
+            <Camera className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           </div>
           {/* 진짜로 파일을 입력받는 창입니다. className="hidden" 이라 화면에는 안보이지만, onClick 등으로 연결되어 몰래 열립니다. */}
           <input 
@@ -201,12 +166,12 @@ export default function ProfileEditForm({ user, profile }: any) {
               onChange={(e) => setNickname(e.target.value)}
               placeholder="2~10자 이내로 입력해주세요"
               maxLength={10}
-              className="w-full h-14 px-4 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-gray-900 transition-shadow text-[15px] text-gray-900 placeholder-gray-400"
+              className="w-full h-14 px-4 rounded-xl bg-gray-50 dark:bg-gray-900 border-none outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 transition-shadow text-[15px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600"
             />
-            <p className="mt-2 text-[11px] text-gray-400">뚜벅 세계에서 사용될 멋진 이름을 지어주세요!</p>
+            <p className="mt-2 text-[11px] text-gray-400 dark:text-gray-500">뚜벅 세계에서 사용될 멋진 이름을 지어주세요!</p>
           </div>
 
-          <hr className="border-gray-100" />
+          <hr className="border-gray-100 dark:border-gray-800" />
 
           {/* Password Security Section */}
           {/* 비유: 세 개의 튼튼한 금고 다이얼이 있는 패스워드 폼 */}
@@ -220,14 +185,14 @@ export default function ProfileEditForm({ user, profile }: any) {
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="현재 비밀번호 (변경 시 필수)" 
-                className="w-full h-14 px-4 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-gray-900 transition-shadow text-[15px] placeholder-gray-400"
+                className="w-full h-14 px-4 rounded-xl bg-gray-50 dark:bg-gray-900 border-none outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 transition-shadow text-[15px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600"
               />
               <input 
                 type="password" 
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="어떤 멋진 새 비밀번호를 쓸까요?" 
-                className="w-full h-14 px-4 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-gray-900 transition-shadow text-[15px] placeholder-gray-400"
+                className="w-full h-14 px-4 rounded-xl bg-gray-50 dark:bg-gray-900 border-none outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 transition-shadow text-[15px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600"
               />
               <div className="relative">
                 <input 
@@ -235,8 +200,8 @@ export default function ProfileEditForm({ user, profile }: any) {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="새 비밀번호 다시 한 번!" 
-                  className={`w-full h-14 px-4 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 transition-shadow text-[15px] placeholder-gray-400 ${
-                    confirmPassword && confirmPassword !== newPassword ? "focus:ring-red-500 ring-2 ring-red-100" : "focus:ring-gray-900"
+                  className={`w-full h-14 px-4 rounded-xl bg-gray-50 dark:bg-gray-900 border-none outline-none focus:ring-2 transition-shadow text-[15px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 ${
+                    confirmPassword && confirmPassword !== newPassword ? "focus:ring-red-500 ring-2 ring-red-100 dark:ring-red-900/50" : "focus:ring-gray-900 dark:focus:ring-gray-100"
                   }`}
                 />
               </div>
@@ -245,16 +210,6 @@ export default function ProfileEditForm({ user, profile }: any) {
         </div>
         
 
-        {/* Action Bottom */}
-        <div className="mt-16 mb-8 text-center w-full">
-          <button 
-            type="button"
-            onClick={handleWithdraw}
-            className="text-[13px] font-medium text-gray-400 hover:text-red-500 transition-colors border-b border-gray-400 hover:border-red-500 pb-0.5"
-          >
-              회원 탈퇴
-          </button>
-        </div>
       </main>
     </div>
   );

@@ -37,17 +37,17 @@ export default function CustomerSupportPage() {
         <div className="mx-auto max-w-2xl px-4 py-4 flex items-center gap-4">
           <Link 
             href="/mypage" 
-            className="group flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/5 hover:bg-gray-50 transition-colors"
+            className="group flex h-10 w-10 items-center justify-center rounded-xl bg-white dark:bg-gray-900 shadow-sm ring-1 ring-black/5 dark:ring-white/10 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
-            <ChevronLeft className="h-6 w-6 text-gray-600 group-hover:text-purple-600 transition-colors" />
+            <ChevronLeft className="h-6 w-6 text-gray-600 dark:text-gray-400 group-hover:text-purple-600 transition-colors" />
           </Link>
-          <h1 className="text-xl font-bold text-gray-900">고객센터</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">고객센터</h1>
         </div>
       </header>
 
       <main className="mx-auto max-w-2xl px-4 pt-8">
         {/* Support Banner */}
-        <div className="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-3xl p-8 mb-10 text-white relative overflow-hidden shadow-xl shadow-purple-100">
+        <div className="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-3xl p-8 mb-10 text-white relative overflow-hidden shadow-xl shadow-purple-100 dark:shadow-none">
           <div className="relative z-10">
             <h2 className="text-2xl font-bold mb-2">무엇을 도와드릴까요?</h2>
             <p className="text-purple-100 text-[14px]">
@@ -62,17 +62,17 @@ export default function CustomerSupportPage() {
 
         {/* Contact Options */}
         <div className="grid grid-cols-2 gap-4 mb-12">
-          <button className="flex flex-col items-center gap-3 p-6 rounded-2xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50/30 transition-all group">
-            <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center group-hover:bg-purple-100 transition-colors">
-              <MessageCircle className="w-6 h-6 text-purple-600" />
+          <button className="flex flex-col items-center gap-3 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-purple-200 dark:hover:border-purple-800 hover:bg-purple-50/30 dark:hover:bg-purple-900/20 transition-all group">
+            <div className="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center group-hover:bg-purple-100 dark:group-hover:bg-purple-900/40 transition-colors">
+              <MessageCircle className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
-            <span className="text-[14px] font-bold text-gray-900">1:1 채팅 문의</span>
+            <span className="text-[14px] font-bold text-gray-900 dark:text-gray-100">1:1 채팅 문의</span>
           </button>
-          <button className="flex flex-col items-center gap-3 p-6 rounded-2xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50/30 transition-all group">
-            <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
-              <Mail className="w-6 h-6 text-indigo-600" />
+          <button className="flex flex-col items-center gap-3 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-purple-200 dark:hover:border-purple-800 hover:bg-purple-50/30 dark:hover:bg-purple-900/20 transition-all group">
+            <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/40 transition-colors">
+              <Mail className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
             </div>
-            <span className="text-[14px] font-bold text-gray-900">이메일 문의</span>
+            <span className="text-[14px] font-bold text-gray-900 dark:text-gray-100">이메일 문의</span>
           </button>
         </div>
 
@@ -88,26 +88,26 @@ export default function CustomerSupportPage() {
               <div 
                 key={idx} 
                 className={`border rounded-2xl transition-all duration-200 ${
-                  openFaq === idx ? "border-purple-200 bg-purple-50/30" : "border-gray-100 bg-white"
+                  openFaq === idx ? "border-purple-200 bg-purple-50/30 dark:border-purple-800 dark:bg-purple-900/20" : "border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900"
                 }`}
               >
                 <button
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
                   className="w-full flex items-center justify-between p-5 text-left"
                 >
-                  <span className="text-[15px] font-bold text-gray-800 leading-snug">
-                    <span className="text-purple-600 mr-2 uppercase">Q.</span>
+                  <span className="text-[15px] font-bold text-gray-800 dark:text-gray-200 leading-snug">
+                    <span className="text-purple-600 dark:text-purple-400 mr-2 uppercase">Q.</span>
                     {faq.question}
                   </span>
                   <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
-                    openFaq === idx ? "rotate-180 text-purple-500" : ""
+                    openFaq === idx ? "rotate-180 text-purple-500 dark:text-purple-400" : ""
                   }`} />
                 </button>
                 <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
                   openFaq === idx ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
                 }`}>
-                  <div className="px-5 pb-5 pt-0 text-[14px] text-gray-500 leading-relaxed border-t border-purple-100/50 mt-1 pt-4">
-                    <span className="text-indigo-600 font-bold mr-2 uppercase">A.</span>
+                  <div className="px-5 pb-5 pt-0 text-[14px] text-gray-500 dark:text-gray-400 leading-relaxed border-t border-purple-100/50 dark:border-purple-900/50 mt-1 pt-4">
+                    <span className="text-indigo-600 dark:text-indigo-400 font-bold mr-2 uppercase">A.</span>
                     {faq.answer}
                   </div>
                 </div>
@@ -117,14 +117,14 @@ export default function CustomerSupportPage() {
         </section>
 
         {/* Support Info Footer */}
-        <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col items-center gap-4 text-center">
+        <div className="mt-12 pt-8 border-t border-gray-100 dark:border-gray-800 flex flex-col items-center gap-4 text-center">
           <p className="text-[13px] text-gray-400 font-medium leading-relaxed">
             고객센터 운영시간: 평일 10:00 - 18:00 (주말/공휴일 제외)<br />
             점심시간: 12:30 - 13:30
           </p>
-          <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full border border-gray-100">
+          <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-full border border-gray-100 dark:border-gray-700">
             <Phone className="w-3.5 h-3.5 text-gray-400" />
-            <span className="text-[12px] font-bold text-gray-500">전화 문의: 1544-0000</span>
+            <span className="text-[12px] font-bold text-gray-500 dark:text-gray-400">전화 문의: 1544-0000</span>
           </div>
         </div>
       </main>

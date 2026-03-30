@@ -195,7 +195,7 @@ export default function Main() {
               </button>
               <button
                 onClick={() => router.push('/search')}
-                className="flex items-center gap-2 rounded-full bg-white px-8 py-4 text-lg font-bold text-gray-900 transition-all hover:bg-gray-50"
+                className="flex items-center gap-2 rounded-full bg-[#ffffff] px-8 py-4 text-lg font-bold text-[#111827] shadow-lg transition-all hover:bg-gray-50"
               >
                 인기 여행지 보기
               </button>

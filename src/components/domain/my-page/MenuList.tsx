@@ -23,7 +23,7 @@ export default function MenuList() {
           onClick={() => {
             router.push(route);
           }}
-          className="flex items-center justify-between w-full px-4 py-[18px] hover:bg-gray-50 transition-colors group rounded-xl"
+          className="flex items-center justify-between w-full px-4 py-[18px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group rounded-xl"
         >
           <div className="flex items-center gap-4">
             <Icon className="w-[18px] h-[18px] text-gray-500" strokeWidth={1.5} />
