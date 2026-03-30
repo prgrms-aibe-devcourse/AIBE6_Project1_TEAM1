@@ -39,11 +39,18 @@ export default function BookmarksPage() {
         const userId = session.user.id;
 
         /**
-         * 1. 'bookmark' 테이블에서 현재 사용자가 저장한 trips_id 목록을 가져옵니다.
+         * 1. 'bookmark' 테이블에서 현재 사용자가 저장한 trip_id 목록을 가져옵니다.
+         * 이때 'trips' 테이블을 조인(Join)하여 여행 정보를 한꺼번에 가져옵니다.
          */
         const { data: bookmarkData, error: bookmarkError } = await supabase
           .from('bookmark')
-          .select('trips_id')
+          .select(`
+            trip_id,
+            created_at,
+            trips (
+              *
+            )
+          `)
           .eq('user_id', userId)
           .order('created_at', { ascending: sortBy === 'oldest' });
 
@@ -57,28 +64,15 @@ export default function BookmarksPage() {
           return;
         }
 
-        const tripsIds = bookmarkData.map(b => b.trips_id);
+        // 조인된 데이터에서 trips 정보만 추출합니다.
+        const tripsData = bookmarkData
+          .map((b: any) => b.trips)
+          .filter(t => t !== null) as any[];
+
+        const tripsIds = tripsData.map(t => t.id);
 
         /**
-         * 2. 'trips' 테이블에서 해당 ID들에 해당하는 여행 정보를 가져옵니다.
-         */
-        const { data: tripsData, error: tripsError } = await supabase
-          .from('trips')
-          .select('*')
-          .in('id', tripsIds);
-
-        if (tripsError) {
-          console.error('Trips Table Fetch Error:', tripsError);
-          throw tripsError;
-        }
-
-        if (!tripsData || tripsData.length === 0) {
-          setCourses([]);
-          return;
-        }
-
-        /**
-         * 3. 각 여행지에 대한 리뷰 정보를 가져와 평균 평점을 계산합니다.
+         * 2. 각 여행지에 대한 리뷰 정보를 가져와 평균 평점을 계산합니다.
          */
         const { data: reviewsData, error: reviewsError } = await supabase
           .from('reviews')
@@ -88,7 +82,7 @@ export default function BookmarksPage() {
         if (reviewsError) throw reviewsError;
 
         /**
-         * 4. UI에 표시할 형식으로 데이터를 변환합니다.
+         * 3. UI에 표시할 형식으로 데이터를 변환합니다.
          */
         const transformed: SavedCourse[] = tripsData.map(trip => {
           const tripReviews = reviewsData?.filter(rev => rev.trip_id === trip.id) || [];
@@ -101,6 +95,7 @@ export default function BookmarksPage() {
           const mins = totalMinutes % 60;
           const timeStr = hours > 0 ? `${hours}시간 ${mins > 0 ? `${mins}분` : ''}` : `${mins}분`;
 
+          // 태그 문자열을 배열로 변환
           const tagsArray = trip.tags ? trip.tags.split(/[#\s]+/).filter(Boolean) : [];
 
           return {
@@ -138,7 +133,7 @@ export default function BookmarksPage() {
         .from('bookmark')
         .delete()
         .eq('user_id', session.user.id)
-        .eq('trips_id', tripId);
+        .eq('trip_id', tripId);
 
       if (error) throw error;
 
