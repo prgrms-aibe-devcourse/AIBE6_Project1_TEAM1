@@ -129,6 +129,9 @@ export default function SaveTripModal({
   }
 
   const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // 한글 입력(IME) 중 Enter/Space 키 중복 처리 방지 (잔여 글자가 남는 현상 해결)
+    if (e.nativeEvent.isComposing) return
+
     if (e.key === 'Enter' || e.key === ' ' || e.key === ',') {
       e.preventDefault()
       addTag(tagInput)
