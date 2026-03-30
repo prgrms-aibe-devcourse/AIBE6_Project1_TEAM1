@@ -17,7 +17,14 @@ import AITagButton from '@/components/domain/ai/AITagButton'
 import AITimeSlider from '@/components/domain/ai/AITimeSlider'
 
 // ─── Import: 아이콘 ───
+import { createClient } from '@/utils/supabase/client'
 import {
+  calcTravelMinutes,
+  type Place,
+  type TransportType,
+} from '@/utils/tripUtils'
+import {
+  CalendarPlus,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -27,11 +34,8 @@ import {
   Search,
   Sparkles,
   Wallet,
-  CalendarPlus,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/utils/supabase/client'
-import { calcTravelMinutes, type Place, type TransportType } from '@/utils/tripUtils'
 
 // ─── 상수 정의 ───
 
@@ -227,7 +231,9 @@ export default function AIPage() {
 
     setIsAddingToSchedule(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         alert('일정을 저장하려면 로그인이 필요합니다.')
         router.push('/login')
@@ -236,20 +242,24 @@ export default function AIPage() {
 
       const userId = user.id
       const courseItems = aiResult?.course ?? DUMMY_RESULTS
-      
+
       // 1. 추천된 장소들의 상세 정보(좌표, ID 등)를 카카오 API를 통해 확보합니다.
       const resolvedPlaces: Place[] = []
-      
+
       for (let idx = 0; idx < courseItems.length; idx++) {
         const item = courseItems[idx]
         // 다음 장소까지의 이동수단: courseItems[idx+1].walkInfo 기준 파싱
         const nextWalkInfo = courseItems[idx + 1]?.walkInfo ?? null
-        const derivedTransport: TransportType = nextWalkInfo?.startsWith('도보') ? 'walk' : 'transit'
+        const derivedTransport: TransportType = nextWalkInfo?.startsWith('도보')
+          ? 'walk'
+          : 'transit'
         try {
           // 1차 시도: 장소 이름으로 검색
           let query = item.name
-          let res = await fetch(`/api/places?query=${encodeURIComponent(query)}&size=1`)
-          
+          let res = await fetch(
+            `/api/places?query=${encodeURIComponent(query)}&size=1`,
+          )
+
           if (!res.ok) {
             console.error(`카카오 API 1차 검색 실패 (${query}):`, res.status)
           }
@@ -260,13 +270,15 @@ export default function AIPage() {
           // 2차 시도: 결과가 없으면 역 이름을 붙여서 검색 (맥락 추가)
           if (!doc && station) {
             query = `${station} ${item.name}`
-            res = await fetch(`/api/places?query=${encodeURIComponent(query)}&size=1`)
+            res = await fetch(
+              `/api/places?query=${encodeURIComponent(query)}&size=1`,
+            )
             if (res.ok) {
               data = await res.json().catch(() => ({ documents: [] }))
               doc = data.documents?.[0]
             }
           }
-          
+
           if (doc) {
             resolvedPlaces.push({
               id: Date.now().toString() + Math.random(),
@@ -276,7 +288,7 @@ export default function AIPage() {
               address: doc.address_name || '',
               lat: parseFloat(doc.y),
               lng: parseFloat(doc.x),
-              transportType: derivedTransport
+              transportType: derivedTransport,
             })
           } else {
             console.warn(`장소를 최종적으로 찾을 수 없음: ${item.name}`)
@@ -287,7 +299,9 @@ export default function AIPage() {
       }
 
       if (resolvedPlaces.length === 0) {
-        alert('추천된 장소들의 위치 정보를 찾을 수 없어 일정을 생성할 수 없습니다.')
+        alert(
+          '추천된 장소들의 위치 정보를 찾을 수 없어 일정을 생성할 수 없습니다.',
+        )
         return
       }
 
@@ -302,32 +316,41 @@ export default function AIPage() {
           is_public: true,
           is_saved: true,
           tags: selectedThemes.join(','),
-          img_url: '/images/jeju-east.png' // 기본 이미지
+          img_url: '/images/jeju-east.png', // 기본 이미지
         })
         .select()
         .single()
 
-      if (tripError || !tripData) throw new Error(tripError?.message || '여행 생성 실패')
+      if (tripError || !tripData)
+        throw new Error(tripError?.message || '여행 생성 실패')
 
       // 3. 장소들 간의 이동 시간 계산 및 일정 아이템 생성 (trip_items 테이블)
       for (let i = 0; i < resolvedPlaces.length; i++) {
         const place = resolvedPlaces[i]
-        
+
         // 장소가 DB에 없으면 추가 (상세 매핑은 편의상 이름 기반)
         let dbPlaceId: number | null = null
         if (place.kakao_place_id) {
-          const { data: existing } = await supabase.from('places').select('id').eq('kakao_place_id', place.kakao_place_id).maybeSingle()
+          const { data: existing } = await supabase
+            .from('places')
+            .select('id')
+            .eq('kakao_place_id', place.kakao_place_id)
+            .maybeSingle()
           if (existing) {
             dbPlaceId = existing.id
           } else {
-            const { data: newP } = await supabase.from('places').insert({
-              kakao_place_id: place.kakao_place_id,
-              place_name: place.name,
-              category: place.category,
-              address: place.address,
-              latitude: place.lat,
-              longitude: place.lng
-            }).select('id').single()
+            const { data: newP } = await supabase
+              .from('places')
+              .insert({
+                kakao_place_id: place.kakao_place_id,
+                place_name: place.name,
+                category: place.category,
+                address: place.address,
+                latitude: place.lat,
+                longitude: place.lng,
+              })
+              .select('id')
+              .single()
             if (newP) dbPlaceId = newP.id
           }
         }
@@ -335,7 +358,9 @@ export default function AIPage() {
         if (dbPlaceId) {
           const nextPlace = resolvedPlaces[i + 1]
           const mode = place.transportType || 'transit'
-          const travelTime = nextPlace ? calcTravelMinutes(place, nextPlace, mode) : 0
+          const travelTime = nextPlace
+            ? calcTravelMinutes(place, nextPlace, mode)
+            : 0
 
           await supabase.from('trip_items').insert({
             trip_id: tripData.id,
@@ -343,7 +368,7 @@ export default function AIPage() {
             visit_day: 1,
             visit_order: i + 1,
             transport_type: mode,
-            travel_time: travelTime
+            travel_time: travelTime,
           })
         }
       }
@@ -351,7 +376,6 @@ export default function AIPage() {
       // 4. 완료 후 일정 편집 페이지로 이동
       alert('AI 추천 코스가 내 일정에 추가되었습니다!')
       router.push(`/plan?id=${tripData.id}`)
-
     } catch (err) {
       console.error('일정 추가 오류:', err)
       alert('일정 추가 중 오류가 발생했습니다.')
@@ -369,7 +393,6 @@ export default function AIPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fafafa]">
-
       <PageContainer className="flex-1 py-8">
         {/* 로딩 오버레이 */}
         {isLoading && (
@@ -700,8 +723,7 @@ export default function AIPage() {
                   </>
                 ) : (
                   <>
-                    <CalendarPlus className="w-4 h-4" />
-                    내 일정에 추가하기
+                    <CalendarPlus className="w-4 h-4" />내 일정에 추가하기
                   </>
                 )}
               </button>
