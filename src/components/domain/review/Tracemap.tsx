@@ -1,5 +1,6 @@
 'use client'
 import { createClient } from '@/utils/supabase/client'
+import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
 const supabase = createClient()
@@ -57,28 +58,18 @@ function getColorByTripId(tripId: string): string {
 }
 
 // ---------------- Supabase에서 trip_items 가져오기
-async function getUserTripItemsWithCoords(userId: string): Promise<Trips> {
-  const { data: reviews } = await supabase
-    .from('reviews')
-    .select('trip_id')
-    .eq('user_id', userId)
-
-  if (!reviews || reviews.length === 0) return {}
-
-  const tripIds = reviews.map((r) => r.trip_id)
+async function getTripsByTripIds(tripIds: string[]): Promise<Trips> {
+  if (!tripIds || tripIds.length === 0) return {}
 
   const { data: tripItems, error } = await supabase
     .from('trip_items')
     .select(
       `
       trip_id,
-      trips ( title ), 
-      visit_order, 
+      trips ( title ),
+      visit_order,
       place_id,
-      places (
-        latitude,
-        longitude
-      )
+      places ( latitude, longitude )
     `,
     )
     .in('trip_id', tripIds)
@@ -89,7 +80,6 @@ async function getUserTripItemsWithCoords(userId: string): Promise<Trips> {
   }
 
   const trips: Trips = {}
-
   tripItems.forEach((item: any) => {
     if (item.places) {
       if (!trips[item.trip_id]) trips[item.trip_id] = []
@@ -178,9 +168,10 @@ function showTripsOnMap(map: any, trips: Trips) {
 // ---------------- TraceMap 컴포넌트
 interface KakaoTripMapProps {
   userId: string
+  tripIds: string[]
 }
 
-export default function TraceMap({ userId }: KakaoTripMapProps) {
+export default function TraceMap({ userId, tripIds }: KakaoTripMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const [trips, setTrips] = useState<Trips>({})
   const [mapInstance, setMapInstance] = useState<any>(null)
@@ -209,14 +200,15 @@ export default function TraceMap({ userId }: KakaoTripMapProps) {
       })
       setMapInstance(map)
 
-      const fetchedTrips = await getUserTripItemsWithCoords(userId)
+      const fetchedTrips = await getTripsByTripIds(tripIds)
       setTrips(fetchedTrips)
-
       showTripsOnMap(map, fetchedTrips)
     }
 
     initMap()
-  }, [userId])
+  }, [userId, tripIds])
+
+  const router = useRouter()
 
   return (
     <div className="relative w-4/5 max-w-6xl h-full mx-auto border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
@@ -225,11 +217,17 @@ export default function TraceMap({ userId }: KakaoTripMapProps) {
       </div>
 
       <aside className="absolute top-6 left-6 z-10 w-72 max-h-[calc(100%-3rem)] bg-white/95 backdrop-blur shadow-2xl rounded-2xl border border-gray-100 flex flex-col overflow-hidden">
-        <div className="p-5 border-b border-gray-50 bg-white">
+        <div className="p-5 border-b border-gray-50 bg-white flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
             <span className="w-1.5 h-5 bg-blue-500 rounded-full"></span>
             여행 발자취
           </h2>
+          <button
+            onClick={() => router.push('/mypage/triplogs')}
+            className="ml-4 px-3 py-1 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
+          >
+            목록으로
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">

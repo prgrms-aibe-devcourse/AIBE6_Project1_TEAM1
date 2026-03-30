@@ -28,8 +28,8 @@ export interface TravelCardProps {
   };
 
   // 4. 리뷰 요약
-  rating: number;         // 4.2
-  reviewCount: number;    // 128개
+  rating?: number;         // 4.2
+  reviewCount?: number;    // 128개
 
   // 5. 추가 정보
   tags?: string[];        // 예: ["가족여행", "힐링", "바다"]
@@ -145,11 +145,13 @@ export default function TravelCard({
             <h3 className="line-clamp-2 text-base font-bold text-gray-900 dark:text-gray-100 group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors">
               {title}
             </h3>
-            <div className="flex items-center gap-1 shrink-0">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{rating}</span>
-              <span className="text-xs text-gray-400 dark:text-gray-500">({reviewCount})</span>
-            </div>
+            {rating !== undefined && reviewCount !== undefined && (
+              <div className="flex items-center gap-1 shrink-0">
+                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{rating}</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">({reviewCount})</span>
+              </div>
+            )}
           </div>
 
           {/* 주요 요약 정보 (5개 아이콘) */}
