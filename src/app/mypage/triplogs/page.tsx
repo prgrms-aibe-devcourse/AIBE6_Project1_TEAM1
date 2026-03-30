@@ -28,8 +28,6 @@ interface TripLog {
     stairs: '없음' | '적음' | '다소 많음' | '매우 많음';
     shade: '없음' | '적음' | '보통' | '충분함';
   };
-  rating: number;
-  reviewCount: number;
   tags?: string[];
 }
  
@@ -66,21 +64,15 @@ export default function TriplogsPage() {
  
         const tripIds = (rawTrips as any[]).map(t => t.id);
  
-        // 2. 여행 아이템(장소 개수) 및 리뷰(평점) 가져오기
-        const [{ data: itemsData }, { data: reviewsData }] = await Promise.all([
-          supabase.from('trip_items').select('trip_id').in('trip_id', tripIds),
-          supabase.from('reviews').select('*').in('trip_id', tripIds)
-        ]);
+        // 2. 여행 아이템(장소 개수) 가져오기
+        const { data: itemsData } = await supabase
+          .from('trip_items')
+          .select('trip_id')
+          .in('trip_id', tripIds);
  
         // 데이터 정제
         const transformedTrips: TripLog[] = rawTrips.map(trip => {
           const tripItems = itemsData?.filter(item => item.trip_id === trip.id) || [];
-          const tripReviews = reviewsData?.filter(rev => rev.trip_id === trip.id) || [];
-          
-          const avgRating = tripReviews.length > 0 
-            ? tripReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / tripReviews.length 
-            : 0;
- 
           const totalMinutes = trip.total_travel_time || 0;
           const hours = Math.floor(totalMinutes / 60);
           const mins = totalMinutes % 60;
@@ -105,8 +97,6 @@ export default function TriplogsPage() {
               stairs: '없음',
               shade: '보통'
             },
-            rating: Number(avgRating.toFixed(1)),
-            reviewCount: tripReviews.length,
             tags: []
           };
         });
@@ -167,12 +157,10 @@ export default function TriplogsPage() {
   const overallStats = useMemo(() => {
     const totalDistance = trips.reduce((sum, t) => sum + t.summary.totalDistance, 0);
     const tripCount = trips.length;
-    const reviewCount = trips.reduce((sum, t) => sum + t.reviewCount, 0);
- 
+
     return {
       triplogCount: tripCount,
       totalDistance: Number(totalDistance.toFixed(1)),
-      reviewCount
     };
   }, [trips]);
  
@@ -203,7 +191,7 @@ export default function TriplogsPage() {
             <StatCardGroup 
                 triplogCount={overallStats.triplogCount}
                 totalDistance={overallStats.totalDistance}
-                reviewCount={overallStats.reviewCount}
+                showReview={false}
             />
         </div>
  
@@ -259,8 +247,6 @@ export default function TriplogsPage() {
                         isHot={trip.isHot}
                         summary={trip.summary}
                         avgStats={trip.avgStats}
-                        rating={trip.rating}
-                        reviewCount={trip.reviewCount}
                         isKept={true}
                         tags={trip.tags}
                       />
