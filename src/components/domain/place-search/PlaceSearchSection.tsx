@@ -1,9 +1,9 @@
 'use client'
 
+import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { useModalStore } from '@/store/useModalStore'
 import PlaceResultSection from './PlaceResultSection'
 
 export interface Trip {
@@ -67,6 +67,7 @@ const CATEGORY_OPTIONS = [
   '숙박',
   '관광명소',
   '문화시설',
+  '당일치기',
 ] as const
 
 type CategoryOption = (typeof CATEGORY_OPTIONS)[number]
@@ -141,6 +142,27 @@ function inferPlaceCategory(
   return null
 }
 
+function getTripDurationDays(
+  startDate?: string | null,
+  endDate?: string | null,
+) {
+  if (!startDate) return null
+
+  const normalizedEndDate = endDate ?? startDate
+
+  const start = new Date(`${startDate}T00:00:00`)
+  const end = new Date(`${normalizedEndDate}T00:00:00`)
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return null
+  }
+
+  const diffMs = end.getTime() - start.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1
+
+  return diffDays > 0 ? diffDays : null
+}
+
 function includesKeyword(value: string | null | undefined, keyword: string) {
   if (!value) return false
   return value.toLowerCase().includes(keyword.toLowerCase())
@@ -164,7 +186,9 @@ export default function PlaceSearchSection() {
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
-  const [bookmarkedTripIds, setBookmarkedTripIds] = useState<Set<number>>(new Set())
+  const [bookmarkedTripIds, setBookmarkedTripIds] = useState<Set<number>>(
+    new Set(),
+  )
 
   const { openModal } = useModalStore()
   const supabase = createClient()
@@ -308,11 +332,17 @@ export default function PlaceSearchSection() {
       const categoryFilteredTrips =
         category === '전체'
           ? mergedTrips
-          : mergedTrips.filter((trip) =>
-              (nextTripDetailsMap[trip.id] ?? []).some(
-                (item) => inferPlaceCategory(item.place?.category) === category,
-              ),
-            )
+          : category === '당일치기'
+            ? mergedTrips.filter((trip) => {
+                const days = getTripDurationDays(trip.start_date, trip.end_date)
+                return days === 1
+              })
+            : mergedTrips.filter((trip) =>
+                (nextTripDetailsMap[trip.id] ?? []).some(
+                  (item) =>
+                    inferPlaceCategory(item.place?.category) === category,
+                ),
+              )
 
       const filteredTripIds = categoryFilteredTrips.map((trip) => trip.id)
 
@@ -383,7 +413,9 @@ export default function PlaceSearchSection() {
   // 유저 정보 및 북마크 목록 가져오기
   useEffect(() => {
     const fetchUserAndBookmarks = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       const currentUserId = session?.user?.id ?? null
       setUserId(currentUserId)
 
@@ -392,9 +424,9 @@ export default function PlaceSearchSection() {
           .from('bookmark')
           .select('trips_id')
           .eq('user_id', currentUserId)
-        
+
         if (bookmarks) {
-          setBookmarkedTripIds(new Set(bookmarks.map(b => b.trips_id)))
+          setBookmarkedTripIds(new Set(bookmarks.map((b) => b.trips_id)))
         }
       }
     }
@@ -402,7 +434,9 @@ export default function PlaceSearchSection() {
     fetchUserAndBookmarks()
 
     // 인증 상태 변경 감지
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       const currentUserId = session?.user?.id ?? null
       setUserId(currentUserId)
       if (!currentUserId) {
@@ -430,9 +464,9 @@ export default function PlaceSearchSection() {
         .delete()
         .eq('user_id', userId)
         .eq('trips_id', tripId)
-      
+
       if (!error) {
-        setBookmarkedTripIds(prev => {
+        setBookmarkedTripIds((prev) => {
           const next = new Set(prev)
           next.delete(tripId)
           return next
@@ -443,9 +477,9 @@ export default function PlaceSearchSection() {
       const { error } = await supabase
         .from('bookmark')
         .insert({ user_id: userId, trips_id: tripId })
-      
+
       if (!error) {
-        setBookmarkedTripIds(prev => {
+        setBookmarkedTripIds((prev) => {
           const next = new Set(prev)
           next.add(tripId)
           return next
@@ -456,7 +490,7 @@ export default function PlaceSearchSection() {
 
   const displayedTrips = useMemo(() => {
     if (maxDistance === 50) return trips
-    return trips.filter(trip => (trip.total_distance || 0) <= maxDistance)
+    return trips.filter((trip) => (trip.total_distance || 0) <= maxDistance)
   }, [trips, maxDistance])
 
   return (
