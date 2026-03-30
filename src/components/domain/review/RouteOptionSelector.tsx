@@ -102,8 +102,8 @@ export default function RouteOptionSelector({
   }
 
   return (
-    <div className="space-y-4 bg-white rounded-lg p-4">
-      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+    <div className="space-y-4 bg-white dark:bg-gray-900 rounded-lg p-4 border border-transparent dark:border-gray-800">
+      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 dark:text-gray-100">
         <RouteIcon /> 경로별 보행 환경
       </h3>
 
@@ -116,10 +116,10 @@ export default function RouteOptionSelector({
         return (
           <div
             key={index}
-            className="flex items-center justify-between border-b py-2 text-center"
+            className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 py-2 text-center"
           >
             {/* 왼쪽: from → to */}
-            <div className="flex flex-col items-center justify-center w-32 font-medium">
+            <div className="flex flex-col items-center justify-center w-32 font-medium dark:text-gray-200">
               {fromName}
               <br /> → <br />
               {toName}
@@ -135,7 +135,7 @@ export default function RouteOptionSelector({
               <div className="flex items-center gap-4">
                 {/* 경사도 */}
                 <div className="flex items-center gap-2">
-                  <div className="text-gray-700">{getSlopeIcon(opt.slope)}</div>
+                  <div className="text-gray-700 dark:text-gray-400">{getSlopeIcon(opt.slope)}</div>
                   <CustomListbox
                     value={opt.slope}
                     placeholder="경사도"
@@ -150,7 +150,7 @@ export default function RouteOptionSelector({
 
                 {/* 계단 */}
                 <div className="flex items-center gap-2">
-                  <div className="text-gray-700">
+                  <div className="text-gray-700 dark:text-gray-400">
                     {getStairsIcon(opt.stairs)}
                   </div>
                   <CustomListbox
@@ -166,7 +166,7 @@ export default function RouteOptionSelector({
 
                 {/* 그늘 */}
                 <div className="flex items-center gap-2">
-                  <div className="text-gray-700">{getShadeIcon(opt.shade)}</div>
+                  <div className="text-gray-700 dark:text-gray-400">{getShadeIcon(opt.shade)}</div>
                   <CustomListbox
                     value={opt.shade}
                     placeholder="그늘"

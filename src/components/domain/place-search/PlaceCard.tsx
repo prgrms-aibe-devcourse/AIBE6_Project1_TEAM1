@@ -9,6 +9,7 @@ import {
   Route,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import type {
   Trip,
   TripDetailItem,
@@ -229,7 +230,7 @@ export default function PlaceCard({
   }
 
   return (
-    <article className="overflow-hidden rounded-[28px] border border-gray-200 bg-[#f6f6f8] shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+    <article className="overflow-hidden rounded-[28px] border border-gray-200 dark:border-gray-800 bg-[#f6f6f8] dark:bg-gray-900 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
       <div
         role="button"
         tabIndex={0}
@@ -237,13 +238,22 @@ export default function PlaceCard({
         onKeyDown={handleCardKeyDown}
         className="block w-full cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-[#6c3cff] focus:ring-offset-2"
       >
-        <div className="relative aspect-[16/11] w-full overflow-hidden rounded-t-[28px]">
-          <div className="absolute inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-blue-200" />
+        <div className="relative aspect-[16/11] w-full overflow-hidden rounded-t-[28px] group-hover:opacity-90 transition-opacity">
+          {trip.img_url ? (
+            <Image
+              src={trip.img_url}
+              alt={trip.title || '여행 코스'}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-blue-200" />
+          )}
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-black/5 to-transparent" />
 
           <div className="absolute left-4 top-4 flex items-center gap-2">
-            <span className="rounded-full bg-white px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm">
+            <span className="rounded-full bg-white dark:bg-gray-800/90 px-3 py-2 text-sm font-semibold text-gray-800 dark:text-gray-200 shadow-sm backdrop-blur-sm">
               {categoryLabel}
             </span>
 
@@ -258,8 +268,8 @@ export default function PlaceCard({
           <button
             type="button"
             onClick={handleToggleBookmarkAction}
-            className={`absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 shadow-sm transition-all hover:scale-110 active:scale-95 ${
-              isBookmarked ? 'text-purple-600' : 'text-gray-700'
+            className={`absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/80 shadow-sm backdrop-blur-sm transition-all hover:scale-110 active:scale-95 ${
+              isBookmarked ? 'text-purple-600 dark:text-purple-400' : 'text-gray-700 dark:text-gray-300'
             }`}
             aria-label={isBookmarked ? '북마크 해제' : '북마크 추가'}
           >
@@ -287,7 +297,7 @@ export default function PlaceCard({
         <div className="space-y-4 px-5 pb-5 pt-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="line-clamp-2 text-[18px] font-extrabold leading-snug text-[#1f2650]">
+              <h3 className="line-clamp-2 text-[18px] font-extrabold leading-snug text-[#1f2650] dark:text-gray-100">
                 {trip.title || '제목 없는 일정'}
               </h3>
 
@@ -299,7 +309,7 @@ export default function PlaceCard({
             <div className="shrink-0 pt-1 text-right">
               <div className="flex items-center gap-1 text-[#f4b400]">
                 <span className="text-[22px] leading-none">★</span>
-                <span className="text-[16px] font-extrabold text-[#1f2650]">
+                <span className="text-[16px] font-extrabold text-[#1f2650] dark:text-gray-100">
                   {ratingText}
                 </span>
                 <span className="text-sm font-medium text-gray-400">
@@ -308,7 +318,7 @@ export default function PlaceCard({
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3 text-[12px] text-gray-500">
+          <div className="flex items-center gap-3 text-[12px] text-gray-500 dark:text-gray-400">
             <span className="inline-flex items-center gap-1 whitespace-nowrap">
               <Route className="h-3.5 w-3.5 shrink-0" />
               {formatDistance(trip.total_distance)}
@@ -336,7 +346,7 @@ export default function PlaceCard({
             </span>
           </div>
 
-          <div className="flex flex-wrap gap-2 text-sm text-[#8b8fa3]">
+          <div className="flex flex-wrap gap-2 text-sm text-[#8b8fa3] dark:text-gray-400">
             {tags.length > 0 ? (
               tags.map((tag) => (
                 <span key={tag} className="font-medium">

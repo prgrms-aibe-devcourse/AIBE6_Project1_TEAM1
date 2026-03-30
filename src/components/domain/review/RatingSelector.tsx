@@ -12,8 +12,8 @@ export default function RatingSelector({ rating, setRating }: Props) {
         <span
           key={star}
           onClick={() => setRating(star)}
-          className={`text-2xl cursor-pointer ${
-            star <= rating ? 'text-black' : 'text-gray-300'
+          className={`text-2xl cursor-pointer transition-colors ${
+            star <= rating ? 'text-black dark:text-yellow-400' : 'text-gray-300 dark:text-gray-700'
           }`}
         >
           ★

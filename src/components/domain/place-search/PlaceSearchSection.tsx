@@ -17,6 +17,7 @@ export interface Trip {
   total_cost: number | null
   total_distance: number | null
   is_saved: boolean | null
+  img_url?: string | null
 }
 
 export interface TripItem {
@@ -159,6 +160,7 @@ export default function PlaceSearchSection() {
   >({})
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryOption>('전체')
+  const [maxDistance, setMaxDistance] = useState<number>(50)
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
@@ -188,7 +190,7 @@ export default function PlaceSearchSection() {
       let tripsQuery = supabase
         .from('trips')
         .select(
-          'id, user_id, title, start_date, end_date, is_public, total_travel_time, total_cost, total_distance, is_saved',
+          'id, user_id, title, start_date, end_date, is_public, total_travel_time, total_cost, total_distance, is_saved, img_url',
         )
         .order('start_date', { ascending: true })
 
@@ -204,7 +206,7 @@ export default function PlaceSearchSection() {
       const { data: allTripsRows, error: allTripsError } = await supabase
         .from('trips')
         .select(
-          'id, user_id, title, start_date, end_date, is_public, total_travel_time, total_cost, total_distance, is_saved',
+          'id, user_id, title, start_date, end_date, is_public, total_travel_time, total_cost, total_distance, is_saved, img_url',
         )
         .order('start_date', { ascending: true })
 
@@ -452,10 +454,15 @@ export default function PlaceSearchSection() {
     }
   }
 
+  const displayedTrips = useMemo(() => {
+    if (maxDistance === 50) return trips
+    return trips.filter(trip => (trip.total_distance || 0) <= maxDistance)
+  }, [trips, maxDistance])
+
   return (
-    <section className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+    <section className="space-y-6 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
       <PlaceResultSection
-        trips={trips}
+        trips={displayedTrips}
         tripDetailsMap={tripDetailsMap}
         tripReviewSummaryMap={tripReviewSummaryMap}
         errorMessage={errorMessage}
@@ -466,6 +473,8 @@ export default function PlaceSearchSection() {
         }
         bookmarkedTripIds={bookmarkedTripIds}
         onToggleBookmark={handleToggleBookmark}
+        maxDistance={maxDistance}
+        onDistanceChange={setMaxDistance}
       />
     </section>
   )

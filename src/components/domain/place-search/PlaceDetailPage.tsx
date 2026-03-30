@@ -964,20 +964,18 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
                 뒤로가기
               </button>
 
-              <span className="rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700">
+              <span className="rounded-full border border-purple-200 dark:border-purple-800/50 bg-purple-50 dark:bg-purple-900/30 px-3 py-1 text-xs font-semibold text-purple-700 dark:text-purple-300">
                 {durationLabel}
               </span>
             </div>
 
             <section className="group relative aspect-[16/9] w-full overflow-hidden rounded-2xl shadow-sm">
-              {/* <div className="absolute inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-blue-200" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" /> */}
               <div className="absolute inset-0">
                 {trip.img_url && (
                   <Image
@@ -988,8 +986,11 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                   />
                 )}
               </div>
+              
+              {/* 이미지 위 글씨 가독성을 위한 그라데이션 오버레이 복원 */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 pointer-events-none" />
 
-              <div className="absolute bottom-6 left-8 space-y-2 text-white">
+              <div className="absolute bottom-6 left-8 space-y-2 text-white z-10">
                 <div className="flex items-center gap-2">
                   <span className="rounded bg-black px-2 py-0.5 text-[10px] font-bold text-white">
                     일정 코스
@@ -1162,7 +1163,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                 (userReviewId ? (
                   <button
                     type="button"
-                    className="rounded-lg bg-gray-900 px-4 py-2 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-black active:scale-95"
+                    className="rounded-lg bg-gray-900 dark:bg-purple-600 px-4 py-2 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-black dark:hover:bg-purple-700 active:scale-95"
                     onClick={() =>
                       router.push(`/mypage/reviews?tripId=${tripId}`)
                     }
@@ -1172,10 +1173,8 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                 ) : (
                   <button
                     type="button"
-                    className="rounded-lg bg-gray-900 px-4 py-2 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-black active:scale-95"
-                    onClick={() =>
-                      router.push(`/review/write?tripId=${tripId}`)
-                    }
+                    className="rounded-lg bg-gray-900 dark:bg-purple-600 px-4 py-2 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-black dark:hover:bg-purple-700 active:scale-95"
+                    onClick={() => router.push(`/review/write?tripId=${tripId}`)}
                   >
                     리뷰 쓰기
                   </button>

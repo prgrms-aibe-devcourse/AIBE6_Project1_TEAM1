@@ -225,9 +225,9 @@ export default function ReviewWritePage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
       <div className="flex-col w-auto self-center">
-        <div className="py-4">
+        <div className="py-4 text-gray-900 dark:text-gray-100">
           <button
-            className="text-2xl p-2 cursor-pointer"
+            className="text-2xl p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
             onClick={() => router.back()}
           >
             ←
@@ -235,7 +235,7 @@ export default function ReviewWritePage() {
           <h1 className="inline text-2xl p-4 font-bold">리뷰 작성</h1>
         </div>
 
-        <div className="border rounded-xl mb-6 p-6 flex flex-row gap-4 text-gray-700">
+        <div className="border border-gray-200 dark:border-gray-800 rounded-xl mb-6 p-6 flex flex-row gap-4 text-gray-700 dark:text-gray-300">
           <div className="flex-col">
             <div>{tripTitle}</div>
             <div>
@@ -244,13 +244,13 @@ export default function ReviewWritePage() {
           </div>
         </div>
 
-        <div className="text-xl font-bold">전체 평점</div>
+        <div className="text-xl font-bold dark:text-gray-100">전체 평점</div>
         <div className="p-4">
           <RatingSelector rating={rating} setRating={setRating} />
         </div>
 
-        <div className="text-xl font-bold py-4">경로별 보행 환경</div>
-        <div className="border rounded-xl mb-6 p-6 flex flex-col text-gray-700">
+        <div className="text-xl font-bold py-4 dark:text-gray-100">경로별 보행 환경</div>
+        <div className="border border-gray-200 dark:border-gray-800 rounded-xl mb-6 p-6 flex flex-col text-gray-700 dark:text-gray-300">
           <RouteOptionSelector
             routes={routes}
             placeMap={placeMap}
@@ -259,17 +259,17 @@ export default function ReviewWritePage() {
           />
         </div>
 
-        <div className="text-xl font-bold py-4">리뷰 내용</div>
+        <div className="text-xl font-bold py-4 dark:text-gray-100">리뷰 내용</div>
         <textarea
           name="content"
           rows={4}
-          className="resize-none w-full py-4"
+          className="resize-none w-full py-4 px-4 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-transparent dark:border-gray-800 rounded-xl outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-500 placeholder-gray-400 dark:placeholder-gray-500"
           placeholder="뚜벅이 여행자에게 도움이 될 보행환경, 접근성, 추천 팁 등을 자유롭게 작성해주세요"
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
 
-        <div className="text-xl font-bold py-4">사진 첨부</div>
+        <div className="text-xl font-bold py-4 dark:text-gray-100">사진 첨부</div>
         <MediaUploader
           supabase={supabase}
           onUpload={(urls: { url: string; path: string }[]) =>
@@ -280,7 +280,7 @@ export default function ReviewWritePage() {
 
         {/* 등록 버튼 */}
         <button
-          className="w-full bg-black text-white py-3 rounded-lg my-6 cursor-pointer"
+          className="w-full bg-black dark:bg-purple-600 text-white py-3 rounded-lg my-6 cursor-pointer hover:bg-gray-900 dark:hover:bg-purple-700 transition-colors"
           onClick={() => {
             // ✅ 유효성 검사
             if (!rating) {
