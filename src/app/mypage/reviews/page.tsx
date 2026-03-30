@@ -17,7 +17,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 
 /**
  * 1. 데이터 타입 정의 (Interface)
@@ -41,7 +41,7 @@ interface Review {
   }[]
 }
 
-export default function ReviewsPage() {
+function ReviewsPageContent() {
   /**
    * 2. 상태 관리 (State)
    * UI의 변화를 추적하기 위해 상태를 정의합니다.
@@ -423,5 +423,13 @@ export default function ReviewsPage() {
         )}
       </main>
     </div>
+  )
+}
+
+export default function ReviewsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ReviewsPageContent />
+    </Suspense>
   )
 }
