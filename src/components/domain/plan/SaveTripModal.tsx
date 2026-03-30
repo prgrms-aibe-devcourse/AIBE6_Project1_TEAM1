@@ -47,6 +47,17 @@ export default function SaveTripModal({
   const [isPublic, setIsPublic] = useState(initialData?.isPublic ?? true)
   const [imgUrl, setImgUrl] = useState(initialData?.imgUrl || '')
   const [tags, setTags] = useState(initialData?.tags || '')
+  // 태그들을 배열로 관리하기 위한 상태
+  const [tagList, setTagList] = useState<string[]>(() => {
+    if (!initialData?.tags) return []
+    // 기존 데이터가 있으면 공백이나 #으로 분리해서 배열로 변환
+    return initialData.tags
+      .split(/[#\s,]+/)
+      .filter(Boolean)
+      .map(t => t.replace(/^#/, ''))
+  })
+  const [tagInput, setTagInput] = useState('')
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
 
@@ -103,6 +114,29 @@ export default function SaveTripModal({
     }
   }
 
+  // 태그 추가 로직
+  const addTag = (value: string) => {
+    const trimmed = value.trim().replace(/^#/, '')
+    if (trimmed && !tagList.includes(trimmed)) {
+      setTagList([...tagList, trimmed])
+    }
+    setTagInput('')
+  }
+
+  // 태그 삭제 로직
+  const removeTag = (index: number) => {
+    setTagList(tagList.filter((_, i) => i !== index))
+  }
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === ',') {
+      e.preventDefault()
+      addTag(tagInput)
+    } else if (e.key === 'Backspace' && !tagInput && tagList.length > 0) {
+      removeTag(tagList.length - 1)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
@@ -130,8 +164,10 @@ export default function SaveTripModal({
 
     setIsSubmitting(true)
     try {
+      // 태그 배열을 공백으로 구분된 문자열로 변환 (DB 저장용)
+      const tagsString = tagList.map(t => `#${t}`).join(' ')
       // 부모 컴포넌트(Page)가 넘겨준 실제 DB 저장 함수 호출
-      await onSave(title, startDate, endDate, isPublic, imgUrl, tags)
+      await onSave(title, startDate, endDate, isPublic, imgUrl, tagsString)
       onClose() // 저장이 완전히 성공하면 모달 닫기
     } catch (error) {
       console.error(error)
@@ -238,21 +274,41 @@ export default function SaveTripModal({
           {/* 해시태그 입력 섹션 추가 */}
           <div className="flex flex-col gap-1.5">
             <label
-              htmlFor="tags"
+              htmlFor="tag-input"
               className="text-[13px] font-bold text-gray-700 flex items-center gap-2"
             >
-              <Hash className="w-4 h-4 text-purple-600" /> 태그 입력
+              <Hash className="w-4 h-4 text-purple-600" /> 태그 설정
             </label>
-            <input
-              id="tags"
-              type="text"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="#제주 #여행 #맛집 (공백으로 구분)"
-              className="w-full px-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-[14px] text-gray-900 shadow-sm transition-all"
-            />
+            
+            <div className="w-full p-2 bg-white border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-transparent transition-all shadow-sm flex flex-wrap gap-1.5 min-h-[52px] items-center">
+              {tagList.map((tag, index) => (
+                <span 
+                  key={index} 
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 text-purple-600 text-[12px] font-bold rounded-lg border border-purple-100 group/tag"
+                >
+                  #{tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(index)}
+                    className="hover:text-purple-800 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+              <input
+                id="tag-input"
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                onBlur={() => addTag(tagInput)}
+                placeholder={tagList.length === 0 ? "태그를 입력하고 엔터나 스페이스를 눌러보세요!" : ""}
+                className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-[14px] text-gray-900 py-1"
+              />
+            </div>
             <p className="text-[10px] text-gray-400 mt-0.5">
-              * 해시태그를 공백이나 #으로 구분하여 입력해주세요.
+              * 엔터, 스페이스, 혹은 쉼표(,)를 눌러 태그를 완성할 수 있습니다.
             </p>
           </div>
 

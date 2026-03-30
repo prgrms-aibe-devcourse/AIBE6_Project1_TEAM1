@@ -779,39 +779,44 @@ function PlanPageContent() {
                 onUpdateTransport={handleUpdateTransport}
                 onOpenSearch={() => setIsSearchOpen(true)}
               />
-
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className="w-full py-4 mt-4 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 font-bold text-[13px] hover:border-purple-300 hover:bg-purple-50 hover:text-purple-500 transition-all flex items-center justify-center gap-2 bg-white"
-              >
-                <Plus className="w-4 h-4" /> 장소 추가하기
-              </button>
             </div>
 
             <div className="absolute bottom-6 left-1 right-3 p-4 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100/50 flex items-center justify-between z-10 animate-in slide-in-from-bottom-4 duration-500">
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Estimated Summary</span>
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col">
-                    <span className="text-[15px] font-black text-gray-900 leading-none">
-                      {calcDaySummary(currentPlaces).totalMins > 60
-                        ? `${Math.floor(calcDaySummary(currentPlaces).totalMins / 60)}h ${calcDaySummary(currentPlaces).totalMins % 60}m`
-                        : `${calcDaySummary(currentPlaces).totalMins}m`}
-                    </span>
-                  </div>
-                  <div className="w-[1px] h-4 bg-gray-200" />
-                  <div className="flex flex-col">
-                    <span className="text-[15px] font-black text-purple-600 leading-none">
-                      {calcDaySummary(currentPlaces).totalCost.toLocaleString()}원
-                    </span>
-                  </div>
+              <div className="flex items-center gap-5">
+                {/* 총 소요 시간 섹션 */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">총 소요 시간</span>
+                  <span className="text-[15px] font-black text-gray-900 leading-none">
+                    {calcDaySummary(currentPlaces).totalMins > 60
+                      ? `${Math.floor(calcDaySummary(currentPlaces).totalMins / 60)}시간 ${calcDaySummary(currentPlaces).totalMins % 60}분`
+                      : `${calcDaySummary(currentPlaces).totalMins}분`}
+                  </span>
+                </div>
+
+                <div className="w-[1px] h-6 bg-gray-100" />
+
+                {/* 총 예상 비용 섹션 */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">총 예상 비용</span>
+                  <span className="text-[15px] font-black text-purple-600 leading-none">
+                    {calcDaySummary(currentPlaces).totalCost.toLocaleString()}원
+                  </span>
+                </div>
+
+                <div className="w-[1px] h-6 bg-gray-100" />
+
+                {/* 총 이동 거리 섹션 */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">총 이동 거리</span>
+                  <span className="text-[15px] font-black text-gray-900 leading-none">
+                    {calcDaySummary(currentPlaces).totalDistance.toFixed(1)}km
+                  </span>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 rounded-xl">
-                 <MapIcon className="w-3.5 h-3.5 text-purple-400" />
-                 <span className="text-[11px] font-bold text-white whitespace-nowrap">
-                   {calcDaySummary(currentPlaces).totalDistance.toFixed(1)}km
-                 </span>
+
+              {/* 오른쪽에는 지도 아이콘 등으로 포인트 부여 (선택사항) */}
+              <div className="flex items-center justify-center w-10 h-10 bg-gray-900 rounded-xl shadow-lg">
+                <MapIcon className="w-5 h-5 text-purple-400" />
               </div>
             </div>
           </div>

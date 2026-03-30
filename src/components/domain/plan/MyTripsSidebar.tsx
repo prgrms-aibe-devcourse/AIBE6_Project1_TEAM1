@@ -57,7 +57,6 @@ export default function MyTripsSidebar({
     const { data, error } = await supabase.from('trips').select(`
         *,
         travelers (
-          has_visited, 
           status,
           user_id
         )
@@ -100,20 +99,46 @@ export default function MyTripsSidebar({
       // 2. 기존 레코드가 있으면 업데이트
       await supabase
         .from('travelers')
-        .update({ has_visited: !currentVisited })
+        .update({ status: currentVisited ? 'ongoing' : 'completed' })
         .eq('id', traveler.id)
     } else {
       // 3. 없으면 새로 생성
       await supabase.from('travelers').insert({
         trip_id: tripId,
         user_id: userId,
-        has_visited: !currentVisited,
         status: !currentVisited ? 'completed' : 'ongoing',
       })
     }
 
     // 4. 최신 데이터로 리스트 갱신 (리스트가 깜빡이지 않도록 isSilent = true 적용)
     await fetchTrips(true)
+  }
+
+  const handleTogglePublic = async (
+    e: React.MouseEvent,
+    tripId: string,
+    currentPublic: boolean,
+  ) => {
+    e.stopPropagation()
+    if (!userId) return
+
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('trips')
+      .update({ is_public: !currentPublic })
+      .eq('id', tripId)
+
+    if (error) {
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '변경 실패',
+        description: '공개 여부 설정을 변경하는 중 오류가 발생했습니다.',
+      })
+    } else {
+      // 리스트 갱신
+      await fetchTrips(true)
+    }
   }
 
   const handleDeleteTrip = async (e: React.MouseEvent, tripId: string, title: string) => {
@@ -207,8 +232,8 @@ export default function MyTripsSidebar({
                 (t: any) => t.user_id === userId,
               )
 
-              // travelers 테이블의 has_visited 컬럼을 우선적으로 사용합니다.
-              const isFinished = myTravelerInfo?.has_visited === true
+              // travelers 테이블의 status 컬럼을 우선적으로 사용합니다. (completed 이면 완주)
+              const isFinished = myTravelerInfo?.status === 'completed'
               // 여행 중 상태는 status가 'ongoing'이거나 날짜 범위 내에 있을 때로 판별합니다.
               const isActive =
                 myTravelerInfo?.status === 'ongoing' ||
@@ -273,13 +298,27 @@ export default function MyTripsSidebar({
                         <div className="flex flex-col items-end gap-2 mt-0.5 shrink-0">
                           <div className="flex items-center gap-1.5">
                             {trip.is_public ? (
-                              <span className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold border border-blue-100 flex-shrink-0">
+                              <button
+                                onClick={(e) =>
+                                  handleTogglePublic(e, trip.id, true)
+                                }
+                                title="비공개로 변경"
+                                className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold border border-blue-100 flex-shrink-0 hover:bg-blue-100 transition-colors"
+                              >
                                 <Eye className="w-3 h-3" />
-                              </span>
+                                <span>공개</span>
+                              </button>
                             ) : (
-                              <span className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 text-gray-400 rounded text-[10px] font-bold border border-gray-100 flex-shrink-0">
+                              <button
+                                onClick={(e) =>
+                                  handleTogglePublic(e, trip.id, false)
+                                }
+                                title="공개로 변경"
+                                className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 text-gray-400 rounded text-[10px] font-bold border border-gray-100 flex-shrink-0 hover:bg-gray-200 transition-colors"
+                              >
                                 <EyeOff className="w-3 h-3" />
-                              </span>
+                                <span>비공개</span>
+                              </button>
                             )}
                             <button
                               onClick={(e) =>
