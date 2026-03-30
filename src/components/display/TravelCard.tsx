@@ -68,7 +68,7 @@ export default function TravelCard({
 
   // 내부 UI 컴포넌트: 요약 정보 아이템
   const SummaryItem = ({ icon: Icon, value }: { icon: any; value: string | number }) => (
-    <div className="flex items-center space-x-1 text-xs text-gray-500">
+    <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400">
       <Icon className="h-3.5 w-3.5" />
       <span>{value}</span>
     </div>
@@ -84,7 +84,7 @@ export default function TravelCard({
   return (
     <div
       onClick={onClick}
-      className={`group relative overflow-hidden rounded-xl border border-gray-100 bg-white transition-all duration-200 hover:shadow-lg active:scale-[0.98] active:shadow-md ${
+      className={`group relative overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all duration-200 hover:shadow-lg active:scale-[0.98] active:shadow-md ${
         onClick ? 'cursor-pointer' : ''
       } ${isHorizontal ? 'flex h-48 w-full' : 'flex flex-col'}`}
     >
@@ -106,7 +106,7 @@ export default function TravelCard({
 
         {/* 좌측 상단: 카테고리 태그 및 인기 배지 */}
         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-gray-900 shadow-sm">
+          <span className="rounded-full bg-white/90 dark:bg-gray-800/80 px-2.5 py-1 text-[11px] font-bold text-gray-900 dark:text-gray-200 shadow-sm backdrop-blur-sm">
             {category}
           </span>
           {isHot && (
@@ -121,7 +121,7 @@ export default function TravelCard({
         {onKeep && (
           <button
             onClick={handleKeepClick}
-            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 p-1.5 text-gray-700 shadow-sm backdrop-blur-md transition-all hover:bg-white hover:text-purple-600"
+            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 dark:bg-gray-800/80 p-1.5 text-gray-700 dark:text-gray-300 shadow-sm backdrop-blur-md transition-all hover:bg-white dark:hover:bg-gray-700 hover:text-purple-600 dark:hover:text-purple-400"
           >
             <Bookmark
               className={`h-full w-full transition-colors ${isKept ? 'fill-purple-600 text-purple-600' : ''}`}
@@ -142,13 +142,13 @@ export default function TravelCard({
         <div className="space-y-2">
           {/* 제목 및 별점 */}
           <div className="flex items-start justify-between gap-2">
-            <h3 className="line-clamp-2 text-base font-bold text-gray-900 group-hover:text-purple-700 transition-colors">
+            <h3 className="line-clamp-2 text-base font-bold text-gray-900 dark:text-gray-100 group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors">
               {title}
             </h3>
             <div className="flex items-center gap-1 shrink-0">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="text-sm font-bold text-gray-900">{rating}</span>
-              <span className="text-xs text-gray-400">({reviewCount})</span>
+              <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{rating}</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">({reviewCount})</span>
             </div>
           </div>
 
@@ -167,7 +167,7 @@ export default function TravelCard({
               {tags.map((tag, idx) => (
                 <span
                   key={idx}
-                  className="text-[11px] text-gray-400 before:content-['#'] hover:text-purple-600 transition-colors cursor-pointer"
+                  className="text-[11px] text-gray-400 dark:text-gray-500 before:content-['#'] hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer"
                 >
                   {tag}
                 </span>

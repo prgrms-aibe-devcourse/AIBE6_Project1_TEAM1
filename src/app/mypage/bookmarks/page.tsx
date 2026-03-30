@@ -151,20 +151,20 @@ export default function BookmarksPage() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50/50 pb-20">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950/50 pb-20">
       {/* Header Area */}
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100">
+      <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
             <Link 
               href="/mypage" 
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/5 hover:bg-gray-50 transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-black/5 dark:ring-white/10 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              <ChevronLeft className="h-6 w-6 text-gray-600" />
+              <ChevronLeft className="h-6 w-6 text-gray-600 dark:text-gray-400" />
             </Link>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900">저장한 여행</h1>
-              <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-sm font-bold text-purple-700">
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">저장한 여행</h1>
+              <span className="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900/40 px-2.5 py-0.5 text-sm font-bold text-purple-700 dark:text-purple-400">
                 {!loading ? courses.length : '-'}
               </span>
             </div>
@@ -174,15 +174,15 @@ export default function BookmarksPage() {
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8">
         {/* Filter Section */}
-        <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-100">
+        <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2">
             <span className="h-6 w-1 rounded-full bg-purple-500" />
-            <h2 className="text-xl font-bold text-gray-900">저장된 코스</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">저장된 코스</h2>
           </div>
           
           <button 
             onClick={() => setSortBy(prev => prev === 'latest' ? 'oldest' : 'latest')}
-            className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-purple-600 transition-colors group px-2 py-1 rounded-lg hover:bg-purple-50"
+            className="flex items-center gap-2 text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors group px-2 py-1 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20"
           >
             <Filter className={`h-4 w-4 transition-transform ${sortBy === 'oldest' ? 'rotate-180' : ''}`} />
             <span>{sortBy === 'latest' ? '최신순' : '오래된순'}</span>
@@ -241,11 +241,11 @@ export default function BookmarksPage() {
         {/* Empty State */}
         {!loading && courses.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="mb-4 rounded-full bg-gray-100 p-6">
-              <Filter className="h-10 w-10 text-gray-300" />
+            <div className="mb-4 rounded-full bg-gray-100 dark:bg-gray-800 p-6">
+              <Filter className="h-10 w-10 text-gray-300 dark:text-gray-600" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900">저장된 코스가 없습니다</h3>
-            <p className="mt-1 text-gray-500">관심 있는 코스를 하트 버튼으로 저장해보세요!</p>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">저장된 코스가 없습니다</h3>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">관심 있는 코스를 하트 버튼으로 저장해보세요!</p>
           </div>
         )}
       </main>
