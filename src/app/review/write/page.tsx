@@ -219,7 +219,7 @@ export default function ReviewWritePage() {
     }
 
     setLoading(false)
-    router.push(`/review/view?reviewId=${reviewId}`)
+    router.push(`/mypage/reviews`)
   }
 
   return (
@@ -232,7 +232,7 @@ export default function ReviewWritePage() {
           >
             ←
           </button>
-          <h1 className="inline text-2xl p-4 font-bold">리뷰작성</h1>
+          <h1 className="inline text-2xl p-4 font-bold">리뷰 작성</h1>
         </div>
 
         <div className="border rounded-xl mb-6 p-6 flex flex-row gap-4 text-gray-700">

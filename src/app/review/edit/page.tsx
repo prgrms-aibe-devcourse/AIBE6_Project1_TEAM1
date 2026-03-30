@@ -274,7 +274,7 @@ export default function ReviewEditPage() {
         if (imageError) throw imageError
       }
 
-      router.push(`/review/view?reviewId=${reviewId}`)
+      router.back()
     } catch (err) {
       console.error('리뷰 수정 실패:', err)
       openModal({
