@@ -10,8 +10,10 @@ import {
   Plus,
   X,
   Hash,
+  Trash2,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useModalStore } from '@/store/useModalStore'
 
 const getRelativeTime = (dateStr: string) => {
   const date = new Date(dateStr)
@@ -43,6 +45,7 @@ export default function MyTripsSidebar({
   currentTripId,
   onSelectTrip,
 }: MyTripsSidebarProps) {
+  const { openModal } = useModalStore()
   const [trips, setTrips] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -113,6 +116,34 @@ export default function MyTripsSidebar({
     await fetchTrips(true)
   }
 
+  const handleDeleteTrip = async (e: React.MouseEvent, tripId: string, title: string) => {
+    e.stopPropagation()
+    
+    openModal({
+      type: 'confirm',
+      variant: 'danger',
+      title: '일정 삭제',
+      description: `"${title}" 일정을 정말 삭제하시겠습니까? 삭제된 일정은 복구할 수 없습니다.`,
+      confirmText: '삭제하기',
+      cancelText: '취소',
+      onConfirm: async () => {
+        const supabase = createClient()
+        const { error } = await supabase
+          .from('trips')
+          .delete()
+          .eq('id', tripId)
+
+        if (error) {
+          alert('일정 삭제 중 오류가 발생했습니다.')
+        } else {
+          // 로컬 상태에서 삭제 반영
+          setTrips(prev => prev.filter(t => t.id !== tripId))
+          // 만약 현재 보고 있는 일정을 삭제했다면 목록 첫 번째나 빈 화면으로 이동 유도 가능 (여기서는 단순 UI 갱신)
+        }
+      }
+    })
+  }
+
   return (
     <>
       {/* 딤(Dim) 배경 오버레이: 바깥쪽 클릭 시 사이드바 닫힘 */}
@@ -125,7 +156,7 @@ export default function MyTripsSidebar({
 
       {/* 왼쪽에서 튀어나오는 Drawer 본체 애니메이션 */}
       <div
-        className={`fixed top-0 left-0 h-full w-[340px] bg-white shadow-[4px_0_24px_rgba(0,0,0,0.08)] z-[160] transform transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col ${
+        className={`fixed top-0 left-0 h-full w-[420px] bg-white shadow-[4px_0_24px_rgba(0,0,0,0.08)] z-[160] transform transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -143,7 +174,7 @@ export default function MyTripsSidebar({
         </div>
 
         {/* 내 일정 리스트 */}
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#fafafa]">
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#fafafa] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <button
             onClick={() => onSelectTrip('new')}
             className="w-full flex items-center justify-center gap-2 py-3.5 bg-gray-900 text-white rounded-xl font-bold text-[13px] shadow-sm hover:bg-gray-800 transition-colors mb-2"
@@ -181,7 +212,9 @@ export default function MyTripsSidebar({
               // 여행 중 상태는 status가 'ongoing'이거나 날짜 범위 내에 있을 때로 판별합니다.
               const isActive =
                 myTravelerInfo?.status === 'ongoing' ||
-                (today >= trip.start_date &&
+                (trip.start_date &&
+                  trip.end_date &&
+                  today >= trip.start_date &&
                   today <= trip.end_date &&
                   !isFinished)
 
@@ -263,6 +296,14 @@ export default function MyTripsSidebar({
                             >
                               <CheckCircle2 className={`w-4 h-4 transition-transform duration-300 ${isFinished ? 'scale-100 fill-white' : 'scale-0 group-hover/btn:scale-110 group-hover/btn:text-emerald-500/50'}`} />
                             </button>
+
+                            <button
+                              onClick={(e) => handleDeleteTrip(e, trip.id, trip.title)}
+                              title="일정 삭제"
+                              className="w-6 h-6 rounded-full flex items-center justify-center bg-white border border-gray-200 text-gray-400 hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition-all active:scale-90"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -276,8 +317,8 @@ export default function MyTripsSidebar({
                       >
                         <CalendarIcon className="w-2.5 h-2.5" />
                         <span className="text-[10px]">
-                          {trip.start_date.replace(/-/g, '.')} ~{' '}
-                          {trip.end_date.replace(/-/g, '.')}
+                          {trip.start_date ? trip.start_date.replace(/-/g, '.') : '-'} ~{' '}
+                          {trip.end_date ? trip.end_date.replace(/-/g, '.') : '-'}
                         </span>
                       </div>
 

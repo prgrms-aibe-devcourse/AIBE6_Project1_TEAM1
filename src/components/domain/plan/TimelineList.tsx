@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 // @ts-ignore : Typescript 지원이 완벽하게 안 될 것을 방지하기 위해 드래그 앤 드롭 타입체킹 무시
-import { Place } from '@/app/plan/page'
+import { type Place } from '@/utils/tripUtils'
 import {
   DragDropContext,
   Draggable,
@@ -14,7 +14,7 @@ import CommonButton from '@/components/common/CommonButton'
 import FilterBadge from './FilterBadge'
 import TransitIndicator from './TransitIndicator'
 
-import { TransportType, calcTravelMinutes } from '@/app/plan/page'
+import { type TransportType, calcTravelMinutes } from '@/utils/tripUtils'
 
 // calcTravelMinutes(shared)를 래핑하여 화면 표시용 포맷 문자열 반환
 const getEstimatedTransit = (p1: Place, p2: Place, type: TransportType = 'transit') => {
@@ -60,7 +60,7 @@ export default function TimelineList({
     )
 
   return (
-    <div className="flex flex-col w-full h-full bg-transparent overflow-y-auto">
+    <div className="flex flex-col w-full h-full bg-transparent overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       <div className="flex items-center justify-between mb-4 mt-1 px-2">
         <div className="flex items-center gap-2">
           <h2 className="text-[15px] font-bold text-gray-900">타임라인</h2>

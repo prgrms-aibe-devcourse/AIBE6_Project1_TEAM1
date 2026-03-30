@@ -1,6 +1,6 @@
 'use client'
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/utils/supabase/client'
 import {
   Bookmark,
   Bus,
@@ -12,13 +12,14 @@ import {
   Flame,
   Footprints,
   ImageIcon,
+  Loader2,
   MapPin,
   Route,
   Share2,
   Star,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface Place {
   id: number
@@ -448,16 +449,10 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
   const [reviews, setReviews] = useState<TripReview[]>([])
   const [reviewRoutes, setReviewRoutes] = useState<ReviewRoute[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
-  const supabase = useMemo(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseAnonKey) return null
-
-    return createClient(supabaseUrl, supabaseAnonKey)
-  }, [])
+  const supabase = createClient()
 
   useEffect(() => {
     if (!supabase) {
@@ -680,6 +675,65 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
       isMounted = false
     }
   }, [supabase, tripId])
+
+  const handleSaveToMyTrips = async () => {
+    if (!supabase || !trip) return
+
+    setIsSaving(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        alert('일정을 저장하려면 로그인이 필요합니다.')
+        router.push('/login')
+        return
+      }
+
+      const userId = user.id
+
+      // 1. 새로운 여행 기록 생성 (기존 메타데이터 복사)
+      const { data: newTrip, error: tripError } = await supabase
+        .from('trips')
+        .insert({
+          user_id: userId,
+          title: trip.title,
+          start_date: trip.start_date,
+          end_date: trip.end_date,
+          is_public: false,
+          is_saved: true,
+          total_distance: trip.total_distance,
+          total_travel_time: trip.total_travel_time,
+          total_cost: trip.total_cost,
+        })
+        .select()
+        .single()
+
+      if (tripError || !newTrip) throw tripError
+
+      // 2. 기존 여행 아이템들 복사
+      const itemsToInsert = detailItems.map(item => ({
+        trip_id: newTrip.id,
+        place_id: item.place_id,
+        visit_order: item.visit_order,
+        transport_type: item.transport_type,
+        travel_time: item.travel_time,
+        visit_day: item.visit_day,
+      }))
+
+      const { error: itemsError } = await supabase
+        .from('trip_items')
+        .insert(itemsToInsert)
+
+      if (itemsError) throw itemsError
+
+      alert('내 보관함에 일정이 추가되었습니다!')
+      router.push(`/plan?id=${newTrip.id}`)
+    } catch (error) {
+      console.error('일정 복사 중 오류:', error)
+      alert('일정을 저장하는 중 오류가 발생했습니다.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -920,9 +974,15 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
               <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-black font-bold text-white shadow-lg transition-all hover:bg-gray-900 active:scale-[0.98]"
+                  onClick={handleSaveToMyTrips}
+                  disabled={isSaving}
+                  className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-black font-bold text-white shadow-lg transition-all hover:bg-gray-900 active:scale-[0.98] disabled:bg-gray-400"
                 >
-                  <Bus className="h-5 w-5" />
+                  {isSaving ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Bus className="h-5 w-5" />
+                  )}
                   일정에 추가하기
                 </button>
 
