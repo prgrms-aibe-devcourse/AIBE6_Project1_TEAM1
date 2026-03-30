@@ -1,4 +1,3 @@
-import LevelProgressBar from '@/components/domain/my-page/LevelProgressBar'
 import MenuList from '@/components/domain/my-page/MenuList'
 import ProfileHeader from '@/components/domain/my-page/ProfileHeader'
 import StatCardGroup from '@/components/domain/my-page/StatCardGroup'
@@ -54,6 +53,7 @@ export default async function MyPage() {
         <ProfileHeader
           nickname={profile?.nickname}
           avatar_url={profile?.avatar_url}
+          triplogCount={stats.triplogCount}
         />
         <StatCardGroup 
           triplogCount={stats.triplogCount}
@@ -62,7 +62,6 @@ export default async function MyPage() {
         />
         <div className="mt-8 md:mt-10">
           <MenuList />
-          <LevelProgressBar />
         </div>
       </main>
     </div>

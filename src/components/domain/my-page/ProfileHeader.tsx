@@ -4,10 +4,19 @@ import Link from "next/link";
 type ProfileProps = {
   nickname?: string;
   avatar_url?: string;
+  triplogCount?: number;
 };
 
-export default function ProfileHeader({ nickname, avatar_url }: ProfileProps) {
+export default function ProfileHeader({ nickname, avatar_url, triplogCount = 0 }: ProfileProps) {
   const displayNickname = nickname || "뚜벅이";
+
+  const getProfileTitle = (count: number) => {
+    if (count >= 20) return "뚜벅이 여행 마스터 🚌";
+    if (count >= 15) return "뚜벅이 여행 전문가 🚶";
+    if (count >= 10) return "뚜벅이 여행 매니아 🎒";
+    if (count >= 5) return "뚜벅이 여행 초보 👟";
+    return "뚜벅이 여행 입문 🥾";
+  };
 
   return (
     <Link href="/mypage/edit" className="flex flex-col items-center pt-8 pb-6 text-center group cursor-pointer rounded-3xl hover:bg-gray-50 transition-colors mx-auto w-full max-w-sm">
@@ -20,7 +29,7 @@ export default function ProfileHeader({ nickname, avatar_url }: ProfileProps) {
         )}
       </div>
       <h2 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-gray-700 transition-colors">{displayNickname}</h2>
-      <p className="text-[13px] font-medium text-gray-500">대중교통 여행 매니아 🚌</p>
+      <p className="text-[13px] font-medium text-gray-500">{getProfileTitle(triplogCount)}</p>
     </Link>
   );
 }
