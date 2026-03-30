@@ -27,7 +27,11 @@ import {
   Search,
   Sparkles,
   Wallet,
+  CalendarPlus,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/utils/supabase/client'
+import { calcTravelMinutes, type Place } from '@/utils/tripUtils'
 
 // ─── 상수 정의 ───
 
@@ -111,6 +115,9 @@ export default function AIPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [aiResult, setAiResult] = useState<AIRecommendResponse | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
+  const [isAddingToSchedule, setIsAddingToSchedule] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
   const [searchResults, setSearchResults] = useState<
     { place_name: string; address_name: string }[]
   >([])
@@ -212,6 +219,139 @@ export default function AIPage() {
       console.error(err)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleAddToSchedule = async () => {
+    if (!aiResult && !DUMMY_RESULTS) return
+
+    setIsAddingToSchedule(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        alert('일정을 저장하려면 로그인이 필요합니다.')
+        router.push('/login')
+        return
+      }
+
+      const userId = user.id
+      const courseItems = aiResult?.course ?? DUMMY_RESULTS
+      
+      // 1. 추천된 장소들의 상세 정보(좌표, ID 등)를 카카오 API를 통해 확보합니다.
+      const resolvedPlaces: Place[] = []
+      
+      for (const item of courseItems) {
+        try {
+          // 1차 시도: 장소 이름으로 검색
+          let query = item.name
+          let res = await fetch(`/api/places?query=${encodeURIComponent(query)}&size=1`)
+          
+          if (!res.ok) {
+            console.error(`카카오 API 1차 검색 실패 (${query}):`, res.status)
+          }
+
+          let data = await res.json().catch(() => ({ documents: [] }))
+          let doc = data.documents?.[0]
+
+          // 2차 시도: 결과가 없으면 역 이름을 붙여서 검색 (맥락 추가)
+          if (!doc && station) {
+            query = `${station} ${item.name}`
+            res = await fetch(`/api/places?query=${encodeURIComponent(query)}&size=1`)
+            if (res.ok) {
+              data = await res.json().catch(() => ({ documents: [] }))
+              doc = data.documents?.[0]
+            }
+          }
+          
+          if (doc) {
+            resolvedPlaces.push({
+              id: Date.now().toString() + Math.random(),
+              kakao_place_id: doc.id,
+              name: doc.place_name,
+              category: doc.category_group_name || item.category,
+              address: doc.address_name || '',
+              lat: parseFloat(doc.y),
+              lng: parseFloat(doc.x),
+              transportType: 'transit'
+            })
+          } else {
+            console.warn(`장소를 최종적으로 찾을 수 없음: ${item.name}`)
+          }
+        } catch (err) {
+          console.error(`장소 처리 중 예외 발생 (${item.name}):`, err)
+        }
+      }
+
+      if (resolvedPlaces.length === 0) {
+        alert('추천된 장소들의 위치 정보를 찾을 수 없어 일정을 생성할 수 없습니다.')
+        return
+      }
+
+      // 2. 여행 기본 정보 생성 (trips 테이블)
+      const { data: tripData, error: tripError } = await supabase
+        .from('trips')
+        .insert({
+          user_id: userId,
+          title: `AI 추천: ${station} 나들이`,
+          start_date: new Date().toISOString().split('T')[0],
+          end_date: new Date().toISOString().split('T')[0],
+          is_public: true,
+          is_saved: true,
+          tags: selectedThemes.join(','),
+          img_url: '/images/jeju-east.png' // 기본 이미지
+        })
+        .select()
+        .single()
+
+      if (tripError || !tripData) throw new Error(tripError?.message || '여행 생성 실패')
+
+      // 3. 장소들 간의 이동 시간 계산 및 일정 아이템 생성 (trip_items 테이블)
+      for (let i = 0; i < resolvedPlaces.length; i++) {
+        const place = resolvedPlaces[i]
+        
+        // 장소가 DB에 없으면 추가 (상세 매핑은 편의상 이름 기반)
+        let dbPlaceId: number | null = null
+        if (place.kakao_place_id) {
+          const { data: existing } = await supabase.from('places').select('id').eq('kakao_place_id', place.kakao_place_id).maybeSingle()
+          if (existing) {
+            dbPlaceId = existing.id
+          } else {
+            const { data: newP } = await supabase.from('places').insert({
+              kakao_place_id: place.kakao_place_id,
+              place_name: place.name,
+              category: place.category,
+              address: place.address,
+              latitude: place.lat,
+              longitude: place.lng
+            }).select('id').single()
+            if (newP) dbPlaceId = newP.id
+          }
+        }
+
+        if (dbPlaceId) {
+          const nextPlace = resolvedPlaces[i + 1]
+          const travelTime = nextPlace ? calcTravelMinutes(place, nextPlace, 'transit') : 0
+
+          await supabase.from('trip_items').insert({
+            trip_id: tripData.id,
+            place_id: dbPlaceId,
+            visit_day: 1,
+            visit_order: i + 1,
+            transport_type: 'transit',
+            travel_time: travelTime
+          })
+        }
+      }
+
+      // 4. 완료 후 일정 편집 페이지로 이동
+      alert('AI 추천 코스가 내 일정에 추가되었습니다!')
+      router.push(`/plan?id=${tripData.id}`)
+
+    } catch (err) {
+      console.error('일정 추가 오류:', err)
+      alert('일정 추가 중 오류가 발생했습니다.')
+    } finally {
+      setIsAddingToSchedule(false)
     }
   }
 
@@ -542,7 +682,24 @@ export default function AIPage() {
             </div>
 
             {/* 하단 버튼 */}
-            <div className="mt-8">
+            <div className="mt-8 flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleAddToSchedule}
+                disabled={isAddingToSchedule}
+                className="flex-1 py-3.5 bg-purple-600 text-white rounded-xl text-sm font-bold hover:bg-purple-700 transition cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-purple-100 disabled:bg-gray-400"
+              >
+                {isAddingToSchedule ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    일정 생성 중...
+                  </>
+                ) : (
+                  <>
+                    <CalendarPlus className="w-4 h-4" />
+                    내 일정에 추가하기
+                  </>
+                )}
+              </button>
               <button
                 onClick={() => {
                   setStep(1)
@@ -552,7 +709,7 @@ export default function AIPage() {
                   setAiResult(null)
                   setAiError(null)
                 }}
-                className="w-full py-3.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer flex items-center justify-center gap-2"
+                className="flex-1 py-3.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer flex items-center justify-center gap-2 bg-white"
               >
                 🔄 다시 추천받기
               </button>

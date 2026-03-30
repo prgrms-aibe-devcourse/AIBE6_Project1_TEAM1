@@ -1,5 +1,5 @@
 import { Bus, Footprints, ChevronRight, TrainFront, Car } from "lucide-react";
-import { TransportType } from "@/app/plan/page";
+import { type TransportType } from "@/utils/tripUtils";
 import { useState } from "react";
 
 interface TransitIndicatorProps {
