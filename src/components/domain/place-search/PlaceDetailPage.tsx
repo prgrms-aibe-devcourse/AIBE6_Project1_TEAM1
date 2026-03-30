@@ -460,6 +460,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
   const [sortOrder, setSortOrder] = useState<'latest' | 'rating' | 'photo'>(
     'latest',
   )
+  const [visibleReviewsCount, setVisibleReviewsCount] = useState(3) // 초기 3개만 보여주기
 
   const supabase = createClient()
 
@@ -774,6 +775,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
         })
     }
   }, [reviews, sortOrder])
+  const visibleReviews = sortedReviews.slice(0, visibleReviewsCount)
 
   const handleSaveToMyTrips = async () => {
     if (!supabase || !trip) return
@@ -986,7 +988,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                   />
                 )}
               </div>
-              
+
               {/* 이미지 위 글씨 가독성을 위한 그라데이션 오버레이 복원 */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 pointer-events-none" />
 
@@ -1174,7 +1176,9 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                   <button
                     type="button"
                     className="rounded-lg bg-gray-900 dark:bg-purple-600 px-4 py-2 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-black dark:hover:bg-purple-700 active:scale-95"
-                    onClick={() => router.push(`/review/write?tripId=${tripId}`)}
+                    onClick={() =>
+                      router.push(`/review/write?tripId=${tripId}`)
+                    }
                   >
                     리뷰 쓰기
                   </button>
@@ -1217,8 +1221,8 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
               </button>
             </div>
             <div className="space-y-6">
-              {sortedReviews.length > 0 ? (
-                sortedReviews.map((review) => {
+              {visibleReviews.length > 0 ? (
+                visibleReviews.map((review) => {
                   const routesForReview = reviewRoutes.filter(
                     (route) => route.review_id === review.id,
                   )
@@ -1393,6 +1397,8 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
               <button
                 type="button"
                 className="flex w-full items-center justify-center gap-1 rounded-xl border border-gray-100 bg-white py-3 text-xs font-bold text-gray-500 transition-colors hover:bg-gray-50"
+                onClick={() => setVisibleReviewsCount((prev) => prev + 3)} // 3개씩 추가
+                disabled={visibleReviewsCount >= sortedReviews.length} // 더 이상 없으면 비활성화
               >
                 리뷰 더보기 <ChevronDown className="h-4 w-4" />
               </button>
