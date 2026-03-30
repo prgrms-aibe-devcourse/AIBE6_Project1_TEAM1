@@ -57,7 +57,6 @@ export default function MyTripsSidebar({
     const { data, error } = await supabase.from('trips').select(`
         *,
         travelers (
-          has_visited, 
           status,
           user_id
         )
@@ -100,14 +99,13 @@ export default function MyTripsSidebar({
       // 2. 기존 레코드가 있으면 업데이트
       await supabase
         .from('travelers')
-        .update({ has_visited: !currentVisited })
+        .update({ status: currentVisited ? 'ongoing' : 'completed' })
         .eq('id', traveler.id)
     } else {
       // 3. 없으면 새로 생성
       await supabase.from('travelers').insert({
         trip_id: tripId,
         user_id: userId,
-        has_visited: !currentVisited,
         status: !currentVisited ? 'completed' : 'ongoing',
       })
     }
@@ -234,8 +232,8 @@ export default function MyTripsSidebar({
                 (t: any) => t.user_id === userId,
               )
 
-              // travelers 테이블의 has_visited 컬럼을 우선적으로 사용합니다.
-              const isFinished = myTravelerInfo?.has_visited === true
+              // travelers 테이블의 status 컬럼을 우선적으로 사용합니다. (completed 이면 완주)
+              const isFinished = myTravelerInfo?.status === 'completed'
               // 여행 중 상태는 status가 'ongoing'이거나 날짜 범위 내에 있을 때로 판별합니다.
               const isActive =
                 myTravelerInfo?.status === 'ongoing' ||
