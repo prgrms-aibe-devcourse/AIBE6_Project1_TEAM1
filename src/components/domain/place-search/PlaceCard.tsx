@@ -9,6 +9,7 @@ import {
   Route,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import type {
   Trip,
   TripDetailItem,
@@ -237,8 +238,17 @@ export default function PlaceCard({
         onKeyDown={handleCardKeyDown}
         className="block w-full cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-[#6c3cff] focus:ring-offset-2"
       >
-        <div className="relative aspect-[16/11] w-full overflow-hidden rounded-t-[28px]">
-          <div className="absolute inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-blue-200" />
+        <div className="relative aspect-[16/11] w-full overflow-hidden rounded-t-[28px] group-hover:opacity-90 transition-opacity">
+          {trip.img_url ? (
+            <Image
+              src={trip.img_url}
+              alt={trip.title || '여행 코스'}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-blue-200" />
+          )}
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-black/5 to-transparent" />
 
