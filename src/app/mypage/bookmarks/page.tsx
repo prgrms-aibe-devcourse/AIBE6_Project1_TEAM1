@@ -19,6 +19,7 @@ interface SavedCourse {
   distance: number;
   rating: number;
   reviewCount: number;
+  tags?: string[];
 }
 
 export default function BookmarksPage() {
@@ -36,25 +37,37 @@ export default function BookmarksPage() {
 
         const userId = session.user.id;
 
-        // Fetch trips that are 'saved' by this user
-        // Using is_saved for now as there's no dedicated bookmarks table yet
-        const { data: tripsData, error: tripsError } = await supabase
-          .from('trips')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('is_saved', true)
-          .order('start_date', { ascending: false });
+        /**
+         * 1. 'bookmark' 테이블에서 현재 사용자가 저장한 trip_id 목록을 가져옵니다.
+         * 이때 'trips' 테이블을 조인(Join)하여 여행 정보를 한꺼번에 가져옵니다.
+         */
+        const { data: bookmarkData, error: bookmarkError } = await supabase
+          .from('bookmark')
+          .select(`
+            trip_id,
+            trips (
+              *
+            )
+          `)
+          .eq('user_id', userId);
 
-        if (tripsError) throw tripsError;
+        if (bookmarkError) throw bookmarkError;
 
-        if (!tripsData || tripsData.length === 0) {
+        if (!bookmarkData || bookmarkData.length === 0) {
           setCourses([]);
           return;
         }
 
+        // 조인된 데이터에서 trips 정보만 추출합니다.
+        const tripsData = bookmarkData
+          .map((b: any) => b.trips)
+          .filter(t => t !== null) as any[];
+
         const tripIds = tripsData.map(t => t.id);
 
-        // Fetch reviews for these trips
+        /**
+         * 2. 각 여행지에 대한 리뷰 정보를 가져와 평균 평점을 계산합니다.
+         */
         const { data: reviewsData, error: reviewsError } = await supabase
           .from('reviews')
           .select('trip_id, rating')
@@ -62,28 +75,34 @@ export default function BookmarksPage() {
 
         if (reviewsError) throw reviewsError;
 
+        /**
+         * 3. UI에 표시할 형식으로 데이터를 변환합니다.
+         */
         const transformed: SavedCourse[] = tripsData.map(trip => {
           const tripReviews = reviewsData?.filter(rev => rev.trip_id === trip.id) || [];
           const avgRating = tripReviews.length > 0 
             ? tripReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / tripReviews.length 
             : 0;
 
-          // Format time
           const totalMinutes = trip.total_travel_time || 0;
           const hours = Math.floor(totalMinutes / 60);
           const mins = totalMinutes % 60;
           const timeStr = hours > 0 ? `${hours}시간 ${mins > 0 ? `${mins}분` : ''}` : `${mins}분`;
 
+          // 태그 문자열을 배열로 변환
+          const tagsArray = trip.tags ? trip.tags.split(/[#\s]+/).filter(Boolean) : [];
+
           return {
             id: String(trip.id),
             title: trip.title || '제목 없는 여행',
-            location: '도심', // Fallback as trips doesn't have category/location yet
+            location: '도심', 
             time: timeStr,
-            category: 'City', // Fallback
-            imageUrl: '/images/jeju-east.png',
+            category: tagsArray.includes('숲') ? 'Forest' : tagsArray.includes('해안') ? 'Coast' : 'City',
+            imageUrl: trip.img_url || '/images/jeju-east.png',
             distance: trip.total_distance || 0,
             rating: Number(avgRating.toFixed(1)),
-            reviewCount: tripReviews.length
+            reviewCount: tripReviews.length,
+            tags: tagsArray
           };
         });
 
@@ -96,7 +115,28 @@ export default function BookmarksPage() {
     };
 
     fetchBookmarks();
-  }, []);
+  }, [supabase]);
+
+  const handleToggleBookmark = async (tripId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // 'bookmarks' 테이블에서 해당 사용자와 여행지의 북마크를 삭제합니다.
+      const { error } = await supabase
+        .from('bookmark')
+        .delete()
+        .eq('user_id', session.user.id)
+        .eq('trip_id', tripId);
+
+      if (error) throw error;
+
+      // 로컬 상태에서 해당 항목을 제거합니다.
+      setCourses(prev => prev.filter(course => course.id !== tripId));
+    } catch (err) {
+      console.error('Error toggling bookmark:', err);
+    }
+  };
 
   const filteredCourses = useMemo(() => {
     if (activeFilter === 'All') return courses;
@@ -179,7 +219,7 @@ export default function BookmarksPage() {
                     summary={{
                       totalDistance: course.distance,
                       totalTime: course.time,
-                      spotCount: 5,
+                      spotCount: course.reviewCount > 0 ? 5 : 3, // 예시값
                       estimatedCost: 2400,
                       saveCount: 1024,
                     }}
@@ -191,6 +231,8 @@ export default function BookmarksPage() {
                     rating={course.rating}
                     reviewCount={course.reviewCount}
                     isKept={true}
+                    onKeep={handleToggleBookmark}
+                    tags={course.tags}
                   />
                 </motion.div>
               ))}
