@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useModalStore } from '@/store/useModalStore'
 import PlaceResultSection from './PlaceResultSection'
@@ -146,6 +146,7 @@ function includesKeyword(value: string | null | undefined, keyword: string) {
 }
 
 export default function PlaceSearchSection() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const queryFromUrl = searchParams.get('query') ?? ''
 
@@ -414,12 +415,7 @@ export default function PlaceSearchSection() {
 
   const handleToggleBookmark = async (tripId: number) => {
     if (!userId) {
-      openModal({
-        type: 'alert',
-        variant: 'danger',
-        title: '로그인 필요',
-        description: '북마크 기능을 이용하려면 로그인이 필요합니다.',
-      })
+      router.push('/login')
       return
     }
 
