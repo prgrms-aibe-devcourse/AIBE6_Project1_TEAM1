@@ -14,6 +14,8 @@ interface PlaceResultSectionProps {
   errorMessage?: string
   selectedCategory: string
   onSelectCategory: (category: string) => void
+  bookmarkedTripIds?: Set<number>
+  onToggleBookmark?: (tripId: number) => void
 }
 
 export default function PlaceResultSection({
@@ -24,6 +26,8 @@ export default function PlaceResultSection({
   errorMessage = '',
   selectedCategory,
   onSelectCategory,
+  bookmarkedTripIds,
+  onToggleBookmark,
 }: PlaceResultSectionProps) {
   return (
     <section className="space-y-4">
@@ -43,6 +47,8 @@ export default function PlaceResultSection({
           trips={trips}
           tripDetailsMap={tripDetailsMap}
           tripReviewSummaryMap={tripReviewSummaryMap}
+          bookmarkedTripIds={bookmarkedTripIds}
+          onToggleBookmark={onToggleBookmark}
         />
       )}
     </section>
