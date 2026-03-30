@@ -35,7 +35,7 @@ export default function GlobalHeader() {
   }
   return (
     // 전체 헤더의 바깥 영역: 하단 경계선과 배경색을 지정합니다.
-    <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
+    <header className="sticky top-0 z-50 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
       {/* 
         내부 컨테이너: 좌우 여백을 주고, 가운데 정렬을 맞춥니다.
         max-w-7xl 은 너무 넓어지지 않게 최대 너비를 제한합니다.
@@ -54,7 +54,7 @@ export default function GlobalHeader() {
             />
           </div>
           {/* 로고 텍스트 (모바일 환경 대비: sm 이상에서만 텍스트 표시하여 좁은 화면 활용) */}
-          <span className="hidden sm:block font-bold text-xl tracking-tight text-purple-900">
+          <span className="hidden sm:block font-bold text-xl tracking-tight text-purple-900 dark:text-purple-400">
             뚜벅
           </span>
         </Link>
