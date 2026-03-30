@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 interface Place {
   id: number
@@ -68,6 +68,7 @@ interface TripReview {
   content: string | null
   created_at: string | null
   trip_id: number
+  images: string[]
 }
 
 interface ReviewRouteRow {
@@ -456,6 +457,9 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
   const [userReviewId, setUserReviewId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [isBookmarked, setIsBookmarked] = useState(false)
+  const [sortOrder, setSortOrder] = useState<'latest' | 'rating' | 'photo'>(
+    'latest',
+  )
 
   const supabase = createClient()
 
@@ -482,7 +486,9 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
         setErrorMessage('')
 
         // 유저 정보 가져오기
-        const { data: { session } } = await supabase.auth.getSession()
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
         const currentUserId = session?.user?.id ?? null
         if (isMounted) setUserId(currentUserId)
 
@@ -494,7 +500,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
             .eq('user_id', currentUserId)
             .eq('trips_id', tripId)
             .maybeSingle()
-          
+
           if (isMounted) setIsBookmarked(!!bookmarkData)
         }
 
@@ -577,7 +583,12 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
 
         const { data: reviewRows, error: reviewsError } = await supabase
           .from('reviews')
-          .select('id, user_id, rating, content, created_at, trip_id')
+          .select(
+            `
+    id, user_id, rating, content, created_at, trip_id,
+    images(file_url)
+  `,
+          )
           .eq('trip_id', tripId)
           .order('created_at', { ascending: false })
 
@@ -604,7 +615,29 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
           }
         }
         if (!isMounted) return
-        setReviews(reviewRows ?? [])
+
+        // 각 리뷰에 첨부된 이미지들 url 처리
+        const processedReviews: TripReview[] = (reviewRows ?? []).map(
+          (review) => {
+            const imageUrls: string[] =
+              review.images && Array.isArray(review.images)
+                ? review.images
+                    .map((img: { file_url: string }) => img.file_url)
+                    .filter(Boolean)
+                : []
+
+            return {
+              id: Number(review.id), // number 타입으로 강제
+              user_id: review.user_id ?? null,
+              rating: review.rating ?? null,
+              content: review.content ?? null,
+              created_at: review.created_at ?? null,
+              trip_id: Number(review.trip_id), // number 타입으로 강제
+              images: imageUrls,
+            }
+          },
+        )
+        setReviews(processedReviews)
 
         const { data: routeRows, error: routesError } = await supabase
           .from('routes')
@@ -673,7 +706,6 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
 
         setTrip(tripRow)
         setDetailItems(mergedItems)
-        setReviews(reviewRows ?? [])
         setReviewRoutes(mappedReviewRoutes)
       } catch (error: unknown) {
         console.error('[fetchTripDetail] raw error:', error)
@@ -717,6 +749,31 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
       isMounted = false
     }
   }, [supabase, tripId])
+
+  const sortedReviews = React.useMemo(() => {
+    if (!reviews) return []
+
+    switch (sortOrder) {
+      case 'rating':
+        // 평점 높은 순
+        return [...reviews].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+
+      case 'photo':
+        // 사진이 많은 순 (여기서는 review.images 배열이 있다고 가정)
+        return [...reviews].sort(
+          (a, b) => (b.images?.length ?? 0) - (a.images?.length ?? 0),
+        )
+
+      case 'latest':
+      default:
+        // 최신순 (created_at 내림차순)
+        return [...reviews].sort((a, b) => {
+          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
+          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
+          return dateB - dateA
+        })
+    }
+  }, [reviews, sortOrder])
 
   const handleSaveToMyTrips = async () => {
     if (!supabase || !trip) return
@@ -791,7 +848,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
         .delete()
         .eq('user_id', userId)
         .eq('trips_id', tripId)
-      
+
       if (!error) {
         setIsBookmarked(false)
       }
@@ -800,7 +857,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
       const { error } = await supabase
         .from('bookmark')
         .insert({ user_id: userId, trips_id: tripId })
-      
+
       if (!error) {
         setIsBookmarked(true)
       }
@@ -1072,7 +1129,9 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                   type="button"
                   onClick={handleToggleBookmark}
                   className={`flex h-14 w-14 items-center justify-center rounded-2xl border border-gray-100 bg-white shadow-sm transition-all hover:bg-gray-50 active:scale-[0.98] ${
-                    isBookmarked ? 'text-purple-600 border-purple-100' : 'text-gray-900'
+                    isBookmarked
+                      ? 'text-purple-600 border-purple-100'
+                      : 'text-gray-900'
                   }`}
                 >
                   <Bookmark
@@ -1136,26 +1195,41 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
             <div className="flex gap-3 pb-3">
               <button
                 type="button"
-                className="rounded-xl px-3 py-1.5 text-sm font-bold text-gray-900"
+                className={`rounded-xl px-3 py-1.5 text-sm font-bold ${
+                  sortOrder === 'latest'
+                    ? 'text-gray-900'
+                    : 'text-gray-700 bg-white border border-gray-200'
+                }`}
+                onClick={() => setSortOrder('latest')}
               >
                 최신순
               </button>
               <button
                 type="button"
-                className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700"
+                className={`rounded-xl px-3 py-1.5 text-sm font-semibold ${
+                  sortOrder === 'rating'
+                    ? 'text-gray-900'
+                    : 'text-gray-700 bg-white border border-gray-200'
+                }`}
+                onClick={() => setSortOrder('rating')}
               >
                 평점순
               </button>
               <button
                 type="button"
-                className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700"
+                className={`rounded-xl px-3 py-1.5 text-sm font-semibold ${
+                  sortOrder === 'photo'
+                    ? 'text-gray-900'
+                    : 'text-gray-700 bg-white border border-gray-200'
+                }`}
+                onClick={() => setSortOrder('photo')}
               >
                 사진순
               </button>
             </div>
             <div className="space-y-6">
-              {reviews.length > 0 ? (
-                reviews.map((review) => {
+              {sortedReviews.length > 0 ? (
+                sortedReviews.map((review) => {
                   const routesForReview = reviewRoutes.filter(
                     (route) => route.review_id === review.id,
                   )
@@ -1212,7 +1286,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                         {review.content || '리뷰 내용이 없습니다.'}
                       </div>
 
-                      <div className="grid grid-cols-4 gap-2.5">
+                      {/* <div className="grid grid-cols-4 gap-2.5">
                         {[0, 1, 2, 3].map((item, index) => (
                           <div
                             key={item}
@@ -1227,6 +1301,37 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                             )}
                           </div>
                         ))}
+                      </div> */}
+                      <div className="grid grid-cols-4 gap-2.5">
+                        {review.images.slice(0, 4).map((url, index) => (
+                          <div
+                            key={index}
+                            className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-gray-100"
+                          >
+                            <img
+                              src={url}
+                              alt={`review-${review.id}-img-${index}`}
+                              className="h-full w-full object-cover"
+                            />
+                            {/* 4번째 이미지일 때 추가 이미지 수 표시 */}
+                            {index === 3 && review.images.length > 4 && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-xl font-bold text-white">
+                                +{review.images.length - 4}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+
+                        {/* 이미지가 0개일 경우 */}
+                        {review.images.length === 0 &&
+                          Array.from({ length: 4 }).map((_, index) => (
+                            <div
+                              key={index}
+                              className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-gray-100"
+                            >
+                              <ImageIcon className="h-6 w-6 text-gray-300" />
+                            </div>
+                          ))}
                       </div>
 
                       <div className="border-t border-gray-200 pt-5">
