@@ -781,34 +781,34 @@ function PlanPageContent() {
               />
             </div>
 
-            <div className="absolute bottom-6 left-1 right-3 p-4 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100/50 flex items-center justify-between z-10 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="absolute bottom-6 left-1 right-3 p-4 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100/50 dark:border-gray-800/50 flex items-center justify-between z-10 animate-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-center gap-5">
                 {/* 총 소요 시간 섹션 */}
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">총 소요 시간</span>
-                  <span className="text-[15px] font-black text-gray-900 leading-none">
+                  <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">총 소요 시간</span>
+                  <span className="text-[15px] font-black text-gray-900 dark:text-gray-100 leading-none">
                     {calcDaySummary(currentPlaces).totalMins > 60
                       ? `${Math.floor(calcDaySummary(currentPlaces).totalMins / 60)}시간 ${calcDaySummary(currentPlaces).totalMins % 60}분`
                       : `${calcDaySummary(currentPlaces).totalMins}분`}
                   </span>
                 </div>
 
-                <div className="w-[1px] h-6 bg-gray-100" />
+                <div className="w-[1px] h-6 bg-gray-100 dark:bg-gray-800" />
 
                 {/* 총 예상 비용 섹션 */}
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">총 예상 비용</span>
-                  <span className="text-[15px] font-black text-purple-600 leading-none">
+                  <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">총 예상 비용</span>
+                  <span className="text-[15px] font-black text-purple-600 dark:text-purple-400 leading-none">
                     {calcDaySummary(currentPlaces).totalCost.toLocaleString()}원
                   </span>
                 </div>
 
-                <div className="w-[1px] h-6 bg-gray-100" />
+                <div className="w-[1px] h-6 bg-gray-100 dark:bg-gray-800" />
 
                 {/* 총 이동 거리 섹션 */}
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">총 이동 거리</span>
-                  <span className="text-[15px] font-black text-gray-900 leading-none">
+                  <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">총 이동 거리</span>
+                  <span className="text-[15px] font-black text-gray-900 dark:text-gray-100 leading-none">
                     {calcDaySummary(currentPlaces).totalDistance.toFixed(1)}km
                   </span>
                 </div>

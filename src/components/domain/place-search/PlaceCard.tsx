@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useState } from 'react'
 import type {
   Trip,
   TripDetailItem,
@@ -201,6 +202,7 @@ export default function PlaceCard({
   onToggleBookmark,
 }: PlaceCardProps) {
   const router = useRouter()
+  const [imgError, setImgError] = useState(false)
 
   const categoryLabel = inferMainCategory(detailItems)
   const tags = buildTags(detailItems)
@@ -238,13 +240,15 @@ export default function PlaceCard({
         onKeyDown={handleCardKeyDown}
         className="block w-full cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-[#6c3cff] focus:ring-offset-2"
       >
-        <div className="relative aspect-[16/11] w-full overflow-hidden rounded-t-[28px] group-hover:opacity-90 transition-opacity">
-          {trip.img_url ? (
+        <div className="relative aspect-[16/11] w-full overflow-hidden rounded-t-[28px] group-hover:opacity-90 transition-opacity bg-gradient-to-br from-sky-200 via-emerald-100 to-blue-200">
+          {trip.img_url && !imgError ? (
             <Image
+              unoptimized
               src={trip.img_url}
               alt={trip.title || '여행 코스'}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"
+              onError={() => setImgError(true)}
             />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-blue-200" />
