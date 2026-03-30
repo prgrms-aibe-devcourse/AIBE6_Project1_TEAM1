@@ -78,15 +78,15 @@ export default function GlobalModal() {
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="w-full max-w-md"
             >
-              <DialogPanel className="w-full overflow-hidden rounded-t-2xl bg-white p-6 text-left align-middle shadow-xl md:rounded-2xl">
+              <DialogPanel className="w-full overflow-hidden rounded-t-2xl bg-white dark:bg-gray-900 dark:border dark:border-gray-800 p-6 text-left align-middle shadow-xl md:rounded-2xl transition-colors duration-300">
                 <div className="flex flex-col items-center gap-4 text-center md:flex-row md:items-start md:text-left">
                   
                   {/* 아이콘 표시 영역: danger일 때는 빨간색 느낌표, 그 외에는 파란색 체크 */}
                   <div
                     className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
                       variant === "danger"
-                        ? "bg-red-100 text-red-600"
-                        : "bg-blue-100 text-blue-600"
+                        ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                        : "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
                      }`}
                   >
                     {variant === "danger" ? (
@@ -100,13 +100,13 @@ export default function GlobalModal() {
                   <div className="flex-1 mt-2 md:mt-0">
                     <DialogTitle
                       as="h3"
-                      className="text-lg font-bold leading-6 text-gray-900"
+                      className="text-lg font-bold leading-6 text-gray-900 dark:text-gray-100"
                     >
                       {title}
                     </DialogTitle>
                     {description && (
                       <div className="mt-2">
-                        <p className="text-sm text-gray-500 whitespace-pre-line">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-line">
                           {description}
                         </p>
                       </div>
@@ -119,7 +119,7 @@ export default function GlobalModal() {
                           type="text"
                           value={inputValue}
                           placeholder={inputPlaceholder}
-                          className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 outline-none focus:ring-2 focus:ring-gray-900 transition-all text-[15px]"
+                          className="w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 transition-all text-[15px] dark:text-gray-100"
                           onChange={(e) => setInputValue(e.target.value)}
                         />
                       </div>

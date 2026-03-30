@@ -43,7 +43,7 @@ export default async function MyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white md:bg-gray-50 dark:bg-gray-950 md:dark:bg-gray-950 pb-20">
+    <div className="min-h-screen bg-[#fafafa] dark:bg-gray-950 transition-colors duration-300">
       <main className="mx-auto max-w-4xl px-4 py-6 md:py-10 flex flex-col">
         <ProfileHeader
           nickname={profile?.nickname}

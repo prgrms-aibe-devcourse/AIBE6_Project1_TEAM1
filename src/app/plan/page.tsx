@@ -615,7 +615,7 @@ function PlanPageContent() {
   const currentPlaces = placesByDay[currentDay] || []
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#fafafa]">
+    <div className="flex flex-col min-h-screen bg-[#fafafa] dark:bg-gray-950 transition-colors duration-300">
       {isSearchOpen && (
         <PlaceSearchModal
           onClose={() => setIsSearchOpen(false)}
@@ -652,7 +652,7 @@ function PlanPageContent() {
                 여행 일정 플래너
                 <button
                   onClick={() => setIsSidebarOpen(true)}
-                  className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-[13px] font-bold text-gray-600 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-all flex items-center gap-1.5 shadow-sm ml-2"
+                  className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-[13px] font-bold text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-600 dark:hover:text-purple-400 hover:border-purple-200 dark:hover:border-purple-800 transition-all flex items-center gap-1.5 shadow-sm ml-2"
                 >
                   <FolderOpen className="w-4 h-4 flex-shrink-0" />
                   <span className="hidden sm:inline">내 보관함</span>
@@ -725,7 +725,7 @@ function PlanPageContent() {
         </div>
 
         <div className="flex flex-col lg:flex-row w-full gap-8 h-[calc(100vh-240px)] min-h-[600px]">
-          <div className="w-full lg:w-[55%] xl:w-[60%] h-[400px] lg:h-full relative rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200">
+          <div className="w-full lg:w-[55%] xl:w-[60%] h-[400px] lg:h-full relative rounded-xl overflow-hidden bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-800">
             <ItineraryMap places={currentPlaces} focusPlace={focusPlace} />
           </div>
 
