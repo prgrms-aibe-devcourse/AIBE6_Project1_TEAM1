@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, Filter, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const FILTERS = ['All', 'Forest', 'City', 'Coast'];
 

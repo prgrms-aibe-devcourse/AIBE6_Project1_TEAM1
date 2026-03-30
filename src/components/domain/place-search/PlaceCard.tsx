@@ -20,6 +20,8 @@ interface PlaceCardProps {
   detailItems: TripDetailItem[]
   reviewSummary: TripReviewSummary
   isHot?: boolean
+  isBookmarked?: boolean
+  onToggleBookmark?: (tripId: number) => void
 }
 
 function formatTravelTime(value?: number | null) {
@@ -194,6 +196,8 @@ export default function PlaceCard({
   detailItems,
   reviewSummary,
   isHot = false,
+  isBookmarked = false,
+  onToggleBookmark,
 }: PlaceCardProps) {
   const router = useRouter()
 
@@ -210,6 +214,11 @@ export default function PlaceCard({
 
   const handleMoveDetail = () => {
     router.push(`/search/${trip.id}`)
+  }
+
+  const handleToggleBookmarkAction = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onToggleBookmark?.(trip.id)
   }
 
   const handleCardKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -248,12 +257,17 @@ export default function PlaceCard({
 
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-            }}
-            className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-sm"
+            onClick={handleToggleBookmarkAction}
+            className={`absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 shadow-sm transition-all hover:scale-110 active:scale-95 ${
+              isBookmarked ? 'text-purple-600' : 'text-gray-700'
+            }`}
+            aria-label={isBookmarked ? '북마크 해제' : '북마크 추가'}
           >
-            <Bookmark className="h-6 w-6" />
+            <Bookmark
+              className={`h-6 w-6 transition-colors ${
+                isBookmarked ? 'fill-purple-600 font-bold' : ''
+              }`}
+            />
           </button>
 
           {featureBadges.length > 0 && (

@@ -12,6 +12,8 @@ interface PlaceListProps {
   trips: Trip[]
   tripDetailsMap: Record<number, TripDetailItem[]>
   tripReviewSummaryMap: Record<number, TripReviewSummary>
+  bookmarkedTripIds?: Set<number>
+  onToggleBookmark?: (tripId: number) => void
 }
 
 const ITEMS_PER_PAGE = 6
@@ -20,6 +22,8 @@ export default function PlaceList({
   trips,
   tripDetailsMap,
   tripReviewSummaryMap,
+  bookmarkedTripIds,
+  onToggleBookmark,
 }: PlaceListProps) {
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -84,6 +88,8 @@ export default function PlaceList({
               }
             }
             isHot={hotTripIds.has(trip.id)}
+            isBookmarked={bookmarkedTripIds?.has(trip.id)}
+            onToggleBookmark={onToggleBookmark}
           />
         ))}
       </div>

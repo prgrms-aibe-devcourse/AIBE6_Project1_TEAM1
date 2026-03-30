@@ -1,44 +1,77 @@
 'use client'
 
-import { createClient } from '@/utils/supabase/client';
-import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, Edit2, Image as ImageIcon, MessageSquare, MoreVertical, Star, ThumbsUp, Trash2, Loader2 } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useEffect, useState, useMemo } from 'react';
+import { deleteReview } from '@/components/domain/review/useDeleteReview'
+import { useModalStore } from '@/store/useModalStore'
+import { createClient } from '@/utils/supabase/client'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  ChevronLeft,
+  Edit2,
+  Image as ImageIcon,
+  Loader2,
+  MessageSquare,
+  MoreVertical,
+  Star,
+  Trash2,
+} from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
 
+/**
+ * 1. 데이터 타입 정의 (Interface)
+ * 서버에서 받아올 리뷰 데이터의 구조를 미리 정의합니다.
+ */
 interface Review {
-  id: string;
-  trip_id: number;
-  rating: number;
-  content: string;
-  created_at: string;
-  trips: {
+  id: string;          // 리뷰 고유 ID
+  trip_id: number;     // 연결된 여행 ID
+  rating: number;      // 별점 (1~5)
+  content: string;     // 리뷰 내용
+  created_at: string;  // 작성일자 (ISO string)
+  trips: {             // 조인(Join)하여 가져온 여행 정보
     title: string;
     start_date: string;
     end_date: string;
   };
-  images: {
+  images: {            // 조인(Join)하여 가져온 리뷰 사진들
     file_url: string;
   }[];
 }
 
 export default function ReviewsPage() {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'latest' | 'rating'>('latest');
-  const supabase = createClient();
+  /**
+   * 2. 상태 관리 (State)
+   * UI의 변화를 추적하기 위해 상태를 정의합니다.
+   */
+  const [reviews, setReviews] = useState<Review[]>([]); // 서버에서 받아온 리뷰 목록
+  const [loading, setLoading] = useState(true);        // 데이터를 불러오는 중인지 여부
+  const [activeMenu, setActiveMenu] = useState<string | null>(null); // 현재 열려있는 '수정/삭제' 메뉴 ID
+  const [sortBy, setSortBy] = useState<'latest' | 'rating'>('latest'); // 현재 정렬 기준 (최신순/별점순)
+  const supabase = createClient(); // 수파베이스 클라이언트 인스턴스
+  const router = useRouter();
+  const { openModal } = useModalStore();
 
+  /**
+   * 3. 데이터 패칭 (useEffect)
+   * 페이지가 처음 로드될 때 실행되어 서버에서 데이터를 가져옵니다.
+   */
   useEffect(() => {
     const fetchReviews = async () => {
       try {
         setLoading(true);
+        // 로그인한 사용자 세션 정보를 확인합니다.
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
         const userId = session.user.id;
 
+        /**
+         * 수파베이스 쿼리:
+         * 1) 'reviews' 테이블에서 데이터를 가져옵니다.
+         * 2) 'trips'와 'images' 테이블도 함께 조인(Join)하여 필요한 정보를 한꺼번에 가져옵니다.
+         * 3) 현재 로그인한 사용자(user_id)의 데이터만 필터링합니다.
+         */
         // Fetch reviews with joined trip and image data
         const { data, error } = await supabase
           .from('reviews')
@@ -59,20 +92,26 @@ export default function ReviewsPage() {
         if (error) throw error;
         setReviews(data || []);
       } catch (err) {
-        console.error('Error fetching reviews:', err);
+        console.error('리뷰를 불러오는 중 오류가 발생했습니다:', err);
       } finally {
-        setLoading(false);
+        setLoading(false); // 로딩 완료
       }
     };
 
     fetchReviews();
   }, []);
 
+  /**
+   * 4. 데이터 가공 (useMemo)
+   * 정렬 기준(sortBy)이나 리뷰 목록이 바뀔 때만 실행되어 성능을 최적화합니다.
+   */
   const sortedReviews = useMemo(() => {
     return [...reviews].sort((a, b) => {
       if (sortBy === 'latest') {
+        // 일시를 기준으로 내림차순 정렬 (최신순)
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       } else {
+        // 별점을 기준으로 내림차순 정렬 (별점순)
         return (b.rating || 0) - (a.rating || 0);
       }
     });
@@ -80,37 +119,45 @@ export default function ReviewsPage() {
 
   const stats = useMemo(() => {
     const totalReviews = reviews.length;
-    const avgRating = totalReviews > 0 
-      ? reviews.reduce((acc, r) => acc + (r.rating || 0), 0) / totalReviews 
-      : 0;
+    // const avgRating = totalReviews > 0 
+    //   ? reviews.reduce((acc, r) => acc + (r.rating || 0), 0) / totalReviews 
+    //   : 0;
     
     return [
       { label: '전체 리뷰', value: String(totalReviews), icon: MessageSquare, color: 'text-purple-600', bgColor: 'bg-purple-50' },
     ];
   }, [reviews]);
 
+  /**
+   * 5. 리뷰 삭제 기능
+   * 사용자에게 확인을 받은 후, 전용 훅을 통해 삭제를 진행합니다.
+   */
   const handleDelete = async (reviewId: string) => {
-     if (!confirm('정말로 이 리뷰를 삭제하시겠습니까?')) return;
-     
-     try {
-        const { error } = await supabase
-            .from('reviews')
-            .delete()
-            .eq('id', reviewId);
-        
-        if (error) throw error;
-        
-        setReviews(prev => prev.filter(r => r.id !== reviewId));
-        setActiveMenu(null);
-     } catch (err) {
-        console.error('Error deleting review:', err);
-        alert('리뷰 삭제 중 오류가 발생했습니다.');
-     }
+    if (!reviewId) return;
+    
+    openModal({
+      type: 'confirm',
+      variant: 'danger',
+      title: '리뷰를 삭제하시겠습니까?',
+      description: '삭제된 데이터는 복구할 수 없습니다.',
+      confirmText: '삭제',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          await deleteReview(supabase, Number(reviewId), openModal, router);
+          // 삭제 후 로컬 상태에서 제거
+          setReviews(prev => prev.filter(r => r.id !== reviewId));
+          setActiveMenu(null);
+        } catch (err) {
+          console.error('리뷰 삭제 중 오류가 발생했습니다:', err);
+        }
+      },
+    });
   };
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20">
-      {/* 1. Header Area */}
+      {/* (1) 상단 헤더: 뒤로가기 버튼과 타이틀 */}
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
@@ -126,6 +173,8 @@ export default function ReviewsPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* (2) 통계 및 정렬 영역: 전체 개수 확인과 최신순/별점순 전환 */}
         {/* Header with Stats & Sort */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-6 border-b border-gray-100">
           <div>
@@ -157,9 +206,9 @@ export default function ReviewsPage() {
           </div>
         </div>
 
+        {/* (3) 리뷰 리스트: 로딩 중일 때는 스피너를, 완료 후에는 카드 목록을 보여줍니다. */}
         {/* Review List Container */}
         <div className="space-y-4">
-
           {loading ? (
              <div className="flex flex-col items-center justify-center py-20">
                 <Loader2 className="h-10 w-10 text-purple-500 animate-spin mb-4" />
@@ -177,6 +226,7 @@ export default function ReviewsPage() {
                   className="group relative bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md hover:border-purple-100 transition-all"
                 >
                   <div className="flex gap-5">
+                    {/* (카드 왼쪽) 여행 코스 이미지 */}
                     {/* Left: Course Image */}
                     <div className="relative h-20 w-20 overflow-hidden rounded-xl border border-gray-50 flex-shrink-0">
                       <Image 
@@ -187,6 +237,7 @@ export default function ReviewsPage() {
                       />
                     </div>
 
+                    {/* (카드 오른쪽) 리뷰 정보 (제목, 별점, 날짜, 내용) */}
                     {/* Right: Content Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-1.5">
@@ -196,6 +247,7 @@ export default function ReviewsPage() {
                           </h3>
                           <div className="flex items-center gap-2.5">
                             <div className="flex gap-0.5">
+                              {/* 별점 5개 기준으로 채워진 별과 빈 별을 표시합니다. */}
                               {[...Array(5)].map((_, i) => (
                                 <Star 
                                   key={i} 
@@ -203,14 +255,15 @@ export default function ReviewsPage() {
                                 />
                               ))}
                             </div>
-                              <div className="text-xs text-gray-400">
+                            <span className="text-[11px] font-bold text-gray-400">
                                 {review.created_at 
                                   ? new Date(review.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')
                                   : '-'}
-                              </div>
+                            </span>
                           </div>
                         </div>
 
+                        {/* 우측 상단 '더보기' 메뉴 (수정/삭제) */}
                         <div className="relative">
                           <button 
                             onClick={() => setActiveMenu(activeMenu === review.id ? null : review.id)}
@@ -238,26 +291,30 @@ export default function ReviewsPage() {
                         </div>
                       </div>
 
+                      {/* 리뷰 텍스트 (길어질 경우 2줄까지만 보여줍니다.) */}
                       <p className="text-[14px] leading-relaxed text-gray-600 line-clamp-2 mb-4">
                         {review.content}
                       </p>
 
+                      {/* 하단 영역: 첨부된 사진 갤러리 */}
                       <div className="flex items-end justify-between">
                         {review.images && review.images.length > 0 ? (
                            <div className="flex gap-1.5">
-                            {review.images.slice(0, 3).map((img, i) => (
-                              <div key={i} className="relative h-14 w-14 rounded-lg overflow-hidden border border-gray-100 flex-shrink-0">
-                                <Image src={img.file_url} alt={`Photo ${i + 1}`} fill className="object-cover" />
-                                {i === 2 && review.images.length > 3 && (
-                                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] font-bold text-white">
-                                      +{review.images.length - 2}
-                                   </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
+                             {review.images.slice(0, 3).map((img, i) => (
+                               <div key={i} className="relative h-14 w-14 rounded-lg overflow-hidden border border-gray-100 flex-shrink-0">
+                                 <Image src={img.file_url} alt={`Photo ${i + 1}`} fill className="object-cover" />
+                                 {/* 사진이 4장 이상이면 '+개수'를 마지막 사진 위에 덮어씌웁니다. */}
+                                 {i === 2 && review.images.length > 3 && (
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] font-bold text-white">
+                                       +{review.images.length - 2}
+                                    </div>
+                                 )}
+                               </div>
+                             ))}
+                           </div>
                         ) : <div />}
 
+                        {/* 사진이 있을 때만 표시되는 뱃지 */}
                         {review.images && review.images.length > 0 && (
                             <div className="flex items-center gap-1.5 text-[11px] font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full">
                                 <ImageIcon className="h-3 w-3" />
@@ -273,6 +330,7 @@ export default function ReviewsPage() {
           )}
         </div>
         
+        {/* (4) 빈 상태 (Empty State): 작성한 리뷰가 없을 때 표시됩니다. */}
         {/* Empty State */}
         {!loading && reviews.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-center">
