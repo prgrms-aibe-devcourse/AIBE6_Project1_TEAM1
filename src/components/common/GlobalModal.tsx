@@ -58,7 +58,7 @@ export default function GlobalModal() {
           static
           open={true}
           onClose={handleClose}
-          className="relative z-50"
+          className="relative z-[1000]"
         >
           {/* 어두운 배경(Backdrop)과 배경 블러 효과 */}
           <motion.div
