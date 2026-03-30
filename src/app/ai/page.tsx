@@ -254,29 +254,42 @@ export default function AIPage() {
           ? 'walk'
           : 'transit'
         try {
-          // 1차 시도: 장소 이름으로 검색
-          let query = item.name
-          let res = await fetch(
-            `/api/places?query=${encodeURIComponent(query)}&size=1`,
-          )
+          // 검색 순서: 1) 장소명, 2) 역명+장소명, 3) 장소명 첫 단어
+          const queries = [
+            item.name,
+            station ? `${station} ${item.name}` : null,
+            item.name.split(' ')[0],
+          ].filter((q): q is string => !!q && q.length > 0)
 
-          if (!res.ok) {
-            console.error(`카카오 API 1차 검색 실패 (${query}):`, res.status)
+          type KakaoDoc = {
+            id: string
+            place_name: string
+            category_group_name: string
+            address_name: string
+            y: string
+            x: string
           }
+          let doc: KakaoDoc | null = null
 
-          let data = await res.json().catch(() => ({ documents: [] }))
-          let doc = data.documents?.[0]
-
-          // 2차 시도: 결과가 없으면 역 이름을 붙여서 검색 (맥락 추가)
-          if (!doc && station) {
-            query = `${station} ${item.name}`
-            res = await fetch(
-              `/api/places?query=${encodeURIComponent(query)}&size=1`,
+          for (const query of queries) {
+            const res = await fetch(
+              `/api/places?query=${encodeURIComponent(query)}&size=5`,
             )
-            if (res.ok) {
-              data = await res.json().catch(() => ({ documents: [] }))
-              doc = data.documents?.[0]
-            }
+            if (!res.ok) continue
+            const data = await res.json().catch(() => ({ documents: [] }))
+            const docs: KakaoDoc[] = data.documents ?? []
+            if (docs.length === 0) continue
+
+            // 이름이 정확히 일치하거나 포함하는 결과 우선 선택
+            const best =
+              docs.find(
+                (d) =>
+                  d.place_name === item.name ||
+                  d.place_name.includes(item.name) ||
+                  item.name.includes(d.place_name),
+              ) ?? docs[0]
+            doc = best
+            break
           }
 
           if (doc) {
@@ -291,7 +304,20 @@ export default function AIPage() {
               transportType: derivedTransport,
             })
           } else {
-            console.warn(`장소를 최종적으로 찾을 수 없음: ${item.name}`)
+            // 카카오에서 찾지 못해도 AI 데이터로 placeholder를 유지해 누락 방지
+            console.warn(
+              `[AI] 카카오 검색 실패, placeholder 사용: ${item.name}`,
+            )
+            resolvedPlaces.push({
+              id: Date.now().toString() + Math.random(),
+              kakao_place_id: undefined,
+              name: item.name,
+              category: item.category,
+              address: station || '',
+              lat: 0,
+              lng: 0,
+              transportType: derivedTransport,
+            })
           }
         } catch (err) {
           console.error(`장소 처리 중 예외 발생 (${item.name}):`, err)
@@ -328,9 +354,10 @@ export default function AIPage() {
       for (let i = 0; i < resolvedPlaces.length; i++) {
         const place = resolvedPlaces[i]
 
-        // 장소가 DB에 없으면 추가 (상세 매핑은 편의상 이름 기반)
+        // 장소가 DB에 없으면 추가 (kakao_place_id 없는 placeholder도 포함)
         let dbPlaceId: number | null = null
         if (place.kakao_place_id) {
+          // kakao_place_id로 중복 체크 후 upsert
           const { data: existing } = await supabase
             .from('places')
             .select('id')
@@ -339,7 +366,7 @@ export default function AIPage() {
           if (existing) {
             dbPlaceId = existing.id
           } else {
-            const { data: newP } = await supabase
+            const { data: newP, error: insertErr } = await supabase
               .from('places')
               .insert({
                 kakao_place_id: place.kakao_place_id,
@@ -351,6 +378,36 @@ export default function AIPage() {
               })
               .select('id')
               .single()
+            if (insertErr)
+              console.error(`places insert 실패 (${place.name}):`, insertErr)
+            if (newP) dbPlaceId = newP.id
+          }
+        } else {
+          // 카카오 ID 없는 placeholder: 이름 기반으로 중복 체크 후 insert
+          const { data: existing } = await supabase
+            .from('places')
+            .select('id')
+            .eq('place_name', place.name)
+            .maybeSingle()
+          if (existing) {
+            dbPlaceId = existing.id
+          } else {
+            const { data: newP, error: insertErr } = await supabase
+              .from('places')
+              .insert({
+                place_name: place.name,
+                category: place.category,
+                address: place.address,
+                latitude: place.lat,
+                longitude: place.lng,
+              })
+              .select('id')
+              .single()
+            if (insertErr)
+              console.error(
+                `places placeholder insert 실패 (${place.name}):`,
+                insertErr,
+              )
             if (newP) dbPlaceId = newP.id
           }
         }
@@ -362,7 +419,7 @@ export default function AIPage() {
             ? calcTravelMinutes(place, nextPlace, mode)
             : 0
 
-          await supabase.from('trip_items').insert({
+          const { error: itemErr } = await supabase.from('trip_items').insert({
             trip_id: tripData.id,
             place_id: dbPlaceId,
             visit_day: 1,
@@ -370,6 +427,10 @@ export default function AIPage() {
             transport_type: mode,
             travel_time: travelTime,
           })
+          if (itemErr)
+            console.error(`trip_items insert 실패 (${place.name}):`, itemErr)
+        } else {
+          console.error(`place DB 저장 실패로 trip_item 건너뜀: ${place.name}`)
         }
       }
 
