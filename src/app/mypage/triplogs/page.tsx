@@ -181,18 +181,18 @@ export default function TriplogsPage() {
   );
  
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950/50">
       {/* 1. Header Area */}
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100">
+      <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
             <Link 
               href="/mypage" 
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/5 hover:bg-gray-50 transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-black/5 dark:ring-white/10 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              <ChevronLeft className="h-6 w-6 text-gray-600" />
+              <ChevronLeft className="h-6 w-6 text-gray-600 dark:text-gray-400" />
             </Link>
-            <h1 className="text-xl font-bold tracking-tight text-gray-900">나의 뚜벅 기록</h1>
+            <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">나의 뚜벅 기록</h1>
           </div>
         </div>
       </header>
@@ -209,25 +209,25 @@ export default function TriplogsPage() {
  
         {/* 3. List Container */}
         <div className="mx-auto max-w-4xl">
-          <div className="rounded-3xl bg-white p-6 shadow-sm border border-gray-100 md:p-10">
+          <div className="rounded-3xl bg-white dark:bg-gray-900 p-6 shadow-sm border border-gray-100 dark:border-gray-800 md:p-10">
             {/* Search Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10 pb-6 border-b border-gray-100">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10 pb-6 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-2">
                 <span className="h-6 w-1 rounded-full bg-purple-500" />
-                <h2 className="text-xl font-bold text-gray-900">기록 리스트</h2>
-                <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full ml-1">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">기록 리스트</h2>
+                <span className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2.5 py-0.5 rounded-full ml-1 border border-purple-100 dark:border-purple-800/50">
                   {!loading ? filteredHistory.length : '-'}
                 </span>
               </div>
               
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   placeholder="장소 또는 제목을 검색하세요"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-12 rounded-2xl bg-gray-50 pl-11 pr-4 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all border border-transparent hover:border-gray-200"
+                  className="w-full h-12 rounded-2xl bg-gray-50 dark:bg-gray-800 pl-11 pr-4 text-sm font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white dark:focus:bg-gray-800 transition-all border border-transparent dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600"
                 />
               </div>
             </div>
@@ -270,7 +270,7 @@ export default function TriplogsPage() {
                           e.stopPropagation();
                           handleDeleteTrip(trip.id, trip.title);
                         }}
-                        className="absolute top-4 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-xl bg-white/90 text-gray-600 shadow-sm backdrop-blur-md transition-all hover:bg-white hover:text-red-500 opacity-0 group-hover:opacity-100 ring-1 ring-black/5"
+                        className="absolute top-4 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-xl bg-white/90 dark:bg-gray-800/80 text-gray-600 dark:text-gray-300 shadow-sm backdrop-blur-md transition-all hover:bg-white dark:hover:bg-gray-700 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 ring-1 ring-black/5 dark:ring-white/10"
                         title="기록 삭제"
                       >
                         <Trash2 className="h-5 w-5" />
@@ -281,7 +281,7 @@ export default function TriplogsPage() {
               )}
  
               {!loading && filteredHistory.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 text-center text-gray-400">
+                <div className="flex flex-col items-center justify-center py-20 text-center text-gray-400 dark:text-gray-500">
                   <Search className="h-10 w-10 mb-4 opacity-20" />
                   <p className="text-sm font-medium">기록이 없거나 검색 결과가 없습니다.</p>
                 </div>

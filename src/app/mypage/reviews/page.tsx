@@ -214,27 +214,27 @@ export default function ReviewsPage() {
       <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
         {/* (2) 통계 및 정렬 영역: 전체 개수 확인과 최신순/별점순 전환 */}
         {/* Header with Stats & Sort */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-6 border-b border-gray-100">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-6 border-b border-gray-100 dark:border-gray-800">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <MessageSquare className="h-5 w-5 text-purple-600" />
-              <h2 className="text-xl font-bold text-gray-900">전체 리뷰</h2>
-              <span className="text-lg font-extrabold text-purple-600">
+              <MessageSquare className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">전체 리뷰</h2>
+              <span className="text-lg font-extrabold text-purple-600 dark:text-purple-400">
                 {reviews.length}
               </span>
             </div>
-            <p className="text-sm text-gray-400 font-medium">
+            <p className="text-sm text-gray-400 dark:text-gray-500 font-medium">
               작성하신 소중한 후기들을 확인해보세요
             </p>
           </div>
 
-          <div className="flex items-center bg-gray-100/50 p-1 rounded-xl w-fit">
+          <div className="flex items-center bg-gray-100/50 dark:bg-gray-900/50 border border-transparent dark:border-gray-800 p-1 rounded-xl w-fit">
             <button
               onClick={() => setSortBy('latest')}
               className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 sortBy === 'latest'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-400 hover:text-gray-600'
+                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
               최신순
@@ -243,8 +243,8 @@ export default function ReviewsPage() {
               onClick={() => setSortBy('rating')}
               className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 sortBy === 'rating'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-400 hover:text-gray-600'
+                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
               별점순
@@ -271,12 +271,12 @@ export default function ReviewsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ delay: index * 0.05 }}
-                  className="group relative bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md hover:border-purple-100 transition-all"
+                  className="group relative bg-white dark:bg-gray-900/50 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md hover:border-purple-100 dark:hover:border-purple-800/50 transition-all"
                 >
                   <div className="flex gap-5">
                     {/* (카드 왼쪽) 여행 코스 이미지 */}
                     {/* Left: Course Image */}
-                    <div className="relative h-20 w-20 overflow-hidden rounded-xl border border-gray-50 flex-shrink-0">
+                    <div className="relative h-20 w-20 overflow-hidden rounded-xl border border-gray-50 dark:border-gray-800 flex-shrink-0">
                       <Image
                         src="/images/jeju-east.png"
                         alt={review.trips?.title || 'Trip'}
@@ -290,7 +290,7 @@ export default function ReviewsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-1.5">
                         <div className="min-w-0 pr-4">
-                          <h3 className="text-[17px] font-bold text-gray-900 truncate mb-1">
+                          <h3 className="text-[17px] font-bold text-gray-900 dark:text-gray-100 line-clamp-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                             {review.trips?.title || '제목 없는 여행'}
                           </h3>
                           <div className="flex items-center gap-2.5">
@@ -299,7 +299,7 @@ export default function ReviewsPage() {
                               {[...Array(5)].map((_, i) => (
                                 <Star
                                   key={i}
-                                  className={`h-3.5 w-3.5 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`}
+                                  className={`h-3.5 w-3.5 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 dark:text-gray-700'}`}
                                 />
                               ))}
                             </div>
@@ -326,22 +326,22 @@ export default function ReviewsPage() {
                                 activeMenu === review.id ? null : review.id,
                               )
                             }
-                            className="p-1.5 rounded-lg hover:bg-gray-50 text-gray-400 hover:text-gray-900 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                           >
                             <MoreVertical className="h-4 w-4" />
                           </button>
 
                           {activeMenu === review.id && (
-                            <div className="absolute right-0 mt-2 w-32 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-10">
+                            <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 z-10">
                               <Link
                                 href={`/review/edit?reviewId=${review.id}`}
-                                className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                               >
                                 <Edit2 className="h-4 w-4" /> 수정하기
                               </Link>
                               <button
                                 onClick={() => handleDelete(review.id)}
-                                className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                                className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                               >
                                 <Trash2 className="h-4 w-4" /> 삭제하기
                               </button>
@@ -351,7 +351,7 @@ export default function ReviewsPage() {
                       </div>
 
                       {/* 리뷰 텍스트 (길어질 경우 2줄까지만 보여줍니다.) */}
-                      <p className="text-[14px] leading-relaxed text-gray-600 line-clamp-2 mb-4">
+                      <p className="text-[14px] leading-relaxed text-gray-600 dark:text-gray-300 line-clamp-2 mb-4 bg-gray-50/50 dark:bg-gray-800/50 p-4 rounded-xl">
                         {review.content}
                       </p>
 
@@ -362,7 +362,7 @@ export default function ReviewsPage() {
                             {review.images.slice(0, 3).map((img, i) => (
                               <div
                                 key={i}
-                                className="relative h-14 w-14 rounded-lg overflow-hidden border border-gray-100 flex-shrink-0"
+                                className="relative h-14 w-14 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700 flex-shrink-0"
                               >
                                 <Image
                                   src={img.file_url}
@@ -385,7 +385,7 @@ export default function ReviewsPage() {
 
                         {/* 사진이 있을 때만 표시되는 뱃지 */}
                         {review.images && review.images.length > 0 && (
-                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full">
+                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 border border-purple-100 dark:border-purple-800/50 px-2.5 py-1 rounded-full">
                             <ImageIcon className="h-3 w-3" />
                             Review Photos
                           </div>
@@ -403,13 +403,14 @@ export default function ReviewsPage() {
         {/* Empty State */}
         {!loading && reviews.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="bg-gray-100 p-8 rounded-full mb-6">
-              <MessageSquare className="h-12 w-12 text-gray-300" />
+            <div className="bg-gray-100 dark:bg-gray-800 p-8 rounded-full mb-6 relative group">
+              <div className="absolute inset-0 bg-purple-100 dark:bg-purple-900/30 rounded-full scale-0 group-hover:scale-110 transition-transform duration-300 opacity-0 group-hover:opacity-100" />
+              <MessageSquare className="h-12 w-12 text-gray-300 dark:text-gray-600 relative z-10 transition-colors duration-300 group-hover:text-purple-500" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
               작성한 리뷰가 없습니다
             </h3>
-            <p className="text-gray-500 mb-8 max-w-xs px-4">
+            <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-xs px-4">
               다녀온 여행지에 대한 소중한 후기를 남겨주세요!
             </p>
             <Link

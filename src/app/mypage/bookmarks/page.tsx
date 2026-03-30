@@ -5,9 +5,9 @@ import { createClient } from '@/utils/supabase/client';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, Filter, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-const FILTERS = ['All', 'Forest', 'City', 'Coast'];
 
 interface SavedCourse {
   id: string;
@@ -19,12 +19,14 @@ interface SavedCourse {
   distance: number;
   rating: number;
   reviewCount: number;
+  tags?: string[];
 }
 
 export default function BookmarksPage() {
   const [courses, setCourses] = useState<SavedCourse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [sortBy, setSortBy] = useState<'latest' | 'oldest'>('latest');
+  const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
@@ -36,54 +38,82 @@ export default function BookmarksPage() {
 
         const userId = session.user.id;
 
-        // Fetch trips that are 'saved' by this user
-        // Using is_saved for now as there's no dedicated bookmarks table yet
+        /**
+         * 1. 'bookmark' 테이블에서 현재 사용자가 저장한 trips_id 목록을 가져옵니다.
+         */
+        const { data: bookmarkData, error: bookmarkError } = await supabase
+          .from('bookmark')
+          .select('trips_id')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: sortBy === 'oldest' });
+
+        if (bookmarkError) {
+          console.error('Bookmark Table Fetch Error:', bookmarkError);
+          throw bookmarkError;
+        }
+
+        if (!bookmarkData || bookmarkData.length === 0) {
+          setCourses([]);
+          return;
+        }
+
+        const tripsIds = bookmarkData.map(b => b.trips_id);
+
+        /**
+         * 2. 'trips' 테이블에서 해당 ID들에 해당하는 여행 정보를 가져옵니다.
+         */
         const { data: tripsData, error: tripsError } = await supabase
           .from('trips')
           .select('*')
-          .eq('user_id', userId)
-          .eq('is_saved', true)
-          .order('start_date', { ascending: false });
+          .in('id', tripsIds);
 
-        if (tripsError) throw tripsError;
+        if (tripsError) {
+          console.error('Trips Table Fetch Error:', tripsError);
+          throw tripsError;
+        }
 
         if (!tripsData || tripsData.length === 0) {
           setCourses([]);
           return;
         }
 
-        const tripIds = tripsData.map(t => t.id);
-
-        // Fetch reviews for these trips
+        /**
+         * 3. 각 여행지에 대한 리뷰 정보를 가져와 평균 평점을 계산합니다.
+         */
         const { data: reviewsData, error: reviewsError } = await supabase
           .from('reviews')
           .select('trip_id, rating')
-          .in('trip_id', tripIds);
+          .in('trip_id', tripsIds);
 
         if (reviewsError) throw reviewsError;
 
+        /**
+         * 4. UI에 표시할 형식으로 데이터를 변환합니다.
+         */
         const transformed: SavedCourse[] = tripsData.map(trip => {
           const tripReviews = reviewsData?.filter(rev => rev.trip_id === trip.id) || [];
           const avgRating = tripReviews.length > 0 
             ? tripReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / tripReviews.length 
             : 0;
 
-          // Format time
           const totalMinutes = trip.total_travel_time || 0;
           const hours = Math.floor(totalMinutes / 60);
           const mins = totalMinutes % 60;
           const timeStr = hours > 0 ? `${hours}시간 ${mins > 0 ? `${mins}분` : ''}` : `${mins}분`;
 
+          const tagsArray = trip.tags ? trip.tags.split(/[#\s]+/).filter(Boolean) : [];
+
           return {
             id: String(trip.id),
             title: trip.title || '제목 없는 여행',
-            location: '도심', // Fallback as trips doesn't have category/location yet
+            location: '도심', 
             time: timeStr,
-            category: 'City', // Fallback
-            imageUrl: '/images/jeju-east.png',
+            category: tagsArray.includes('숲') ? 'Forest' : tagsArray.includes('해안') ? 'Coast' : 'City',
+            imageUrl: trip.img_url || '/images/jeju-east.png',
             distance: trip.total_distance || 0,
             rating: Number(avgRating.toFixed(1)),
-            reviewCount: tripReviews.length
+            reviewCount: tripReviews.length,
+            tags: tagsArray
           };
         });
 
@@ -96,28 +126,45 @@ export default function BookmarksPage() {
     };
 
     fetchBookmarks();
-  }, []);
+  }, [supabase, sortBy]);
 
-  const filteredCourses = useMemo(() => {
-    if (activeFilter === 'All') return courses;
-    return courses.filter(course => course.category === activeFilter);
-  }, [courses, activeFilter]);
+  const handleToggleBookmark = async (tripId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // 'bookmarks' 테이블에서 해당 사용자와 여행지의 북마크를 삭제합니다.
+      const { error } = await supabase
+        .from('bookmark')
+        .delete()
+        .eq('user_id', session.user.id)
+        .eq('trips_id', tripId);
+
+      if (error) throw error;
+
+      // 로컬 상태에서 해당 항목을 제거합니다.
+      setCourses(prev => prev.filter(course => course.id !== tripId));
+    } catch (err) {
+      console.error('Error toggling bookmark:', err);
+    }
+  };
+
 
   return (
-    <div className="min-h-screen bg-gray-50/50 pb-20">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950/50 pb-20">
       {/* Header Area */}
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100">
+      <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
             <Link 
               href="/mypage" 
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/5 hover:bg-gray-50 transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-black/5 dark:ring-white/10 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              <ChevronLeft className="h-6 w-6 text-gray-600" />
+              <ChevronLeft className="h-6 w-6 text-gray-600 dark:text-gray-400" />
             </Link>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900">저장한 여행</h1>
-              <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-sm font-bold text-purple-700">
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">저장한 여행</h1>
+              <span className="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900/40 px-2.5 py-0.5 text-sm font-bold text-purple-700 dark:text-purple-400">
                 {!loading ? courses.length : '-'}
               </span>
             </div>
@@ -127,29 +174,19 @@ export default function BookmarksPage() {
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8">
         {/* Filter Section */}
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-8">
-          <div className="flex flex-wrap gap-2">
-            {FILTERS.map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setActiveFilter(filter)}
-                className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
-                  activeFilter === filter
-                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-200'
-                    : 'bg-white text-gray-500 ring-1 ring-black/5 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                {filter === 'All' ? '전체' : 
-                 filter === 'Forest' ? '숲' : 
-                 filter === 'City' ? '도심' : '해안'}
-              </button>
-            ))}
+        <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-2">
+            <span className="h-6 w-1 rounded-full bg-purple-500" />
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">저장된 코스</h2>
           </div>
           
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-400">
-            <Filter className="h-4 w-4" />
-            <span>최신순</span>
-          </div>
+          <button 
+            onClick={() => setSortBy(prev => prev === 'latest' ? 'oldest' : 'latest')}
+            className="flex items-center gap-2 text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors group px-2 py-1 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20"
+          >
+            <Filter className={`h-4 w-4 transition-transform ${sortBy === 'oldest' ? 'rotate-180' : ''}`} />
+            <span>{sortBy === 'latest' ? '최신순' : '오래된순'}</span>
+          </button>
         </div>
 
         {/* Grid Layout */}
@@ -161,7 +198,7 @@ export default function BookmarksPage() {
              </div>
           ) : (
             <AnimatePresence mode='popLayout'>
-              {filteredCourses.map((course, index) => (
+              {courses.map((course, index) => (
                 <motion.div
                   key={course.id}
                   layout
@@ -179,7 +216,7 @@ export default function BookmarksPage() {
                     summary={{
                       totalDistance: course.distance,
                       totalTime: course.time,
-                      spotCount: 5,
+                      spotCount: course.reviewCount > 0 ? 5 : 3, // 예시값
                       estimatedCost: 2400,
                       saveCount: 1024,
                     }}
@@ -191,6 +228,9 @@ export default function BookmarksPage() {
                     rating={course.rating}
                     reviewCount={course.reviewCount}
                     isKept={true}
+                    onKeep={handleToggleBookmark}
+                    onClick={() => router.push(`/search/${course.id}`)}
+                    tags={course.tags}
                   />
                 </motion.div>
               ))}
@@ -199,13 +239,13 @@ export default function BookmarksPage() {
         </div>
         
         {/* Empty State */}
-        {!loading && filteredCourses.length === 0 && (
+        {!loading && courses.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="mb-4 rounded-full bg-gray-100 p-6">
-              <Filter className="h-10 w-10 text-gray-300" />
+            <div className="mb-4 rounded-full bg-gray-100 dark:bg-gray-800 p-6">
+              <Filter className="h-10 w-10 text-gray-300 dark:text-gray-600" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900">저장된 코스가 없습니다</h3>
-            <p className="mt-1 text-gray-500">관심 있는 코스를 하트 버튼으로 저장해보세요!</p>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">저장된 코스가 없습니다</h3>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">관심 있는 코스를 하트 버튼으로 저장해보세요!</p>
           </div>
         )}
       </main>

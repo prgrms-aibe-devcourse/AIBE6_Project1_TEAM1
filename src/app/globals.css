@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
+@variant dark (&:is(.dark, .dark *));
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #111827;
+  --border-color: #e5e7eb;
+}
+
+.dark, :root.dark {
+  --background: #121212;
+  --foreground: #f3f4f6;
+  --border-color: #262626;
 }
 
 @theme inline {
@@ -12,15 +21,75 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* --- Automatic Dark Mode Selective Overrides --- */
+
+/* 카드성격, 내부 컨테이너 등 (조금 더 밝게) */
+.dark section.bg-white,
+.dark div.bg-white,
+.dark nav.bg-white,
+.dark header.bg-white,
+.dark aside.bg-white,
+.dark button.bg-white,
+.dark span.bg-white,
+.dark div.bg-white\/80,
+.dark header.bg-white\/80,
+.dark div.bg-white\/90,
+.dark button.bg-white\/90,
+.dark article.bg-\[\#f6f6f8\],
+.dark div.bg-\[\#f6f6f8\] {
+  background-color: #262626 !important;
+  border-color: #404040 !important;
+}
+
+/* 페이지 또는 큰 배경 래퍼 (가장 어둡게) */
+.dark section.bg-gray-50,
+.dark div.bg-gray-50,
+.dark div.bg-gray-50\/50,
+.dark div.bg-\[\#fafafa\],
+.dark main.bg-\[\#fafafa\] {
+  background-color: #121212 !important;
+}
+
+/* Explicitly keep dark backgrounds dark (like AI section) */
+/* This works because we didn't override the --color-gray-900 variable anymore */
+
+/* Fix Text in Dark Mode */
+.dark h1, .dark h2, .dark h3 {
+  color: #ffffff !important;
+}
+
+.dark .text-gray-900, 
+.dark .text-gray-800, 
+.dark .text-gray-700,
+.dark .text-\[\#1f2650\] {
+  color: #f3f4f6 !important;
+}
+
+.dark .text-gray-600, 
+.dark .text-gray-500, 
+.dark .text-gray-400 {
+  color: #a3a3a3 !important;
+}
+
+.dark .text-purple-900, .dark .text-purple-800, .dark .text-purple-700 {
+  color: #e9d5ff !important;
+}
+
+.dark .text-blue-900, .dark .text-blue-800, .dark .text-blue-700 {
+  color: #dbeafe !important;
+}
+
+.dark .border-purple-100, .dark .border-purple-200 {
+  border-color: #581c87 !important;
+}
+
+.dark .border-gray-100, .dark .border-gray-200 {
+  border-color: #262626 !important;
 }

@@ -180,36 +180,36 @@ export default function SaveTripModal({
   return (
     // 배경을 불투명하게 만들고 컴포넌트를 띄웁니다.
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* 모달 상단 헤더 */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h2 className="font-bold text-gray-900 text-lg">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="font-bold text-gray-900 dark:text-gray-100 text-lg">
             여행 상세 정보 저장
           </h2>
           <button
             onClick={onClose}
             type="button"
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
             disabled={isSubmitting}
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
         {/* 정보 입력 Form 범위 */}
         <form
           onSubmit={handleSubmit}
-          className="p-5 flex flex-col gap-6 bg-gray-50/50 max-h-[80vh] overflow-y-auto"
+          className="p-5 flex flex-col gap-6 bg-gray-50/50 dark:bg-gray-900/50 max-h-[80vh] overflow-y-auto"
         >
           {/* 대표 이미지 설정 섹션 (업로드 방식) */}
           <div className="flex flex-col gap-3">
-            <label className="text-[13px] font-bold text-gray-700 flex items-center gap-2">
-              <ImageIcon className="w-4 h-4 text-purple-600" /> 대표 이미지 설정
+            <label className="text-[13px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" /> 대표 이미지 설정
             </label>
             
             <div 
               onClick={() => !isUploading && fileInputRef.current?.click()}
-              className={`group relative w-full h-40 rounded-2xl border-2 border-dashed border-gray-200 bg-white flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all hover:border-purple-300 hover:bg-purple-50/10 ${isUploading ? 'cursor-not-allowed opacity-80' : ''}`}
+              className={`group relative w-full h-40 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all hover:border-purple-300 dark:hover:border-purple-500 hover:bg-purple-50/10 dark:hover:bg-purple-900/20 ${isUploading ? 'cursor-not-allowed opacity-80' : ''}`}
             >
               {imgUrl ? (
                 <>
@@ -225,20 +225,20 @@ export default function SaveTripModal({
                   </div>
                 </>
               ) : (
-                <div className="flex flex-col items-center gap-2 text-gray-400">
-                  <div className="p-3 bg-gray-50 rounded-full group-hover:bg-purple-50 transition-colors">
-                    <Upload className="w-6 h-6 group-hover:text-purple-500" />
+                <div className="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-500">
+                  <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-full group-hover:bg-purple-50 dark:group-hover:bg-purple-900/30 transition-colors">
+                    <Upload className="w-6 h-6 group-hover:text-purple-500 dark:group-hover:text-purple-400" />
                   </div>
                   <span className="text-[12px] font-medium">여행을 대표할 사진을 올려주세요</span>
-                  <span className="text-[10px] text-gray-300">최대 30MB / 이미지 파일만 가능</span>
+                  <span className="text-[10px] text-gray-300 dark:text-gray-600">최대 30MB / 이미지 파일만 가능</span>
                 </div>
               )}
 
               {/* 로딩 표시 */}
               {isUploading && (
-                <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center">
-                  <Loader2 className="w-6 h-6 text-purple-600 animate-spin mb-2" />
-                  <span className="text-[12px] font-bold text-purple-600">업로드 중...</span>
+                <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex flex-col items-center justify-center">
+                  <Loader2 className="w-6 h-6 text-purple-600 dark:text-purple-400 animate-spin mb-2" />
+                  <span className="text-[12px] font-bold text-purple-600 dark:text-purple-400">업로드 중...</span>
                 </div>
               )}
             </div>
@@ -255,10 +255,10 @@ export default function SaveTripModal({
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="title"
-              className="text-[13px] font-bold text-gray-700"
+              className="text-[13px] font-bold text-gray-700 dark:text-gray-300"
             >
               어떤 여행을 만들어볼까요?{' '}
-              <span className="text-purple-600">*</span>
+              <span className="text-purple-600 dark:text-purple-400">*</span>
             </label>
             <input
               id="title"
@@ -266,7 +266,7 @@ export default function SaveTripModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="예: 우리들의 완벽한 제주 여행"
-              className="w-full px-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-[14px] text-gray-900 shadow-sm transition-all"
+              className="w-full px-4 py-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-[14px] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm transition-all"
               autoFocus
             />
           </div>
@@ -275,22 +275,22 @@ export default function SaveTripModal({
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="tag-input"
-              className="text-[13px] font-bold text-gray-700 flex items-center gap-2"
+              className="text-[13px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2"
             >
-              <Hash className="w-4 h-4 text-purple-600" /> 태그 설정
+              <Hash className="w-4 h-4 text-purple-600 dark:text-purple-400" /> 태그 설정
             </label>
             
-            <div className="w-full p-2 bg-white border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-transparent transition-all shadow-sm flex flex-wrap gap-1.5 min-h-[52px] items-center">
+            <div className="w-full p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-transparent transition-all shadow-sm flex flex-wrap gap-1.5 min-h-[52px] items-center">
               {tagList.map((tag, index) => (
                 <span 
                   key={index} 
-                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 text-purple-600 text-[12px] font-bold rounded-lg border border-purple-100 group/tag"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 text-[12px] font-bold rounded-lg border border-purple-100 dark:border-purple-800/50 group/tag"
                 >
                   #{tag}
                   <button
                     type="button"
                     onClick={() => removeTag(index)}
-                    className="hover:text-purple-800 transition-colors"
+                    className="hover:text-purple-800 dark:hover:text-purple-100 transition-colors"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -304,10 +304,10 @@ export default function SaveTripModal({
                 onKeyDown={handleTagKeyDown}
                 onBlur={() => addTag(tagInput)}
                 placeholder={tagList.length === 0 ? "태그를 입력하고 엔터나 스페이스를 눌러보세요!" : ""}
-                className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-[14px] text-gray-900 py-1"
+                className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-[14px] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 py-1"
               />
             </div>
-            <p className="text-[10px] text-gray-400 mt-0.5">
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
               * 엔터, 스페이스, 혹은 쉼표(,)를 눌러 태그를 완성할 수 있습니다.
             </p>
           </div>
@@ -316,7 +316,7 @@ export default function SaveTripModal({
             <div className="flex flex-col gap-1.5 flex-1">
               <label
                 htmlFor="startDate"
-                className="text-[13px] font-bold text-gray-700"
+                className="text-[13px] font-bold text-gray-700 dark:text-gray-300"
               >
                 가는 날
               </label>
@@ -325,13 +325,13 @@ export default function SaveTripModal({
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-3.5 bg-white border border-gray-200 rounded-xl cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-[14px] text-gray-900 shadow-sm transition-all"
+                className="w-full px-3 py-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-[14px] text-gray-900 dark:text-gray-100 shadow-sm transition-all [color-scheme:light] dark:[color-scheme:dark]"
               />
             </div>
             <div className="flex flex-col gap-1.5 flex-1">
               <label
                 htmlFor="endDate"
-                className="text-[13px] font-bold text-gray-700"
+                className="text-[13px] font-bold text-gray-700 dark:text-gray-300"
               >
                 오는 날
               </label>
@@ -341,17 +341,17 @@ export default function SaveTripModal({
                 value={endDate}
                 min={startDate} // 최소 시작날짜와 맞춰줌
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-3.5 bg-white border border-gray-200 rounded-xl cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-[14px] text-gray-900 shadow-sm transition-all"
+                className="w-full px-3 py-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-[14px] text-gray-900 dark:text-gray-100 shadow-sm transition-all [color-scheme:light] dark:[color-scheme:dark]"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="flex flex-col">
-              <span className="text-[14px] font-bold text-gray-900">
+              <span className="text-[14px] font-bold text-gray-900 dark:text-gray-100">
                 내 일정 공개하기
               </span>
-              <span className="text-[12px] text-gray-400 mt-0.5">
+              <span className="text-[12px] text-gray-400 dark:text-gray-500 mt-0.5">
                 다른 유저들이 내 일정을 참고할 수 있게 허용합니다.
               </span>
             </div>
@@ -363,7 +363,7 @@ export default function SaveTripModal({
                 onChange={(e) => setIsPublic(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-500 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 dark:peer-checked:bg-purple-500"></div>
             </label>
           </div>
 
@@ -373,7 +373,7 @@ export default function SaveTripModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-5 py-3 text-[14px] font-semibold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors"
+              className="px-5 py-3 text-[14px] font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700/50 rounded-xl transition-colors"
             >
               취소
             </button>

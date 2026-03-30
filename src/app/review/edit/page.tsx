@@ -292,9 +292,9 @@ export default function ReviewEditPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
       <div className="flex-col w-auto self-center">
-        <div className="py-4 flex items-center gap-2">
+        <div className="py-4 flex items-center gap-2 text-gray-900 dark:text-gray-100">
           <button
-            className="text-2xl p-2 cursor-pointer"
+            className="text-2xl p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
             onClick={async () => {
               if (mediaCleanupRef.current) await mediaCleanupRef.current()
               router.back()
@@ -306,7 +306,7 @@ export default function ReviewEditPage() {
         </div>
 
         {/* Trip info */}
-        <div className="border rounded-xl mb-6 p-6 flex flex-row gap-4 text-gray-700">
+        <div className="border border-gray-200 dark:border-gray-800 rounded-xl mb-6 p-6 flex flex-row gap-4 text-gray-700 dark:text-gray-300">
           <div className="flex flex-col">
             <div>{tripTitle}</div>
             <div>
@@ -316,14 +316,14 @@ export default function ReviewEditPage() {
         </div>
 
         {/* Rating */}
-        <div className="text-xl font-bold">전체 평점</div>
+        <div className="text-xl font-bold dark:text-gray-100">전체 평점</div>
         <div className="p-4">
           <RatingSelector rating={rating} setRating={setRating} />
         </div>
 
         {/* Route options */}
-        <div className="text-xl font-bold py-4">경로별 보행 환경</div>
-        <div className="border rounded-xl mb-6 p-6 flex flex-col text-gray-700">
+        <div className="text-xl font-bold py-4 dark:text-gray-100">경로별 보행 환경</div>
+        <div className="border border-gray-200 dark:border-gray-800 rounded-xl mb-6 p-6 flex flex-col text-gray-700 dark:text-gray-300">
           <RouteOptionSelector
             routes={routes}
             placeMap={placeMap}
@@ -333,18 +333,18 @@ export default function ReviewEditPage() {
         </div>
 
         {/* Content */}
-        <div className="text-xl font-bold py-4">리뷰 내용</div>
+        <div className="text-xl font-bold py-4 dark:text-gray-100">리뷰 내용</div>
         <textarea
           name="content"
           rows={4}
-          className="resize-none w-full py-4"
+          className="resize-none w-full py-4 px-4 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-transparent dark:border-gray-800 rounded-xl outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-500 placeholder-gray-400 dark:placeholder-gray-500"
           placeholder="뚜벅이 여행자에게 도움이 될 보행환경, 접근성, 추천 팁 등을 작성해주세요"
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
 
         {/* Media uploader */}
-        <div className="text-xl font-bold py-4">사진 첨부</div>
+        <div className="text-xl font-bold py-4 dark:text-gray-100">사진 첨부</div>
         <EditMediaUploader
           supabase={supabase}
           images={images}
@@ -361,7 +361,7 @@ export default function ReviewEditPage() {
         {/* Buttons */}
         <div className="flex gap-2 my-6">
           <button
-            className="w-1/2 bg-black text-white py-3 rounded-lg cursor-pointer"
+            className="w-1/2 bg-black dark:bg-purple-600 text-white py-3 rounded-lg cursor-pointer hover:bg-gray-900 dark:hover:bg-purple-700 transition-colors"
             onClick={() =>
               openModal({
                 type: 'confirm',
@@ -376,7 +376,7 @@ export default function ReviewEditPage() {
             {loading ? '수정 중...' : '리뷰 수정'}
           </button>
           <button
-            className="w-1/2 bg-white text-black py-3 rounded-lg border cursor-pointer"
+            className="w-1/2 bg-white dark:bg-gray-800 text-black dark:text-white py-3 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             onClick={async () => {
               if (mediaCleanupRef.current) await mediaCleanupRef.current()
               router.back()
