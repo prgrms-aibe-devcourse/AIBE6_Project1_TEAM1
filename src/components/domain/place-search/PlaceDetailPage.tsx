@@ -1158,38 +1158,28 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                 </span>
               </div>
 
-              {/* <button
-                type="button"
-                className="rounded-lg bg-gray-900 px-4 py-2 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-black active:scale-95"
-                onClick={() => router.push(`/review/write?tripId=${tripId}`)}
-              >
-                리뷰 쓰기
-              </button>*/}
-              {userReviewId ? (
-                <button
-                  type="button"
-                  className="rounded-lg bg-gray-900 px-4 py-2 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-black active:scale-95"
-                  onClick={() =>
-                    router.push(`/review/edit?reviewId=${userReviewId}`)
-                  }
-                >
-                  리뷰 수정
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="rounded-lg bg-gray-900 px-4 py-2 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-black active:scale-95"
-                  onClick={() => {
-                    if (!userId) {
-                      router.push('/login')
-                    } else {
+              {userId &&
+                (userReviewId ? (
+                  <button
+                    type="button"
+                    className="rounded-lg bg-gray-900 px-4 py-2 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-black active:scale-95"
+                    onClick={() =>
+                      router.push(`/mypage/reviews?tripId=${tripId}`)
+                    }
+                  >
+                    리뷰 수정
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="rounded-lg bg-gray-900 px-4 py-2 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-black active:scale-95"
+                    onClick={() =>
                       router.push(`/review/write?tripId=${tripId}`)
                     }
-                  }}
-                >
-                  리뷰 쓰기
-                </button>
-              )}
+                  >
+                    리뷰 쓰기
+                  </button>
+                ))}
             </div>
 
             <div className="flex gap-3 pb-3">
@@ -1286,22 +1276,6 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                         {review.content || '리뷰 내용이 없습니다.'}
                       </div>
 
-                      {/* <div className="grid grid-cols-4 gap-2.5">
-                        {[0, 1, 2, 3].map((item, index) => (
-                          <div
-                            key={item}
-                            className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-gray-100"
-                          >
-                            {index === 3 ? (
-                              <span className="text-xl font-bold text-gray-500">
-                                +4
-                              </span>
-                            ) : (
-                              <ImageIcon className="h-6 w-6 text-gray-300" />
-                            )}
-                          </div>
-                        ))}
-                      </div> */}
                       <div className="grid grid-cols-4 gap-2.5">
                         {review.images.slice(0, 4).map((url, index) => (
                           <div
