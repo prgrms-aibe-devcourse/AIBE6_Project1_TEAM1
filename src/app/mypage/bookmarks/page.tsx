@@ -44,11 +44,7 @@ export default function BookmarksPage() {
         const { data: bookmarkData, error: bookmarkError } = await supabase
           .from('bookmark')
           .select(`
-<<<<<<< HEAD
             trips_id,
-=======
-            trip_id,
->>>>>>> bcb3a0e (Feat : 저장페이지 조회기능 구현중)
             created_at,
             trips (
               *
