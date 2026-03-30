@@ -11,11 +11,10 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-
-const supabase = createClient()
+import { useEffect, useMemo, useState } from 'react'
 
 export default function GNBMenu() {
+  const supabase = useMemo(() => createClient(), [])
   const [isLogin, setIsLogin] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
