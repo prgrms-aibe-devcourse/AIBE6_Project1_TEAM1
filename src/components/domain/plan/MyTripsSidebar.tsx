@@ -116,6 +116,33 @@ export default function MyTripsSidebar({
     await fetchTrips(true)
   }
 
+  const handleTogglePublic = async (
+    e: React.MouseEvent,
+    tripId: string,
+    currentPublic: boolean,
+  ) => {
+    e.stopPropagation()
+    if (!userId) return
+
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('trips')
+      .update({ is_public: !currentPublic })
+      .eq('id', tripId)
+
+    if (error) {
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '변경 실패',
+        description: '공개 여부 설정을 변경하는 중 오류가 발생했습니다.',
+      })
+    } else {
+      // 리스트 갱신
+      await fetchTrips(true)
+    }
+  }
+
   const handleDeleteTrip = async (e: React.MouseEvent, tripId: string, title: string) => {
     e.stopPropagation()
     
@@ -273,13 +300,27 @@ export default function MyTripsSidebar({
                         <div className="flex flex-col items-end gap-2 mt-0.5 shrink-0">
                           <div className="flex items-center gap-1.5">
                             {trip.is_public ? (
-                              <span className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold border border-blue-100 flex-shrink-0">
+                              <button
+                                onClick={(e) =>
+                                  handleTogglePublic(e, trip.id, true)
+                                }
+                                title="비공개로 변경"
+                                className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold border border-blue-100 flex-shrink-0 hover:bg-blue-100 transition-colors"
+                              >
                                 <Eye className="w-3 h-3" />
-                              </span>
+                                <span>공개</span>
+                              </button>
                             ) : (
-                              <span className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 text-gray-400 rounded text-[10px] font-bold border border-gray-100 flex-shrink-0">
+                              <button
+                                onClick={(e) =>
+                                  handleTogglePublic(e, trip.id, false)
+                                }
+                                title="공개로 변경"
+                                className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 text-gray-400 rounded text-[10px] font-bold border border-gray-100 flex-shrink-0 hover:bg-gray-200 transition-colors"
+                              >
                                 <EyeOff className="w-3 h-3" />
-                              </span>
+                                <span>비공개</span>
+                              </button>
                             )}
                             <button
                               onClick={(e) =>
