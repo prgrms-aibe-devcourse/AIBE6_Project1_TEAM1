@@ -80,34 +80,34 @@ export default function PlaceSearchModal({
     // 화면 전체를 덮는 투명한 검은색 팝업 배경
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       {/* 팝업 모달창 본체 */}
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col h-[80vh] overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col h-[80vh] overflow-hidden">
         {/* 헤더 영역 */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h2 className="font-bold text-gray-900 text-lg flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-gray-700" /> 장소 검색 및 추가
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="font-bold text-gray-900 dark:text-gray-100 text-lg flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-gray-700 dark:text-gray-300" /> 장소 검색 및 추가
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
         {/* 검색 인풋 영역 */}
-        <div className="p-5 bg-gray-50 border-b border-gray-100">
+        <div className="p-5 bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
           <form onSubmit={handleSearch} className="relative">
             <input
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="가고 싶은 식당이나 명소를 검색해보세요!"
-              className="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 rounded-xl 
-  focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent 
-  text-[15px] text-gray-900 placeholder-gray-400 shadow-sm"
+              className="w-full pl-11 pr-4 py-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl 
+  focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent 
+  text-[15px] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
               autoFocus
             />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
             <button type="submit" className="hidden">
               검색
             </button>{' '}
@@ -116,9 +116,9 @@ export default function PlaceSearchModal({
         </div>
 
         {/* 결과 리스트 영역 */}
-        <div className="flex-1 overflow-y-auto p-3 bg-white [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex-1 overflow-y-auto p-3 bg-white dark:bg-gray-900 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {results.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-gray-300">
+            <div className="h-full flex flex-col items-center justify-center text-gray-300 dark:text-gray-600">
               <Search className="w-10 h-10 mb-3 opacity-20" />
               <p className="text-[15px] font-medium">
                 검색어에 해당하는 장소가 여기에 나타납니다.
@@ -161,18 +161,18 @@ export default function PlaceSearchModal({
                       options,
                     )
                   }}
-                  className="flex justify-between items-center p-4 hover:bg-gray-50 rounded-xl cursor-pointer border border-transparent hover:border-gray-200 transition-all group"
+                  className="flex justify-between items-center p-4 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl cursor-pointer border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all group"
                 >
                   <div className="flex flex-col gap-1.5 overflow-hidden pr-4">
-                    <h4 className="font-bold text-gray-900 text-[15px] truncate">
+                    <h4 className="font-bold text-gray-900 dark:text-gray-100 text-[15px] truncate">
                       {place.place_name}
                     </h4>
-                    <p className="text-[12px] text-gray-500 truncate">
+                    <p className="text-[12px] text-gray-500 dark:text-gray-400 truncate">
                       {place.address_name}
                     </p>
                   </div>
                   {/* 마우스를 올렸을 때만 나타나는 추가하기 뱃지 버턴 효과 */}
-                  <div className="flex-shrink-0 bg-gray-900 text-white px-3.5 py-2 rounded-lg text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex-shrink-0 bg-gray-900 dark:bg-purple-600 text-white px-3.5 py-2 rounded-lg text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">
                     추가하기
                   </div>
                 </div>
