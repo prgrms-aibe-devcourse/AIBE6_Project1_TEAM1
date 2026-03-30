@@ -43,12 +43,19 @@ export default function BookmarksPage() {
          */
         const { data: bookmarkData, error: bookmarkError } = await supabase
           .from('bookmark')
-          .select('trips_id')
+          .select(`
+            trips_id,
+            created_at,
+            trips (
+              *
+            )
+          `)
           .eq('user_id', userId)
           .order('created_at', { ascending: sortBy === 'oldest' });
 
         if (bookmarkError) {
-          console.error('Bookmark Table Fetch Error:', bookmarkError);
+          console.error('Bookmark Table Fetch Error Raw:', bookmarkError);
+          console.error('Bookmark Table Fetch Error Stringified:', JSON.stringify(bookmarkError, null, 2));
           throw bookmarkError;
         }
 
@@ -57,28 +64,19 @@ export default function BookmarksPage() {
           return;
         }
 
-        const tripsIds = bookmarkData.map(b => b.trips_id);
+        // 조인된 데이터에서 trips 정보만 추출합니다.
+        // Supabase의 join 결과는 관계 설정에 따라 객체일 수도, 배열일 수도 있으므로 안전하게 처리합니다.
+        const tripsData = bookmarkData
+          .map((b: any) => Array.isArray(b.trips) ? b.trips[0] : b.trips)
+          .filter(t => t !== null) as any[];
+
+        // 중복 제거: 같은 여행지가 여러 번 북마크되어 있을 경우를 대비해 ID 기준으로 유니크하게 필터링합니다.
+        const uniqueTrips = Array.from(new Map(tripsData.map(t => [t.id, t])).values());
+
+        const tripsIds = uniqueTrips.map(t => t.id);
 
         /**
-         * 2. 'trips' 테이블에서 해당 ID들에 해당하는 여행 정보를 가져옵니다.
-         */
-        const { data: tripsData, error: tripsError } = await supabase
-          .from('trips')
-          .select('*')
-          .in('id', tripsIds);
-
-        if (tripsError) {
-          console.error('Trips Table Fetch Error:', tripsError);
-          throw tripsError;
-        }
-
-        if (!tripsData || tripsData.length === 0) {
-          setCourses([]);
-          return;
-        }
-
-        /**
-         * 3. 각 여행지에 대한 리뷰 정보를 가져와 평균 평점을 계산합니다.
+         * 2. 각 여행지에 대한 리뷰 정보를 가져와 평균 평점을 계산합니다.
          */
         const { data: reviewsData, error: reviewsError } = await supabase
           .from('reviews')
@@ -90,7 +88,7 @@ export default function BookmarksPage() {
         /**
          * 4. UI에 표시할 형식으로 데이터를 변환합니다.
          */
-        const transformed: SavedCourse[] = tripsData.map(trip => {
+        const transformed: SavedCourse[] = uniqueTrips.map(trip => {
           const tripReviews = reviewsData?.filter(rev => rev.trip_id === trip.id) || [];
           const avgRating = tripReviews.length > 0 
             ? tripReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / tripReviews.length 
@@ -118,8 +116,16 @@ export default function BookmarksPage() {
         });
 
         setCourses(transformed);
-      } catch (err) {
-        console.error('Error fetching bookmarks:', err);
+      } catch (err: any) {
+        console.error('Error fetching bookmarks final catch:', err);
+        try {
+          console.error('Error JSON:', JSON.stringify(err, null, 2));
+        } catch (e) {
+          console.error('Error could not be stringified');
+        }
+        if (err && typeof err === 'object') {
+          console.error('Error Keys:', Object.keys(err));
+        }
       } finally {
         setLoading(false);
       }
