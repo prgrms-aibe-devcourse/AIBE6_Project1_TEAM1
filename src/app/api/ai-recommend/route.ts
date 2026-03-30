@@ -75,14 +75,13 @@ export async function POST(request: Request) {
   · 대중교통(버스, 지하철)은 거리 계산에서 제외
 - transitFare 요금 규칙:
   · 도보 구간은 0, 출발지는 null
-  · 버스 기본요금: 1,500원 / 지하철 기본요금: 1,550원 (교통카드 기준, 고정값)
-  · 환승 할인: 이전 대중교통 하차 후 30분 이내 재승차 시 무료 환승 (최대 4회). 단, 그 사이 장소에 머무는 시간(duration)이 30분을 초과하면 환승이 끊어지므로 새로운 기본요금 부과
+  · 대중교통(버스·지하철 무관): 1,500원 고정
   · totalTransitFare = 각 구간 transitFare의 합산
 - 선호 테마(${themes.join(', ')})에 부합하는 장소 위주
 - 한국어로만 응답
 
 반드시 다음 형식으로만 응답하고 다른 텍스트는 절대 포함하지 마라:
-{"course":[{"order":1,"name":"출발지이름","category":"출발지","desc":"출발지","duration":"5분","walkInfo":null,"transitFare":null},{"order":2,"name":"장소1","category":"카테고리","desc":"설명","duration":"XY분","walkInfo":"지하철25분(5역)","transitFare":1550},{"order":3,"name":"장소2","category":"카테고리","desc":"설명","duration":"XY분","walkInfo":"도보8분(0.5km)","transitFare":0},{"order":4,"name":"장소3","category":"카테고리","desc":"설명","duration":"XY분","walkInfo":"도보12분(0.8km)","transitFare":0}],"totalWalkDistance":"1.3km","totalPlaces":4,"totalTransitFare":1550}`
+{"course":[{"order":1,"name":"출발지이름","category":"출발지","desc":"출발지","duration":"5분","walkInfo":null,"transitFare":null},{"order":2,"name":"장소1","category":"카테고리","desc":"설명","duration":"XY분","walkInfo":"지하철25분(5역)","transitFare":1500},{"order":3,"name":"장소2","category":"카테고리","desc":"설명","duration":"XY분","walkInfo":"도보8분(0.5km)","transitFare":0},{"order":4,"name":"장소3","category":"카테고리","desc":"설명","duration":"XY분","walkInfo":"도보12분(0.8km)","transitFare":0}],"totalWalkDistance":"1.3km","totalPlaces":4,"totalTransitFare":1500}`
 
   // 5. Gemini API 호출
   try {

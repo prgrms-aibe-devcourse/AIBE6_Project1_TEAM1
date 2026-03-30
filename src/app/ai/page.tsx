@@ -31,7 +31,7 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { calcTravelMinutes, type Place } from '@/utils/tripUtils'
+import { calcTravelMinutes, type Place, type TransportType } from '@/utils/tripUtils'
 
 // ─── 상수 정의 ───
 
@@ -240,7 +240,11 @@ export default function AIPage() {
       // 1. 추천된 장소들의 상세 정보(좌표, ID 등)를 카카오 API를 통해 확보합니다.
       const resolvedPlaces: Place[] = []
       
-      for (const item of courseItems) {
+      for (let idx = 0; idx < courseItems.length; idx++) {
+        const item = courseItems[idx]
+        // 다음 장소까지의 이동수단: courseItems[idx+1].walkInfo 기준 파싱
+        const nextWalkInfo = courseItems[idx + 1]?.walkInfo ?? null
+        const derivedTransport: TransportType = nextWalkInfo?.startsWith('도보') ? 'walk' : 'transit'
         try {
           // 1차 시도: 장소 이름으로 검색
           let query = item.name
@@ -272,7 +276,7 @@ export default function AIPage() {
               address: doc.address_name || '',
               lat: parseFloat(doc.y),
               lng: parseFloat(doc.x),
-              transportType: 'transit'
+              transportType: derivedTransport
             })
           } else {
             console.warn(`장소를 최종적으로 찾을 수 없음: ${item.name}`)
@@ -330,14 +334,15 @@ export default function AIPage() {
 
         if (dbPlaceId) {
           const nextPlace = resolvedPlaces[i + 1]
-          const travelTime = nextPlace ? calcTravelMinutes(place, nextPlace, 'transit') : 0
+          const mode = place.transportType || 'transit'
+          const travelTime = nextPlace ? calcTravelMinutes(place, nextPlace, mode) : 0
 
           await supabase.from('trip_items').insert({
             trip_id: tripData.id,
             place_id: dbPlaceId,
             visit_day: 1,
             visit_order: i + 1,
-            transport_type: 'transit',
+            transport_type: mode,
             travel_time: travelTime
           })
         }
