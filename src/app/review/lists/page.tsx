@@ -1,149 +1,307 @@
 'use client'
 
+import { deleteReview } from '@/components/domain/review/useDeleteReview'
 import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
-import { Search } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  ChevronLeft,
+  Edit2,
+  Image as ImageIcon,
+  MessageSquare,
+  MoreVertical,
+  Star,
+  ThumbsUp,
+  Trash2,
+} from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
-interface Review {
-  rating: number
-  trip_id: string
-  trips: {
-    title: string
-    start_date: string
-    end_date: string
-  }
-}
+// Dummy data for user reviews
+const REVIEWS_DATA = [
+  {
+    id: '106',
+    courseId: 'c1',
+    courseName: '영도 흰여울문화마을 산책 코스',
+    courseImage: '/images/jeju-east.png',
+    rating: 5,
+    content:
+      '바다를 보면서 걷는 기분이 정말 최고였어요! 골목골목 숨겨진 카페들도 너무 예쁘고, 사진 찍기 너무 좋은 곳입니다. 노을 질 때쯤 가는 걸 강력 추천드려요.',
+    date: '2024.03.25',
+    likes: 12,
+    images: ['/images/jeju-east.png', '/images/jeju-east.png'],
+  },
+  {
+    id: '2',
+    courseId: 'c2',
+    courseName: '서울 숲 힐링 산책로',
+    courseImage: '/images/jeju-east.png',
+    rating: 4,
+    content:
+      '도심 속에서 자연을 느낄 수 있는 최고의 장소입니다. 다만 주말에는 사람이 조금 많아서 평일 오전에 방문하는 것이 더 여유로울 것 같아요.',
+    date: '2024.03.20',
+    likes: 8,
+    images: [],
+  },
+  {
+    id: '3',
+    courseId: 'c3',
+    courseName: '광화문 역사 밤거리 걷기',
+    courseImage: '/images/jeju-east.png',
+    rating: 5,
+    content:
+      '야경이 정말 아름다워요. 경복궁 주변을 돌며 역사의 숨결을 느낄 수 있었습니다. 외국인 친구와 함께 왔는데 너무 좋아하네요.',
+    date: '2024.03.15',
+    likes: 24,
+    images: ['/images/jeju-east.png'],
+  },
+]
 
-export default function ReviewListPage() {
-  const [searchQuery, setSearchQuery] = useState('')
-  const supabase = createClient()
+const STATS = [
+  {
+    label: '전체 리뷰',
+    value: '12',
+    icon: MessageSquare,
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-50',
+  },
+  {
+    label: '평균 별점',
+    value: '4.8',
+    icon: Star,
+    color: 'text-yellow-500',
+    bgColor: 'bg-yellow-50',
+  },
+  {
+    label: '도움됨',
+    value: '44',
+    icon: ThumbsUp,
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-50',
+  },
+]
+
+export default function ReviewsPage() {
+  const [activeMenu, setActiveMenu] = useState<string | null>(null)
+
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [userId, setUserId] = useState<string | null>(null)
-  const [reviewList, setReviewList] = useState<Review[]>([])
+  const supabase = createClient()
   const { openModal } = useModalStore()
 
-  /** 사용자 정보 가져오기 */
-  useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUserId(user?.id ?? null)
-    }
-    getUser()
-  }, [])
+  const handleEdit = (reviewId: string) => {
+    console.log(reviewId)
+    router.push(`/review/edit?reviewId=${reviewId}`)
+  }
 
-  /** 리뷰 목록 가져오기 */
-  useEffect(() => {
-    const getReviewList = async () => {
-      setLoading(true)
-      const { data: reviewData, error: reviewError } = await supabase
-        .from('reviews')
-        .select(
-          `
-          rating,
-          trip_id,
-          trips!inner(
-            title,
-            start_date,
-            end_date
-          )
-        `,
-        )
-        .eq('user_id', userId)
-
-      if (reviewError || !reviewData) {
-        setLoading(false)
-        console.error(reviewError)
-        openModal({
-          type: 'alert',
-          variant: 'danger',
-          title: '리뷰 목록 조회 오류',
-          description: '리뷰 목록 조회에 오류가 발생했습니다.',
-          onConfirm: () => router.push('/'),
-        })
-        return
-      }
-
-      const formattedReviews: Review[] = reviewData.map((item: any) => ({
-        rating: item.rating,
-        trip_id: item.trip_id,
-        trips: {
-          title: item.trips.title,
-          start_date: item.trips.start_date,
-          end_date: item.trips.end_date,
-        },
-      }))
-
-      setReviewList(formattedReviews)
-      setLoading(false)
-    }
-
-    if (userId) getReviewList()
-  }, [userId])
-
-  /** 검색 필터 적용 */
-  const filteredReview = reviewList.filter((item) =>
-    item.trips.title.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const handleDelete = async (reviewId: string) => {
+    if (!reviewId) return
+    await deleteReview(supabase, Number(reviewId), openModal, router)
+  }
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <div className="rounded-3xl bg-white p-6 shadow-sm border border-gray-100 md:p-10 my-10">
-        {/* Search Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10 pb-6 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <span className="h-6 w-1 rounded-full bg-purple-500" />
-            <h2 className="text-xl font-bold text-gray-900">리뷰 목록</h2>
-            <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full ml-1">
-              {filteredReview.length}
-            </span>
-          </div>
-
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="장소 또는 제목을 검색하세요"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 rounded-2xl bg-gray-50 pl-11 pr-4 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all border border-transparent hover:border-gray-200"
-            />
-          </div>
-        </div>
-
-        {/* Review List */}
-        <div className="space-y-6">
-          {filteredReview.map((review, index) => (
-            <div
-              key={index}
-              className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 p-4 border border-gray-100 rounded-xl hover:shadow-sm transition"
+    <div className="min-h-screen bg-gray-50/50 pb-20">
+      {/* 1. Header Area */}
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/mypage"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/5 hover:bg-gray-50 transition-colors"
             >
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {review.trips.title}
-                </h3>
-                <p className="text-sm text-gray-500">
-                  {review.trips.start_date} - {review.trips.end_date}
-                </p>
-              </div>
-              <div className="text-purple-600 font-bold text-xl">
-                {review.rating}★
-              </div>
-            </div>
-          ))}
-
-          {filteredReview.length === 0 && !loading && (
-            <div className="flex flex-col items-center justify-center py-20 text-center text-gray-400">
-              <Search className="h-10 w-10 mb-4 opacity-20" />
-              <p className="text-sm font-medium">검색 결과가 없습니다.</p>
-            </div>
-          )}
+              <ChevronLeft className="h-6 w-6 text-gray-600" />
+            </Link>
+            <h1 className="text-xl font-bold tracking-tight text-gray-900">
+              작성한 리뷰
+            </h1>
+          </div>
         </div>
-      </div>
+      </header>
+
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+        {/* 2. Stats Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {STATS.map((stat, i) => {
+            const Icon = stat.icon
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="flex flex-col items-center justify-center p-8 rounded-3xl bg-white shadow-sm border border-gray-100"
+              >
+                <div
+                  className={`mb-4 p-3 rounded-2xl ${stat.bgColor} ${stat.color}`}
+                >
+                  <Icon className="h-6 w-6" />
+                </div>
+                <div className="text-center">
+                  <span className="block text-sm font-bold text-gray-400 mb-1 uppercase tracking-tight">
+                    {stat.label}
+                  </span>
+                  <span className="text-3xl font-extrabold text-gray-900">
+                    {stat.value}
+                  </span>
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+
+        {/* 3. Review List Container */}
+        <div className="max-w-4xl mx-auto space-y-6">
+          <AnimatePresence>
+            {REVIEWS_DATA.map((review, index) => (
+              <motion.div
+                key={review.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="group relative bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all"
+              >
+                {/* Review Header */}
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-gray-100 flex-shrink-0">
+                    <Image
+                      src={review.courseImage}
+                      alt={review.courseName}
+                      fill
+                      className="object-cover transition-transform group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="text-lg font-bold text-gray-900 truncate pr-8">
+                        {review.courseName}
+                      </h3>
+                      <div className="relative">
+                        <button
+                          onClick={() =>
+                            setActiveMenu(
+                              activeMenu === review.id ? null : review.id,
+                            )
+                          }
+                          className="p-2 -mr-2 text-gray-400 hover:text-gray-900 transition-colors"
+                        >
+                          <MoreVertical className="h-5 w-5" />
+                        </button>
+
+                        {activeMenu === review.id && (
+                          <div className="absolute right-0 mt-2 w-32 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-10">
+                            <button
+                              className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                              onClick={() => handleEdit(review.id)}
+                            >
+                              <Edit2 className="h-4 w-4" /> 수정하기
+                            </button>
+                            <button
+                              className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                              onClick={() =>
+                                openModal({
+                                  type: 'confirm',
+                                  variant: 'danger',
+                                  title: '리뷰를 삭제하시겠습니까?',
+                                  description:
+                                    '삭제된 데이터는 복구할 수 없습니다.',
+                                  confirmText: '삭제',
+                                  cancelText: '취소',
+                                  onConfirm: () => handleDelete(review.id),
+                                })
+                              }
+                            >
+                              <Trash2 className="h-4 w-4" /> 삭제하기
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex gap-0.5">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-4 w-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs font-bold text-gray-400">
+                        {review.date}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Review Content */}
+                <div className="mb-6">
+                  <p className="text-[15px] leading-relaxed text-gray-600 whitespace-pre-wrap">
+                    {review.content}
+                  </p>
+                </div>
+
+                {/* Photo Gallery */}
+                {review.images.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide mb-4">
+                    {review.images.map((img, i) => (
+                      <div
+                        key={i}
+                        className="relative h-32 w-32 rounded-2xl overflow-hidden border border-gray-100 flex-shrink-0"
+                      >
+                        <Image
+                          src={img}
+                          alt={`Review photo ${i + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Review Footer */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                  <div className="flex items-center gap-4">
+                    <button className="flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-blue-500 transition-colors">
+                      <ThumbsUp className="h-4 w-4" />
+                      도움됨 {review.likes}
+                    </button>
+                    <button className="flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-gray-900 transition-colors">
+                      <MessageSquare className="h-4 w-4" />
+                      댓글 2
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full">
+                    <ImageIcon className="h-3 w-3" />+{review.images.length}{' '}
+                    Photos
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+
+        {/* Empty State Mockup */}
+        {REVIEWS_DATA.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="bg-gray-100 p-8 rounded-full mb-6">
+              <MessageSquare className="h-12 w-12 text-gray-300" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              작성한 리뷰가 없습니다
+            </h3>
+            <p className="text-gray-500 mb-8 max-w-xs px-4">
+              다녀온 여행지에 대한 소중한 후기를 남겨주세요!
+            </p>
+            <Link
+              href="/mypage/triplogs"
+              className="px-8 py-3.5 bg-purple-600 text-white font-bold rounded-2xl shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all hover:scale-[1.02]"
+            >
+              내 기록 확인하러 가기
+            </Link>
+          </div>
+        )}
+      </main>
     </div>
   )
 }

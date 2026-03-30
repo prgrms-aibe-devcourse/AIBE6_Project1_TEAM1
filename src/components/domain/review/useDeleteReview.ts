@@ -114,7 +114,7 @@ export async function deleteReview(
     title: '리뷰 삭제 성공',
     description: '삭제 완료!',
     onConfirm: () => {
-      router.push('/')
+      router.push('/mypage/reviews')
     },
   })
 }
