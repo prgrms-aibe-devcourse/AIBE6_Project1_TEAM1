@@ -52,28 +52,28 @@ export default function NoticePage() {
   return (
     <div className="min-h-screen bg-white pb-20">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100">
+      <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
         <div className="mx-auto max-max-w-2xl px-4 py-4 flex items-center gap-4">
           <Link 
             href="/mypage" 
-            className="group flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/5 hover:bg-gray-50 transition-colors"
+            className="group flex h-10 w-10 items-center justify-center rounded-xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-black/5 dark:ring-white/10 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
-            <ChevronLeft className="h-6 w-6 text-gray-600 group-hover:text-purple-600 transition-colors" />
+            <ChevronLeft className="h-6 w-6 text-gray-600 dark:text-gray-400 group-hover:text-purple-600 transition-colors" />
           </Link>
-          <h1 className="text-xl font-bold text-gray-900">공지사항</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">공지사항</h1>
         </div>
       </header>
 
       <main className="mx-auto max-w-2xl px-4 pt-8">
         {/* Search Bar */}
         <div className="relative mb-8 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-purple-500 transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 group-focus-within:text-purple-500 transition-colors" />
           <input
             type="text"
             placeholder="공지사항 제목으로 검색해보세요"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-purple-200 outline-none transition-all text-[15px] font-medium placeholder:text-gray-400"
+            className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-900 border border-transparent dark:border-gray-800 rounded-2xl focus:bg-white dark:focus:bg-gray-800 focus:border-purple-200 dark:focus:border-purple-800 outline-none transition-all text-[15px] font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
         </div>
 
@@ -84,30 +84,30 @@ export default function NoticePage() {
               <Link 
                 key={notice.id} 
                 href={`/mypage/notice/${notice.id}`}
-                className="group flex flex-col p-6 rounded-2xl border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all bg-white relative overflow-hidden"
+                className="group flex flex-col p-6 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-purple-200 dark:hover:border-purple-800 hover:shadow-md transition-all bg-white dark:bg-gray-900 relative overflow-hidden"
               >
                 <div className="flex items-start justify-between gap-4 mb-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
-                      notice.tag === "점검" ? "bg-red-50 text-red-600 border border-red-100" :
-                      notice.tag === "이벤트" ? "bg-orange-50 text-orange-600 border border-orange-100" :
-                      notice.tag === "업데이트" ? "bg-blue-50 text-blue-600 border border-blue-100" :
-                      "bg-gray-50 text-gray-600 border border-gray-100"
+                      notice.tag === "점검" ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30" :
+                      notice.tag === "이벤트" ? "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-100 dark:border-orange-900/30" :
+                      notice.tag === "업데이트" ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30" :
+                      "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-gray-700"
                     }`}>
                       {notice.tag}
                     </span>
                     {notice.isNew && (
-                      <span className="flex h-2 w-2 rounded-full bg-purple-600" />
+                      <span className="flex h-2 w-2 rounded-full bg-purple-600 dark:bg-purple-500" />
                     )}
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-purple-500 transition-colors" />
+                  <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-purple-500 dark:group-hover:text-purple-400 transition-colors" />
                 </div>
                 
-                <h2 className="text-[16px] font-bold text-gray-900 leading-snug group-hover:text-purple-700 transition-colors mb-3">
+                <h2 className="text-[16px] font-bold text-gray-900 dark:text-gray-100 leading-snug group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors mb-3">
                   {notice.title}
                 </h2>
                 
-                <span className="text-[13px] text-gray-400 font-medium">
+                <span className="text-[13px] text-gray-400 dark:text-gray-500 font-medium">
                   {notice.date}
                 </span>
                 

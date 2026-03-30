@@ -2,7 +2,7 @@
 
 import { useModalStore } from "@/store/useModalStore";
 import { createClient } from "@/utils/supabase/client";
-import { ChevronLeft, ChevronRight, Globe, Info, LogOut, Moon, Shield, Trash2, User } from "lucide-react";
+import { ChevronLeft, ChevronRight, Globe, Info, Moon, Shield, Trash2, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -228,11 +228,6 @@ export default function SettingsPage() {
         {/* More Section */}
         <SectionTitle>기타</SectionTitle>
         <div className="flex flex-col">
-          <SettingItem
-            icon={LogOut}
-            title="로그아웃"
-            onClick={() => supabase.auth.signOut().then(() => router.push("/"))}
-          />
           <SettingItem
             icon={Trash2}
             title="계정 탈퇴"

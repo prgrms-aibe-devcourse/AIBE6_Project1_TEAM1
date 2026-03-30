@@ -29,7 +29,7 @@ export default function ProfileHeader({ nickname, avatar_url, triplogCount = 0 }
         )}
       </div>
       <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">{displayNickname}</h2>
-      <p className="text-[13px] font-medium text-gray-500">{getProfileTitle(triplogCount)}</p>
+      <p className="text-[13px] font-medium text-gray-500 dark:text-gray-400">{getProfileTitle(triplogCount)}</p>
     </Link>
   );
 }
