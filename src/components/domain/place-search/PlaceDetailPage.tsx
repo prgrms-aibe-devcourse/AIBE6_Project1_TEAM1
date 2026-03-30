@@ -606,19 +606,24 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
         if (user) {
           const userId = user.id
 
-          // 여행을 완료했는지 확인
+          // 여행 완료 여부 확인 (userId + tripId 기준)
           const { data: travelerData, error: travelerError } = await supabase
             .from('travelers')
             .select('status')
             .eq('user_id', userId)
+            .eq('trip_id', tripId)
             .maybeSingle() // 하나만 가져오기
+
           if (travelerError) {
             console.error(
               '[fetchTripDetail] travelers query error:',
               travelerError,
             )
-          } else if (travelerData?.status === 'completed') {
-            setIsCompleted(true)
+            // 에러 발생 시 완료 여부를 false로 초기화
+            setIsCompleted(false)
+          } else {
+            // travelerData가 없거나 status가 'completed'가 아니면 false
+            setIsCompleted(travelerData?.status === 'completed')
           }
 
           // ✅ 로그인한 유저의 리뷰 존재 확인
