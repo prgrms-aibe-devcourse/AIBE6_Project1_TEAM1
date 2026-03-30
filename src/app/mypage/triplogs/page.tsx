@@ -147,7 +147,6 @@ export default function TriplogsPage() {
               .from('travelers')
               .update({ 
                 status: 'ongoing',
-                has_visited: false
               })
               .eq('id', traveler.id);
  
