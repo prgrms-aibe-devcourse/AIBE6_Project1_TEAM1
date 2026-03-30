@@ -5,9 +5,8 @@ import { createClient } from '@/utils/supabase/client';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, Filter, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-const FILTERS = ['All', 'Forest', 'City', 'Coast'];
 
 interface SavedCourse {
   id: string;
@@ -25,7 +24,7 @@ interface SavedCourse {
 export default function BookmarksPage() {
   const [courses, setCourses] = useState<SavedCourse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [sortBy, setSortBy] = useState<'latest' | 'oldest'>('latest');
   const supabase = createClient();
 
   useEffect(() => {
@@ -38,45 +37,56 @@ export default function BookmarksPage() {
         const userId = session.user.id;
 
         /**
-         * 1. 'bookmark' 테이블에서 현재 사용자가 저장한 trip_id 목록을 가져옵니다.
-         * 이때 'trips' 테이블을 조인(Join)하여 여행 정보를 한꺼번에 가져옵니다.
+         * 1. 'bookmark' 테이블에서 현재 사용자가 저장한 trips_id 목록을 가져옵니다.
          */
         const { data: bookmarkData, error: bookmarkError } = await supabase
           .from('bookmark')
-          .select(`
-            trip_id,
-            trips (
-              *
-            )
-          `)
-          .eq('user_id', userId);
+          .select('trips_id')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: sortBy === 'oldest' });
 
-        if (bookmarkError) throw bookmarkError;
+        if (bookmarkError) {
+          console.error('Bookmark Table Fetch Error:', bookmarkError);
+          throw bookmarkError;
+        }
 
         if (!bookmarkData || bookmarkData.length === 0) {
           setCourses([]);
           return;
         }
 
-        // 조인된 데이터에서 trips 정보만 추출합니다.
-        const tripsData = bookmarkData
-          .map((b: any) => b.trips)
-          .filter(t => t !== null) as any[];
-
-        const tripIds = tripsData.map(t => t.id);
+        const tripsIds = bookmarkData.map(b => b.trips_id);
 
         /**
-         * 2. 각 여행지에 대한 리뷰 정보를 가져와 평균 평점을 계산합니다.
+         * 2. 'trips' 테이블에서 해당 ID들에 해당하는 여행 정보를 가져옵니다.
+         */
+        const { data: tripsData, error: tripsError } = await supabase
+          .from('trips')
+          .select('*')
+          .in('id', tripsIds);
+
+        if (tripsError) {
+          console.error('Trips Table Fetch Error:', tripsError);
+          throw tripsError;
+        }
+
+        if (!tripsData || tripsData.length === 0) {
+          setCourses([]);
+          return;
+        }
+
+        /**
+         * 3. 각 여행지에 대한 리뷰 정보를 가져와 평균 평점을 계산합니다.
          */
         const { data: reviewsData, error: reviewsError } = await supabase
           .from('reviews')
           .select('trip_id, rating')
-          .in('trip_id', tripIds);
+          .in('trip_id', tripsIds);
 
         if (reviewsError) throw reviewsError;
 
         /**
-         * 3. UI에 표시할 형식으로 데이터를 변환합니다.
+         * 4. UI에 표시할 형식으로 데이터를 변환합니다.
          */
         const transformed: SavedCourse[] = tripsData.map(trip => {
           const tripReviews = reviewsData?.filter(rev => rev.trip_id === trip.id) || [];
@@ -89,7 +99,6 @@ export default function BookmarksPage() {
           const mins = totalMinutes % 60;
           const timeStr = hours > 0 ? `${hours}시간 ${mins > 0 ? `${mins}분` : ''}` : `${mins}분`;
 
-          // 태그 문자열을 배열로 변환
           const tagsArray = trip.tags ? trip.tags.split(/[#\s]+/).filter(Boolean) : [];
 
           return {
@@ -115,7 +124,7 @@ export default function BookmarksPage() {
     };
 
     fetchBookmarks();
-  }, [supabase]);
+  }, [supabase, sortBy]);
 
   const handleToggleBookmark = async (tripId: string) => {
     try {
@@ -127,7 +136,7 @@ export default function BookmarksPage() {
         .from('bookmark')
         .delete()
         .eq('user_id', session.user.id)
-        .eq('trip_id', tripId);
+        .eq('trips_id', tripId);
 
       if (error) throw error;
 
@@ -138,10 +147,6 @@ export default function BookmarksPage() {
     }
   };
 
-  const filteredCourses = useMemo(() => {
-    if (activeFilter === 'All') return courses;
-    return courses.filter(course => course.category === activeFilter);
-  }, [courses, activeFilter]);
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20">
@@ -167,29 +172,19 @@ export default function BookmarksPage() {
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8">
         {/* Filter Section */}
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-8">
-          <div className="flex flex-wrap gap-2">
-            {FILTERS.map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setActiveFilter(filter)}
-                className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
-                  activeFilter === filter
-                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-200'
-                    : 'bg-white text-gray-500 ring-1 ring-black/5 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                {filter === 'All' ? '전체' : 
-                 filter === 'Forest' ? '숲' : 
-                 filter === 'City' ? '도심' : '해안'}
-              </button>
-            ))}
+        <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <span className="h-6 w-1 rounded-full bg-purple-500" />
+            <h2 className="text-xl font-bold text-gray-900">저장된 코스</h2>
           </div>
           
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-400">
-            <Filter className="h-4 w-4" />
-            <span>최신순</span>
-          </div>
+          <button 
+            onClick={() => setSortBy(prev => prev === 'latest' ? 'oldest' : 'latest')}
+            className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-purple-600 transition-colors group px-2 py-1 rounded-lg hover:bg-purple-50"
+          >
+            <Filter className={`h-4 w-4 transition-transform ${sortBy === 'oldest' ? 'rotate-180' : ''}`} />
+            <span>{sortBy === 'latest' ? '최신순' : '오래된순'}</span>
+          </button>
         </div>
 
         {/* Grid Layout */}
@@ -201,7 +196,7 @@ export default function BookmarksPage() {
              </div>
           ) : (
             <AnimatePresence mode='popLayout'>
-              {filteredCourses.map((course, index) => (
+              {courses.map((course, index) => (
                 <motion.div
                   key={course.id}
                   layout
@@ -241,7 +236,7 @@ export default function BookmarksPage() {
         </div>
         
         {/* Empty State */}
-        {!loading && filteredCourses.length === 0 && (
+        {!loading && courses.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="mb-4 rounded-full bg-gray-100 p-6">
               <Filter className="h-10 w-10 text-gray-300" />
