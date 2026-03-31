@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
       'lh3.googleusercontent.com',
       'k.kakaocdn.net',
       't1.daumcdn.net',
+      'img1.kakaocdn.net',
     ],
   },
 }
