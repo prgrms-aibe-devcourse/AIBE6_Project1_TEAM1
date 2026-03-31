@@ -369,22 +369,22 @@ function normalizeEnvValue(
   const normalized = value.trim()
 
   if (key === 'slope') {
-    if (normalized === '평지') return 90
-    if (normalized === '보통') return 60
-    if (normalized === '가파름') return 30
+    if (normalized === '평지') return 0
+    if (normalized === '보통') return 50
+    if (normalized === '가파름') return 100
     return null
   }
 
   if (key === 'stairs') {
-    if (normalized === '없음') return 90
-    if (normalized === '있음') return 30
+    if (normalized === '없음') return 0
+    if (normalized === '있음') return 100
     return null
   }
 
   if (key === 'shade') {
-    if (normalized === '많음') return 90
-    if (normalized === '보통') return 60
-    if (normalized === '적음') return 30
+    if (normalized === '많음') return 100
+    if (normalized === '보통') return 50
+    if (normalized === '적음') return 0
     return null
   }
 
@@ -423,8 +423,12 @@ function buildEnvStatFromRoutes(
     shade?: string | null
   }>,
 ): EnvStatBarProps {
-  const values = routes
-    .map((route) => normalizeEnvValue(key, route[key]))
+  const rawValues = routes
+    .map((route) => route[key]?.trim())
+    .filter((value): value is string => Boolean(value))
+
+  const values = rawValues
+    .map((value) => normalizeEnvValue(key, value))
     .filter((value): value is number => value !== null)
 
   const minMap: Record<EnvMetricKey, string> = {
@@ -449,14 +453,29 @@ function buildEnvStatFromRoutes(
     }
   }
 
-  const average = Math.round(
+  const averageValue = Math.round(
     values.reduce((sum, value) => sum + value, 0) / values.length,
   )
 
+  const countMap = new Map<string, number>()
+  rawValues.forEach((value) => {
+    countMap.set(value, (countMap.get(value) ?? 0) + 1)
+  })
+
+  let mostFrequent = rawValues[0]
+  let maxCount = 0
+
+  countMap.forEach((count, value) => {
+    if (count > maxCount) {
+      maxCount = count
+      mostFrequent = value
+    }
+  })
+
   return {
     label,
-    value: average,
-    level: getEnvLevelFromAverage(key, average),
+    value: averageValue,
+    level: mostFrequent,
     min: minMap[key],
     max: maxMap[key],
   }
@@ -472,26 +491,29 @@ const SummaryCard = ({ icon: Icon, label, value }: SummaryCardProps) => (
 
 const EnvStatBar = ({ label, value, level, min, max }: EnvStatBarProps) => (
   <div className="space-y-2">
-    <div className="flex items-end justify-between">
-      <span className="flex items-center gap-1 text-sm font-bold text-gray-900">
-        {label === '경사도' && <Route className="h-3.5 w-3.5 rotate-45" />}
-        {label === '계단' && (
-          <ChevronRight className="h-3.5 w-3.5 rotate-[-90deg]" />
-        )}
-        {label === '그늘' && <Flame className="h-3.5 w-3.5" />}
-        {label}
+    <div className="flex items-center gap-1 text-sm font-bold text-gray-900">
+      {label === '경사도' && <Route className="h-3.5 w-3.5 rotate-45" />}
+      {label === '계단' && (
+        <ChevronRight className="h-3.5 w-3.5 rotate-[-90deg]" />
+      )}
+      {label === '그늘' && <Flame className="h-3.5 w-3.5" />}
+      {label}
+    </div>
+
+    <div className="relative pt-9">
+      <span className="absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap text-lg font-bold text-gray-900">
+        {level === '정보 없음' ? level : `${level}`}
       </span>
-      <span className="text-sm font-bold text-gray-900">{level}</span>
+
+      <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-gray-100">
+        <div
+          className="absolute left-0 top-0 h-full rounded-full bg-black transition-all duration-1000"
+          style={{ width: `${value}%` }}
+        />
+      </div>
     </div>
 
-    <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-gray-100">
-      <div
-        className="absolute left-0 top-0 h-full rounded-full bg-black transition-all duration-1000"
-        style={{ width: `${value}%` }}
-      />
-    </div>
-
-    <div className="flex justify-between text-[10px] text-gray-400">
+    <div className="flex justify-between text-xs text-gray-500">
       <span>{min}</span>
       <span>{max}</span>
     </div>
