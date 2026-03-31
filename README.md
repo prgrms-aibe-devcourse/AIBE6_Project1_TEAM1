@@ -149,11 +149,12 @@ src/
 
 
 ```mermaid
-Home --> Planner
-Home --> Search
-Search --> Detail
-Detail --> Review
-Home --> MyPage
+graph TD
+    Home --> Planner
+    Home --> Search
+    Search --> Detail
+    Detail --> Review
+    Home --> MyPage
 ```
 
 ---
