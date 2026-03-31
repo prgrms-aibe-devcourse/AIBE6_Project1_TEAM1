@@ -33,6 +33,10 @@ export interface TravelCardProps {
 
   // 5. 추가 정보
   tags?: string[];        // 예: ["가족여행", "힐링", "바다"]
+  author?: {              // 작성자 정보 추가
+    nickname: string;
+    avatarUrl?: string | null;
+  };
 
   // 6. UI 제어
   variant?: 'vertical' | 'horizontal';
@@ -52,6 +56,7 @@ export default function TravelCard({
   rating,
   reviewCount,
   tags,
+  author,
   variant = 'vertical',
   isKept,
   onKeep,
@@ -88,6 +93,47 @@ export default function TravelCard({
         onClick ? 'cursor-pointer' : ''
       } ${isHorizontal ? 'flex h-48 w-full' : 'flex flex-col'}`}
     >
+      {/* 0. 프리미엄 인스타그램 스타일 헤더 (작성자 정보) */}
+      {author && (
+        <div className="flex items-center gap-2.5 px-4 py-3.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-gray-50 dark:border-gray-800/30">
+          <div className="flex items-center gap-3 active:scale-95 transition-transform">
+            {/* 그라데이션 아바타 링 */}
+            <div className="relative p-[1.5px] rounded-full bg-gradient-to-tr from-[#6c3cff] via-[#8b5cf6] to-[#0ea5e9] shadow-sm">
+              <div className="relative h-7 w-7 overflow-hidden rounded-full bg-white dark:bg-gray-900 ring-2 ring-transparent">
+                {author.avatarUrl ? (
+                  <Image
+                    src={author.avatarUrl}
+                    alt={author.nickname}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-50/50 to-purple-50/50 dark:from-indigo-900/20 dark:to-purple-900/20">
+                    <span className="text-[10px] font-black text-[#6c3cff] dark:text-[#a78bfa] uppercase">
+                      {author.nickname.charAt(0)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-extrabold tracking-tight text-gray-900 dark:text-gray-50">
+                  {author.nickname}
+                </span>
+                {/* 미세 뱃지 */}
+                <div className="h-3 w-3 rounded-full bg-blue-500 flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="h-1.5 w-1.5 fill-current text-white" stroke="currentColor" strokeWidth="4">
+                    <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 1. 이미지 및 오버레이 레이어 */}
       <div
         className={`relative overflow-hidden ${

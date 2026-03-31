@@ -240,7 +240,51 @@ export default function PlaceCard({
         onKeyDown={handleCardKeyDown}
         className="block w-full cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-[#6c3cff] focus:ring-offset-2"
       >
-        <div className="relative aspect-[16/11] w-full overflow-hidden rounded-t-[28px] group-hover:opacity-90 transition-opacity bg-gradient-to-br from-sky-200 via-emerald-100 to-blue-200">
+        {/* 프리미엄 인스타그램 스타일 헤더 (고도화됨) */}
+        {trip.author && (
+          <div className="flex items-center justify-between px-5 py-4 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-gray-50 dark:border-gray-800/30">
+            <div className="flex items-center gap-3.5 group/profile">
+              {/* 그라데이션 아바타 링 */}
+              <div className="relative p-[2px] rounded-full bg-gradient-to-tr from-[#6c3cff] via-[#8b5cf6] to-[#0ea5e9] shadow-sm transition-transform duration-300 group-hover/profile:scale-105">
+                <div className="relative h-9 w-9 overflow-hidden rounded-full bg-white dark:bg-gray-900 ring-2 ring-transparent">
+                  {trip.author.avatarUrl ? (
+                    <Image
+                      src={trip.author.avatarUrl}
+                      alt={trip.author.nickname}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-50/50 to-purple-50/50 dark:from-indigo-900/20 dark:to-purple-900/20">
+                      <span className="text-xs font-black text-[#6c3cff] dark:text-[#a78bfa] uppercase">
+                        {trip.author.nickname.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-extrabold tracking-tight text-gray-900 dark:text-gray-50">
+                    {trip.author.nickname}
+                  </span>
+                  {/* 신뢰도 뱃지 */}
+                  <div className="h-3.5 w-3.5 rounded-full bg-blue-500 flex items-center justify-center shadow-sm">
+                    <svg viewBox="0 0 24 24" className="h-2 w-2 fill-current text-white" stroke="currentColor" strokeWidth="4">
+                      <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600/80 dark:text-purple-400/80">
+                  Certified Planner
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="relative aspect-[16/11] w-full overflow-hidden rounded-none group-hover:opacity-100 transition-all duration-700 bg-gradient-to-br from-indigo-100 via-white to-sky-100 dark:from-gray-800 dark:to-gray-900">
           {trip.img_url && !imgError ? (
             <Image
               unoptimized

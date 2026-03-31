@@ -32,6 +32,10 @@ interface TripLog {
   }
   tags?: string[]
   reviewId?: string
+  author?: {
+    nickname: string
+    avatarUrl?: string | null
+  }
 }
 
 export default function TriplogsPage() {
@@ -56,7 +60,7 @@ export default function TriplogsPage() {
         // 1. trips 테이블에서 시작하며 travelers가 'completed'인 데이터만 조인해서 가져오기
         const { data: rawTrips, error: tripsError } = await supabase
           .from('trips')
-          .select('*, travelers!inner(*)')
+          .select('*, travelers!inner(*), profiles(*)')
           .eq('travelers.user_id', userId)
           .eq('travelers.status', 'completed')
           .order('start_date', { ascending: false })
@@ -120,6 +124,10 @@ export default function TriplogsPage() {
             },
             tags: [],
             reviewId: reviewMap.get(trip.id),
+            author: trip.profiles ? {
+              nickname: trip.profiles.nickname,
+              avatarUrl: trip.profiles.avatar_url
+            } : undefined
           }
         })
 
@@ -313,6 +321,7 @@ export default function TriplogsPage() {
                         avgStats={trip.avgStats}
                         isKept={true}
                         tags={trip.tags}
+                        author={trip.author}
                       />
                       {/* 삭제 버튼 오버레이 */}
                       <button
