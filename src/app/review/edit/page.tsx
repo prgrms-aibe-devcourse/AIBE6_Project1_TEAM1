@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 
 import EditMediaUploader from '@/components/domain/review/EditMediaUploader'
 import RatingSelector from '@/components/domain/review/RatingSelector'
@@ -13,8 +13,8 @@ type Route = { from: number; to: number; transport: string }
 type RouteOption = { slope: string; stairs: string; shade: string }
 type MediaItem = { id?: number; url: string; path: string; isNew?: boolean }
 
-export default function ReviewEditPage() {
-  const supabase = createClient()
+function ReviewEditContent() {
+  const supabase = useMemo(() => createClient(), [])
   const router = useRouter()
   const searchParams = useSearchParams()
   const reviewId = Number(searchParams.get('reviewId'))
@@ -45,7 +45,7 @@ export default function ReviewEditPage() {
       setUserId(data?.user?.id ?? null)
     }
     getUser()
-  }, [])
+  }, [supabase])
 
   // --- Fetch review ---
   useEffect(() => {
@@ -132,7 +132,7 @@ export default function ReviewEditPage() {
     }
 
     fetchReview()
-  }, [reviewId])
+  }, [reviewId, supabase, openModal, router])
 
   // --- Fetch trip info ---
   useEffect(() => {
@@ -156,7 +156,7 @@ export default function ReviewEditPage() {
     }
 
     fetchTrip()
-  }, [tripId])
+  }, [tripId, supabase])
 
   // --- Fetch place map ---
   useEffect(() => {
@@ -180,7 +180,7 @@ export default function ReviewEditPage() {
     }
 
     fetchPlaces()
-  }, [routes])
+  }, [routes, supabase])
 
   // --- Submit handler ---
   const handleSubmit = async () => {
@@ -387,5 +387,13 @@ export default function ReviewEditPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ReviewEditPage() {
+  return (
+    <Suspense fallback={null}>
+      <ReviewEditContent />
+    </Suspense>
   )
 }

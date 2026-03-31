@@ -3,11 +3,10 @@
 import TraceMap from '@/components/domain/review/Tracemap'
 import { createClient } from '@/utils/supabase/client'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 
-const supabase = createClient()
-
-export default function TracemapPage() {
+function TracemapContent() {
+  const supabase = useMemo(() => createClient(), [])
   const [userId, setUserId] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const tripIdsParam = searchParams.get('tripIds') || ''
@@ -21,7 +20,7 @@ export default function TracemapPage() {
       setUserId(user?.id ?? null)
     }
     getUser()
-  }, [])
+  }, [supabase])
 
   return (
     <>
@@ -37,5 +36,13 @@ export default function TracemapPage() {
         )}
       </div>
     </>
+  )
+}
+
+export default function TracemapPage() {
+  return (
+    <Suspense fallback={null}>
+      <TracemapContent />
+    </Suspense>
   )
 }

@@ -125,6 +125,8 @@ interface TimelineItemProps {
   isLast: boolean
 }
 
+type EnvMetricKey = 'slope' | 'stairs' | 'shade'
+
 function formatDistance(value?: number | null) {
   if (value == null) return '-'
   return `${value.toLocaleString()}km`
@@ -155,10 +157,12 @@ function getTripDurationDays(
   startDate?: string | null,
   endDate?: string | null,
 ) {
-  if (!startDate || !endDate) return null
+  if (!startDate) return null
+
+  const normalizedEndDate = endDate ?? startDate
 
   const start = new Date(`${startDate}T00:00:00`)
-  const end = new Date(`${endDate}T00:00:00`)
+  const end = new Date(`${normalizedEndDate}T00:00:00`)
 
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return null
@@ -323,20 +327,139 @@ function getRouteLabel(route: ReviewRoute) {
 
 function normalizeSlopeLabel(value?: string | null) {
   if (!value) return '정보 없음'
-  if (value === '낮음') return '완만'
-  if (value === '높음') return '급경사'
+
+  const normalized = value.trim()
+
+  if (normalized === '평지') return '평지'
+  if (normalized === '보통') return '보통'
+  if (normalized === '가파름') return '가파름'
+
   return value
 }
 
 function normalizeStairsLabel(value?: string | null) {
   if (!value) return '정보 없음'
-  if (value === '적음') return '약간'
+
+  const normalized = value.trim()
+
+  if (normalized === '없음') return '없음'
+  if (normalized === '있음') return '있음'
+
   return value
 }
 
 function normalizeShadeLabel(value?: string | null) {
   if (!value) return '정보 없음'
+
+  const normalized = value.trim()
+
+  if (normalized === '적음') return '적음'
+  if (normalized === '보통') return '보통'
+  if (normalized === '많음') return '많음'
+
   return value
+}
+
+function normalizeEnvValue(
+  key: EnvMetricKey,
+  value?: string | null,
+): number | null {
+  if (!value) return null
+
+  const normalized = value.trim()
+
+  if (key === 'slope') {
+    if (normalized === '평지') return 90
+    if (normalized === '보통') return 60
+    if (normalized === '가파름') return 30
+    return null
+  }
+
+  if (key === 'stairs') {
+    if (normalized === '없음') return 90
+    if (normalized === '있음') return 30
+    return null
+  }
+
+  if (key === 'shade') {
+    if (normalized === '많음') return 90
+    if (normalized === '보통') return 60
+    if (normalized === '적음') return 30
+    return null
+  }
+
+  return null
+}
+
+function getEnvLevelFromAverage(key: EnvMetricKey, avg: number | null): string {
+  if (avg === null) return '정보 없음'
+
+  if (key === 'slope') {
+    if (avg >= 75) return '평지'
+    if (avg >= 45) return '보통'
+    return '가파름'
+  }
+
+  if (key === 'stairs') {
+    if (avg >= 60) return '없음'
+    return '있음'
+  }
+
+  if (key === 'shade') {
+    if (avg >= 75) return '많음'
+    if (avg >= 45) return '보통'
+    return '적음'
+  }
+
+  return '정보 없음'
+}
+
+function buildEnvStatFromRoutes(
+  key: EnvMetricKey,
+  label: string,
+  routes: Array<{
+    slope?: string | null
+    stairs?: string | null
+    shade?: string | null
+  }>,
+): EnvStatBarProps {
+  const values = routes
+    .map((route) => normalizeEnvValue(key, route[key]))
+    .filter((value): value is number => value !== null)
+
+  const minMap: Record<EnvMetricKey, string> = {
+    slope: '평지',
+    stairs: '없음',
+    shade: '적음',
+  }
+
+  const maxMap: Record<EnvMetricKey, string> = {
+    slope: '가파름',
+    stairs: '있음',
+    shade: '많음',
+  }
+
+  if (values.length === 0) {
+    return {
+      label,
+      value: 40,
+      level: '정보 없음',
+      min: minMap[key],
+      max: maxMap[key],
+    }
+  }
+
+  const average = Math.round(
+    values.reduce((sum, value) => sum + value, 0) / values.length,
+  )
+
+  return {
+    label,
+    value: average,
+    level: getEnvLevelFromAverage(key, average),
+    min: minMap[key],
+    max: maxMap[key],
+  }
 }
 
 const SummaryCard = ({ icon: Icon, label, value }: SummaryCardProps) => (
@@ -454,13 +577,13 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-  const [userReviewId, setUserReviewId] = useState<string | null>(null)
+  const [userReviewId, setUserReviewId] = useState<number | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [sortOrder, setSortOrder] = useState<'latest' | 'rating' | 'photo'>(
     'latest',
   )
-  const [visibleReviewsCount, setVisibleReviewsCount] = useState(3) // 초기 3개만 보여주기
+  const [visibleReviewsCount, setVisibleReviewsCount] = useState(3)
   const [isCompleted, setIsCompleted] = useState(false)
 
   const supabase = createClient()
@@ -487,7 +610,6 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
         setIsLoading(true)
         setErrorMessage('')
 
-        // 유저 정보 가져오기
         const {
           data: { session },
         } = await supabase.auth.getSession()
@@ -495,7 +617,6 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
         if (isMounted) setUserId(currentUserId)
 
         if (currentUserId) {
-          // 북마크 여부 확인
           const { data: bookmarkData } = await supabase
             .from('bookmark')
             .select('id')
@@ -604,34 +725,31 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
         } = await supabase.auth.getUser()
 
         if (user) {
-          const userId = user.id
+          const currentUserId = user.id
 
-          // 여행 완료 여부 확인 (userId + tripId 기준)
           const { data: travelerData, error: travelerError } = await supabase
             .from('travelers')
             .select('status')
-            .eq('user_id', userId)
+            .eq('user_id', currentUserId)
             .eq('trip_id', tripId)
-            .maybeSingle() // 하나만 가져오기
+            .maybeSingle()
 
           if (travelerError) {
             console.error(
               '[fetchTripDetail] travelers query error:',
               travelerError,
             )
-            // 에러 발생 시 완료 여부를 false로 초기화
             setIsCompleted(false)
           } else {
-            // travelerData가 없거나 status가 'completed'가 아니면 false
             setIsCompleted(travelerData?.status === 'completed')
           }
 
-          // ✅ 로그인한 유저의 리뷰 존재 확인
           const myReview = (reviewRows ?? []).find(
-            (review) => review.user_id === userId,
+            (review) => review.user_id === currentUserId,
           )
+
           if (myReview) {
-            setUserReviewId(myReview.id)
+            setUserReviewId(Number(myReview.id))
           } else {
             setUserReviewId(null)
           }
@@ -639,7 +757,6 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
 
         if (!isMounted) return
 
-        // 각 리뷰에 첨부된 이미지들 url 처리
         const processedReviews: TripReview[] = (reviewRows ?? []).map(
           (review) => {
             const imageUrls: string[] =
@@ -650,12 +767,12 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                 : []
 
             return {
-              id: Number(review.id), // number 타입으로 강제
+              id: Number(review.id),
               user_id: review.user_id ?? null,
               rating: review.rating ?? null,
               content: review.content ?? null,
               created_at: review.created_at ?? null,
-              trip_id: Number(review.trip_id), // number 타입으로 강제
+              trip_id: Number(review.trip_id),
               images: imageUrls,
             }
           },
@@ -668,7 +785,6 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
             'id, trip_id, start, end, slope, stairs, shade, user_id, transport_type, review_id, order',
           )
           .eq('trip_id', tripId)
-          .eq('transport_type', 'walk')
           .order('order', { ascending: true })
 
         if (routesError) {
@@ -778,18 +894,15 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
 
     switch (sortOrder) {
       case 'rating':
-        // 평점 높은 순
         return [...reviews].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
 
       case 'photo':
-        // 사진이 많은 순 (여기서는 review.images 배열이 있다고 가정)
         return [...reviews].sort(
           (a, b) => (b.images?.length ?? 0) - (a.images?.length ?? 0),
         )
 
       case 'latest':
       default:
-        // 최신순 (created_at 내림차순)
         return [...reviews].sort((a, b) => {
           const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
           const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
@@ -797,6 +910,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
         })
     }
   }, [reviews, sortOrder])
+
   const visibleReviews = sortedReviews.slice(0, visibleReviewsCount)
 
   const handleSaveToMyTrips = async () => {
@@ -812,13 +926,12 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
         return
       }
 
-      const userId = user.id
+      const currentUserId = user.id
 
-      // 1. 새로운 여행 기록 생성 (기존 메타데이터 복사)
       const { data: newTrip, error: tripError } = await supabase
         .from('trips')
         .insert({
-          user_id: userId,
+          user_id: currentUserId,
           title: trip.title,
           start_date: trip.start_date,
           end_date: trip.end_date,
@@ -833,7 +946,6 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
 
       if (tripError || !newTrip) throw tripError
 
-      // 2. 기존 여행 아이템들 복사
       const itemsToInsert = detailItems.map((item) => ({
         trip_id: newTrip.id,
         place_id: item.place_id,
@@ -866,7 +978,6 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
     }
 
     if (isBookmarked) {
-      // 북마크 삭제
       const { error } = await supabase
         .from('bookmark')
         .delete()
@@ -877,7 +988,6 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
         setIsBookmarked(false)
       }
     } else {
-      // 북마크 추가
       const { error } = await supabase
         .from('bookmark')
         .insert({ user_id: userId, trips_id: tripId })
@@ -927,29 +1037,20 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
     saveCount: formatSaveCount(trip.is_saved),
   }
 
+  const walkRoutesForEnv = reviewRoutes ?? []
+
   const envStats: EnvStatBarProps[] = [
-    {
-      label: '경사도',
-      value: 40,
-      level: '정보 없음',
-      min: '평지',
-      max: '급경사',
-    },
-    {
-      label: '계단',
-      value: 40,
-      level: '정보 없음',
-      min: '없음',
-      max: '매우 많음',
-    },
-    {
-      label: '그늘',
-      value: 40,
-      level: '정보 없음',
-      min: '없음',
-      max: '충분함',
-    },
+    buildEnvStatFromRoutes('slope', '경사도', walkRoutesForEnv),
+    buildEnvStatFromRoutes('stairs', '계단', walkRoutesForEnv),
+    buildEnvStatFromRoutes('shade', '그늘', walkRoutesForEnv),
   ]
+
+  const hasEnvData = walkRoutesForEnv.some(
+    (route) =>
+      normalizeEnvValue('slope', route.slope) !== null ||
+      normalizeEnvValue('stairs', route.stairs) !== null ||
+      normalizeEnvValue('shade', route.shade) !== null,
+  )
 
   const validRatings = reviews
     .map((review) => review.rating)
@@ -1011,7 +1112,6 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                 )}
               </div>
 
-              {/* 이미지 위 글씨 가독성을 위한 그라데이션 오버레이 복원 */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 pointer-events-none" />
 
               <div className="absolute bottom-6 left-8 space-y-2 text-white z-10">
@@ -1123,7 +1223,9 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                   보행 환경 분석
                 </h2>
                 <p className="text-xs text-gray-400">
-                  아직 분석 데이터가 없습니다.
+                  {hasEnvData
+                    ? '리뷰의 구간별 보행 환경 평가 평균값을 반영했어요.'
+                    : '아직 분석 데이터가 없습니다.'}
                 </p>
               </div>
 
@@ -1243,6 +1345,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                 사진순
               </button>
             </div>
+
             <div className="space-y-6">
               {visibleReviews.length > 0 ? (
                 visibleReviews.map((review) => {
@@ -1313,7 +1416,6 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                               alt={`review-${review.id}-img-${index}`}
                               className="h-full w-full object-cover"
                             />
-                            {/* 4번째 이미지일 때 추가 이미지 수 표시 */}
                             {index === 3 && review.images.length > 4 && (
                               <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-xl font-bold text-white">
                                 +{review.images.length - 4}
@@ -1322,7 +1424,6 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
                           </div>
                         ))}
 
-                        {/* 이미지가 0개일 경우 */}
                         {review.images.length === 0 &&
                           Array.from({ length: 4 }).map((_, index) => (
                             <div
@@ -1420,8 +1521,8 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
               <button
                 type="button"
                 className="flex w-full items-center justify-center gap-1 rounded-xl border border-gray-100 bg-white py-3 text-xs font-bold text-gray-500 transition-colors hover:bg-gray-50"
-                onClick={() => setVisibleReviewsCount((prev) => prev + 3)} // 3개씩 추가
-                disabled={visibleReviewsCount >= sortedReviews.length} // 더 이상 없으면 비활성화
+                onClick={() => setVisibleReviewsCount((prev) => prev + 3)}
+                disabled={visibleReviewsCount >= sortedReviews.length}
               >
                 리뷰 더보기 <ChevronDown className="h-4 w-4" />
               </button>

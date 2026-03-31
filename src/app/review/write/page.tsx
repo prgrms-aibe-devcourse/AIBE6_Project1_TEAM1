@@ -7,7 +7,7 @@ import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 
 type Route = {
   from: number
@@ -21,7 +21,7 @@ type RouteOption = {
   shade: string
 }
 
-export default function ReviewWritePage() {
+function ReviewWriteContent() {
   const [rating, setRating] = useState(0)
   const [content, setContent] = useState('')
   const [images, setImages] = useState<{ url: string; path: string }[]>([])
@@ -34,7 +34,7 @@ export default function ReviewWritePage() {
   const [routeOptions, setRouteOptions] = useState<RouteOption[]>([])
   const [placeMap, setPlaceMap] = useState<Record<number, string>>({})
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const router = useRouter()
   const { openModal } = useModalStore()
   const searchParams = useSearchParams()
@@ -49,7 +49,7 @@ export default function ReviewWritePage() {
       setUserId(user?.id ?? null)
     }
     getUser()
-  }, [])
+  }, [supabase])
 
   /** 여행 정보 가져오기 */
   useEffect(() => {
@@ -80,7 +80,7 @@ export default function ReviewWritePage() {
       setLoading(false)
     }
     if (tripId) getTripData()
-  }, [tripId])
+  }, [tripId, supabase, openModal, router])
 
   /** 경로 가져오기 */
   const getRoutesFromTrip = async (tripId: number): Promise<Route[]> => {
@@ -130,7 +130,7 @@ export default function ReviewWritePage() {
       setPlaceMap(map)
     }
     if (routes.length > 0) fetchPlaces()
-  }, [routes])
+  }, [routes, supabase])
 
   /** 리뷰 등록 함수 */
   const handleSubmit = async () => {
@@ -339,5 +339,13 @@ export default function ReviewWritePage() {
         </button>
       </div>
     </div>
+  )
+}
+
+export default function ReviewWritePage() {
+  return (
+    <Suspense fallback={null}>
+      <ReviewWriteContent />
+    </Suspense>
   )
 }

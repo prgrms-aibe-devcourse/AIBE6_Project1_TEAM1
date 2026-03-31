@@ -7,10 +7,15 @@ export async function createClient() {
   // Next.js의 기능을 이용해 사용자의 브라우저 쿠키 저장소에 접근합니다.
   const cookieStore = await cookies();
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    // 빌드 시점에 환경 변수가 없을 경우 에러가 나지 않도록 처리합니다.
+    return createServerClient("", "", { cookies: { getAll: () => [], setAll: () => {} } });
+  }
+
+  return createServerClient(url, key, {
       cookies: {
         // 1. 쿠키 전부 가져오기 (이 쿠키를 보고 로그인 여부를 판단합니다)
         getAll() {
@@ -35,10 +40,14 @@ export async function createClient() {
 // 어드민 전용 고유 키(Service Role Key)를 사용하여, 보안 제약을 넘어서는 작업을 할 때 사용합니다.
 // 예: 회원 탈퇴 시 auth.users에서 사용자 직접 삭제
 export async function createAdminClient() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_SECRET_KEY!, // 사용자 요청에 따라 .env의 secretkey(SUPABASE_SECRET_KEY)를 사용합니다.
-    {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_SECRET_KEY;
+
+  if (!url || !key) {
+    return createServerClient("", "", { cookies: { getAll: () => [], setAll: () => {} } });
+  }
+
+  return createServerClient(url, key, {
       cookies: {
         getAll() {
           return [];

@@ -101,70 +101,6 @@ async function getTripsByTripIds(tripIds: string[]): Promise<Trips> {
   return trips
 }
 
-// ---------------- 지도에 마커 + Polyline 표시 (클러스터러 적용)
-function showTripsOnMap(map: any, trips: Trips) {
-  const bounds = new window.kakao.maps.LatLngBounds()
-  let hasCoords = false
-
-  const clusterer = new window.kakao.maps.MarkerClusterer({
-    map: map,
-    averageCenter: true,
-    minLevel: 1,
-  })
-
-  Object.keys(trips).forEach((tripId) => {
-    const items = trips[tripId]
-    const coords: any[] = []
-
-    items.forEach((item) => {
-      const { latitude, longitude, visit_order } = item
-      const lat = Number(latitude)
-      const lng = Number(longitude)
-      if (isNaN(lat) || isNaN(lng)) return
-
-      const position = new window.kakao.maps.LatLng(lat, lng)
-      coords.push(position)
-
-      bounds.extend(position)
-      hasCoords = true
-
-      // SVG 마커 생성
-      const svgMarker = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36">
-          <circle cx="18" cy="18" r="16" fill="${getColorByTripId(
-            tripId,
-          )}" stroke="#fff" stroke-width="3"/>
-          <text x="18" y="22" font-size="14" font-family="Arial" fill="#fff" text-anchor="middle" alignment-baseline="middle">${visit_order}</text>
-        </svg>`
-      const blob = new Blob([svgMarker], { type: 'image/svg+xml' })
-      const url = URL.createObjectURL(blob)
-
-      const marker = new window.kakao.maps.Marker({
-        position,
-        image: new window.kakao.maps.MarkerImage(
-          url,
-          new window.kakao.maps.Size(36, 36),
-        ),
-      })
-
-      clusterer.addMarker(marker)
-    })
-
-    const polyline = new window.kakao.maps.Polyline({
-      path: coords,
-      strokeWeight: 4,
-      strokeColor: getColorByTripId(tripId),
-      strokeOpacity: 0.8,
-      strokeStyle: 'solid',
-    })
-    polyline.setMap(map)
-  })
-
-  if (hasCoords) {
-    map.setBounds(bounds)
-  }
-}
-
 // ---------------- TraceMap 컴포넌트
 interface KakaoTripMapProps {
   userId: string
@@ -209,6 +145,70 @@ export default function TraceMap({ userId, tripIds }: KakaoTripMapProps) {
   }, [userId, tripIds])
 
   const router = useRouter()
+
+  // ---------------- 지도에 마커 + Polyline 표시 (클러스터러 적용)
+  function showTripsOnMap(map: any, trips: Trips) {
+    const bounds = new window.kakao.maps.LatLngBounds()
+    let hasCoords = false
+
+    const clusterer: any = new window.kakao.maps.MarkerClusterer({
+      map: map,
+      averageCenter: true,
+      minLevel: 1,
+    })
+
+    Object.keys(trips).forEach((tripId) => {
+      const items = trips[tripId]
+      const coords: any[] = []
+
+      items.forEach((item) => {
+        const { latitude, longitude, visit_order } = item
+        const lat = Number(latitude)
+        const lng = Number(longitude)
+        if (isNaN(lat) || isNaN(lng)) return
+
+        const position = new window.kakao.maps.LatLng(lat, lng)
+        coords.push(position)
+
+        bounds.extend(position)
+        hasCoords = true
+
+        // SVG 마커 생성
+        const svgMarker = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+          <circle cx="18" cy="18" r="16" fill="${getColorByTripId(
+            tripId,
+          )}" stroke="#fff" stroke-width="3"/>
+          <text x="18" y="22" font-size="14" font-family="Arial" fill="#fff" text-anchor="middle" alignment-baseline="middle">${visit_order}</text>
+        </svg>`
+        const blob = new Blob([svgMarker], { type: 'image/svg+xml' })
+        const url = URL.createObjectURL(blob)
+
+        const marker = new window.kakao.maps.Marker({
+          position,
+          image: new window.kakao.maps.MarkerImage(
+            url,
+            new window.kakao.maps.Size(36, 36),
+          ),
+        })
+
+        clusterer.addMarker(marker)
+      })
+
+      const polyline = new window.kakao.maps.Polyline({
+        path: coords,
+        strokeWeight: 4,
+        strokeColor: getColorByTripId(tripId),
+        strokeOpacity: 0.8,
+        strokeStyle: 'solid',
+      })
+      polyline.setMap(map)
+    })
+
+    if (hasCoords) {
+      map.setBounds(bounds)
+    }
+  }
 
   return (
     <div className="relative w-4/5 max-w-6xl h-full mx-auto border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
