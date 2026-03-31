@@ -159,7 +159,12 @@ export default function MyTripsSidebar({
           .eq('id', tripId)
 
         if (error) {
-          alert('일정 삭제 중 오류가 발생했습니다.')
+          openModal({
+            type: 'alert',
+            variant: 'danger',
+            title: '삭제 실패',
+            description: '일정 삭제 중 오류가 발생했습니다.',
+          })
         } else {
           // 로컬 상태에서 삭제 반영
           setTrips(prev => prev.filter(t => t.id !== tripId))

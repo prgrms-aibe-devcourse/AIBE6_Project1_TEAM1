@@ -171,7 +171,12 @@ export default function TriplogsPage() {
           }
         } catch (error) {
           console.error('Error deleting trip record:', error)
-          alert('기록 삭제 중 오류가 발생했습니다.')
+          openModal({
+            type: 'alert',
+            variant: 'danger',
+            title: '삭제 오류',
+            description: '기록 삭제 중 오류가 발생했습니다.',
+          })
         }
       },
     })

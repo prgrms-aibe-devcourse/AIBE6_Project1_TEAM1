@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
+import { useModalStore } from "@/store/useModalStore";
 
 // 브라우저 화면에서 동작하는 함수들이므로, 클라이언트용 Supabase를 가져옵니다.
 const supabase = createClient();
@@ -23,7 +24,12 @@ export const handleSocialLogin = async (provider: 'google' | 'kakao') => {
 
   if (error) {
     console.error('로그인 에러:', error)
-    alert('로그인 중 오류가 발생했습니다.')
+    useModalStore.getState().openModal({
+      type: 'alert',
+      variant: 'danger',
+      title: '로그인 실패',
+      description: '로그인 중 오류가 발생했습니다.',
+    })
     return
   }
 }

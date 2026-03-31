@@ -64,17 +64,33 @@ export default function SettingsPage() {
         try {
           const res = await fetch("/api/auth/withdraw", { method: "POST" });
           if (res.ok) {
-            alert("그동안 뚜벅을 이용해 주셔서 감사합니다. 안녕히 가세요!");
-            // 로그아웃 처리 후 홈으로 이동
-            await supabase.auth.signOut();
-            router.push("/");
-            router.refresh();
+            useModalStore.getState().openModal({
+              type: "alert",
+              variant: "primary",
+              title: "탈퇴 완료",
+              description: "그동안 뚜벅을 이용해 주셔서 감사합니다. 안녕히 가세요!",
+              onConfirm: async () => {
+                await supabase.auth.signOut();
+                router.push("/");
+                router.refresh();
+              }
+            });
           } else {
             const data = await res.json();
-            alert("탈퇴 처리 중 오류가 발생했습니다: " + data.error);
+            useModalStore.getState().openModal({
+              type: "alert",
+              variant: "danger",
+              title: "탈퇴 실패",
+              description: "탈퇴 처리 중 오류가 발생했습니다: " + data.error
+            });
           }
         } catch (error) {
-          alert("네트워크 오류로 탈퇴 처리에 실패했습니다.");
+          useModalStore.getState().openModal({
+            type: "alert",
+            variant: "danger",
+            title: "네트워크 오류",
+            description: "네트워크 오류로 탈퇴 처리에 실패했습니다."
+          });
         } finally {
           setIsLoading(false);
         }

@@ -21,6 +21,7 @@ import {
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
+import { useModalStore } from '@/store/useModalStore'
 
 interface Place {
   id: number
@@ -585,6 +586,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
   )
   const [visibleReviewsCount, setVisibleReviewsCount] = useState(3)
   const [isCompleted, setIsCompleted] = useState(false)
+  const { openModal } = useModalStore()
 
   const supabase = createClient()
 
@@ -961,11 +963,21 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
 
       if (itemsError) throw itemsError
 
-      alert('내 보관함에 일정이 추가되었습니다!')
-      router.push(`/plan?id=${newTrip.id}`)
+      openModal({
+        type: 'alert',
+        variant: 'primary',
+        title: '저장 완료',
+        description: '내 보관함에 일정이 추가되었습니다!',
+        onConfirm: () => router.push(`/plan?id=${newTrip.id}`),
+      })
     } catch (error) {
       console.error('일정 복사 중 오류:', error)
-      alert('일정을 저장하는 중 오류가 발생했습니다.')
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '저장 실패',
+        description: '일정을 저장하는 중 오류가 발생했습니다.',
+      })
     } finally {
       setIsSaving(false)
     }

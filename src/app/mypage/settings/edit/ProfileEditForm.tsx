@@ -2,6 +2,7 @@
 
 import { removeMediaFile, uploadSingleImage } from "@/utils/mediaUploader";
 import { createClient } from "@/utils/supabase/client";
+import { useModalStore } from "@/store/useModalStore";
 import { ArrowLeft, Camera, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -9,6 +10,7 @@ import { useRef, useState } from "react";
 export default function ProfileEditForm({ user, profile }: any) {
   const router = useRouter();
   const supabase = createClient();
+  const { openModal } = useModalStore();
   
   // 파일 입력창을 가려두고, 프로필 이미지를 클릭했을 때 파일 창이 뜨도록 연결해주는 리액트 참조(Ref)입니다.
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -85,7 +87,12 @@ export default function ProfileEditForm({ user, profile }: any) {
     if (newPassword && confirmPassword) {
       // 새 비밀번호 두 개가 똑같은지 비교
       if (newPassword !== confirmPassword) {
-        alert("새 비밀번호와 확인 비밀번호가 일치하지 않습니다.");
+        openModal({
+          type: "alert",
+          variant: "danger",
+          title: "비밀번호 불일치",
+          description: "새 비밀번호와 확인 비밀번호가 일치하지 않습니다.",
+        });
         setIsLoading(false);
         return; // 일치하지 않으면 바로 함수를 멈춥니다 (저장 실패)
       }
@@ -95,15 +102,27 @@ export default function ProfileEditForm({ user, profile }: any) {
         password: newPassword
       });
       if (passwordError) {
-        alert("비밀번호 변경 실패: " + passwordError.message);
+        openModal({
+          type: "alert",
+          variant: "danger",
+          title: "비밀번호 변경 실패",
+          description: passwordError.message,
+        });
       }
     }
 
     // 위 1,2,3 단계 작업이 모두 성공적으로 끝났다면, 로딩을 끄고 마이페이지 화면으로 돌아갑니다.
     setIsLoading(false);
-    alert("소중한 프로필 정보가 성공적으로 업데이트 되었습니다! 🎉");
-    router.push("/mypage"); // 마이페이지 홈으로 강제 이동
-    router.refresh(); // 최신 프로필 사진과 닉네임이 반영되도록 전체 리프레시를 한 번 시켜줍니다.
+    openModal({
+      type: "alert",
+      variant: "primary",
+      title: "프로필 업데이트",
+      description: "소중한 프로필 정보가 성공적으로 업데이트 되었습니다! 🎉",
+      onConfirm: () => {
+        router.push("/mypage"); // 마이페이지 홈으로 강제 이동
+        router.refresh(); // 최신 프로필 사진과 닉네임이 반영되도록 전체 리프레시를 한 번 시켜줍니다.
+      }
+    });
   };
 
   // 화면에 보여줄 사진을 결정합니다: 방금 막 선택한 미리보기용(previewUrl)이 있다면 그걸 먼저 보여주고, 없다면 DB에 저장되어있던 사진(avatarUrl)을 보여줍니다.

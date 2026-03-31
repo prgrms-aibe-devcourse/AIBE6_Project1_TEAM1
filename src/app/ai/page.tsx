@@ -36,6 +36,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useModalStore } from '@/store/useModalStore'
 
 // ─── 상수 정의 ───
 
@@ -130,6 +131,7 @@ export default function AIPage() {
     { name: string; access: string }[]
   >([])
   const [isLoadingPopular, setIsLoadingPopular] = useState(true)
+  const { openModal } = useModalStore()
 
   // ─── 인기 출발지 로드 (Step 1 마운트 시) ───
   useEffect(() => {
@@ -235,8 +237,13 @@ export default function AIPage() {
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) {
-        alert('일정을 저장하려면 로그인이 필요합니다.')
-        router.push('/login')
+        openModal({
+          type: 'alert',
+          variant: 'danger',
+          title: '로그인 필요',
+          description: '일정을 저장하려면 로그인이 필요합니다.',
+          onConfirm: () => router.push('/login'),
+        })
         return
       }
 
@@ -325,9 +332,12 @@ export default function AIPage() {
       }
 
       if (resolvedPlaces.length === 0) {
-        alert(
-          '추천된 장소들의 위치 정보를 찾을 수 없어 일정을 생성할 수 없습니다.',
-        )
+        openModal({
+          type: 'alert',
+          variant: 'danger',
+          title: '장소 찾기 실패',
+          description: '추천된 장소들의 위치 정보를 찾을 수 없어 일정을 생성할 수 없습니다.',
+        })
         return
       }
 
@@ -435,11 +445,21 @@ export default function AIPage() {
       }
 
       // 4. 완료 후 일정 편집 페이지로 이동
-      alert('AI 추천 코스가 내 일정에 추가되었습니다!')
-      router.push(`/plan?id=${tripData.id}`)
+      openModal({
+        type: 'alert',
+        variant: 'primary',
+        title: '저장 완료',
+        description: 'AI 추천 코스가 내 일정에 추가되었습니다!',
+        onConfirm: () => router.push(`/plan?id=${tripData.id}`),
+      })
     } catch (err) {
       console.error('일정 추가 오류:', err)
-      alert('일정 추가 중 오류가 발생했습니다.')
+      openModal({
+        type: 'alert',
+        variant: 'danger',
+        title: '설정 오류',
+        description: '일정 추가 중 오류가 발생했습니다.',
+      })
     } finally {
       setIsAddingToSchedule(false)
     }

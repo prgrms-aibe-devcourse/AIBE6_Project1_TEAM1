@@ -1,3 +1,4 @@
+import { useModalStore } from "@/store/useModalStore";
 import { createClient } from "./supabase/client";
 
 /**
@@ -34,7 +35,12 @@ export const uploadMediaFiles = async (
     // 업로드 중 에러가 발생한 경우 (용량 초과, 형식 오류 등)
     if (error) {
       console.error("업로드 에러:", error);
-      alert("파일 형식 및 용량을 확인해주세요");
+      useModalStore.getState().openModal({
+        type: "alert",
+        variant: "danger",
+        title: "업로드 실패",
+        description: "파일 형식 및 용량을 확인해주세요.",
+      });
       continue; // 에러가 난 파일은 건너뛰고 다음 파일 업로드를 계속 진행
     }
 
@@ -76,7 +82,12 @@ export const removeMediaFile = async (
   // 삭제 중 에러 발생 시 처리
   if (error) {
     console.error("삭제 에러:", error);
-    alert("미디어 파일 삭제 실패");
+    useModalStore.getState().openModal({
+      type: "alert",
+      variant: "danger",
+      title: "삭제 실패",
+      description: "미디어 파일 삭제에 실패했습니다.",
+    });
     return false;
   }
 
@@ -114,7 +125,12 @@ export const uploadSingleImage = async (
 
   if (error) {
     console.error("프로필 업로드 에러:", error);
-    alert("이미지 업로드에 실패했습니다. (버킷 설정을 확인해주세요)");
+    useModalStore.getState().openModal({
+      type: "alert",
+      variant: "danger",
+      title: "업로드 실패",
+      description: "이미지 업로드에 실패했습니다. (버킷 설정을 확인해주세요)",
+    });
     return null;
   }
 
