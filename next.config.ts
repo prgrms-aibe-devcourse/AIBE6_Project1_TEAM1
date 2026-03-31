@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
       'source.unsplash.com',
       'images.unsplash.com',
       'ddubuk.supabase.co',
+      'lh3.googleusercontent.com',
+      'k.kakaocdn.net',
+      't1.daumcdn.net',
     ],
   },
 }

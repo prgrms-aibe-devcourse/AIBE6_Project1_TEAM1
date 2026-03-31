@@ -20,6 +20,10 @@ interface SavedCourse {
   rating: number;
   reviewCount: number;
   tags?: string[];
+  author?: {
+    nickname: string;
+    avatarUrl?: string | null;
+  };
 }
 
 export default function BookmarksPage() {
@@ -47,7 +51,11 @@ export default function BookmarksPage() {
             trips_id,
             created_at,
             trips (
-              *
+              *,
+              profiles (
+                nickname,
+                avatar_url
+              )
             )
           `)
           .eq('user_id', userId)
@@ -111,7 +119,11 @@ export default function BookmarksPage() {
             distance: trip.total_distance || 0,
             rating: Number(avgRating.toFixed(1)),
             reviewCount: tripReviews.length,
-            tags: tagsArray
+            tags: tagsArray,
+            author: trip.profiles ? {
+              nickname: trip.profiles.nickname,
+              avatarUrl: trip.profiles.avatar_url
+            } : undefined
           };
         });
 
@@ -237,6 +249,7 @@ export default function BookmarksPage() {
                     onKeep={handleToggleBookmark}
                     onClick={() => router.push(`/search/${course.id}`)}
                     tags={course.tags}
+                    author={course.author}
                   />
                 </motion.div>
               ))}
