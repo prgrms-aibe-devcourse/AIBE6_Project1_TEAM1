@@ -106,7 +106,7 @@ function ReviewsPageContent() {
         const processedReviews: Review[] = (data ?? []).map((row) => ({
           id: String(row.id),
           trip_id: Number(row.trip_id),
-          img_url: row.img_url || '/image/jeju-east.png',
+          img_url: row.img_url || '/images/jeju-east.png',
           rating: row.rating ?? 0,
           content: row.content ?? '',
           created_at: row.created_at ?? '',
