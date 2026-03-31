@@ -216,6 +216,7 @@ export default function PlaceSearchSection() {
         .select(
           'id, user_id, title, start_date, end_date, is_public, total_travel_time, total_cost, total_distance, is_saved, img_url',
         )
+        .eq('is_public', true)
         .order('start_date', { ascending: true })
 
       if (trimmedKeyword) {
@@ -232,6 +233,7 @@ export default function PlaceSearchSection() {
         .select(
           'id, user_id, title, start_date, end_date, is_public, total_travel_time, total_cost, total_distance, is_saved, img_url',
         )
+        .eq('is_public', true)
         .order('start_date', { ascending: true })
 
       if (allTripsError) throw allTripsError

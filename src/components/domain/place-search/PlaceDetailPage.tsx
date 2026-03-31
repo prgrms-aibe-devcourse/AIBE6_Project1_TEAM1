@@ -46,6 +46,7 @@ interface Trip {
   total_distance: number | null
   is_saved: boolean | null
   img_url: string | null
+  tags: string | null
 }
 
 interface TripItemRow {
@@ -634,7 +635,7 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
         const { data: tripRow, error: tripError } = await supabase
           .from('trips')
           .select(
-            'id, user_id, title, start_date, end_date, is_public, total_travel_time, total_cost, total_distance, is_saved, img_url',
+            'id, user_id, title, start_date, end_date, is_public, total_travel_time, total_cost, total_distance, is_saved, img_url, tags',
           )
           .eq('id', tripId)
           .maybeSingle()
@@ -942,6 +943,8 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
           total_distance: trip.total_distance,
           total_travel_time: trip.total_travel_time,
           total_cost: trip.total_cost,
+          img_url: trip.img_url,
+          tags: trip.tags,
         })
         .select()
         .single()
