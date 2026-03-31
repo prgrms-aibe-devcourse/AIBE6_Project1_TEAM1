@@ -31,6 +31,7 @@ interface TripLog {
     shade: '없음' | '적음' | '보통' | '충분함'
   }
   tags?: string[]
+  reviewId?: string
 }
 
 export default function TriplogsPage() {
@@ -68,6 +69,15 @@ export default function TriplogsPage() {
         }
 
         const tripIds = (rawTrips as any[]).map((t) => t.id)
+
+        // 리뷰 테이블에서 리뷰 데이터 가져오기
+        const { data: reviewsData } = await supabase
+          .from('reviews')
+          .select('id, trip_id')
+          .in('trip_id', tripIds)
+          .eq('user_id', userId)
+
+        const reviewMap = new Map(reviewsData?.map((r) => [r.trip_id, r.id]))
 
         // 2. 여행 아이템(장소 개수) 가져오기
         const { data: itemsData } = await supabase
@@ -109,6 +119,7 @@ export default function TriplogsPage() {
               shade: '보통',
             },
             tags: [],
+            reviewId: reviewMap.get(trip.id),
           }
         })
 
@@ -150,7 +161,6 @@ export default function TriplogsPage() {
               .from('travelers')
               .update({
                 status: 'ongoing',
-                has_visited: false,
               })
               .eq('id', traveler.id)
 
@@ -308,6 +318,21 @@ export default function TriplogsPage() {
                         title="기록 삭제"
                       >
                         <Trash2 className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (trip.reviewId) {
+                            router.push(
+                              `/review/edit?reviewId=${trip.reviewId}`,
+                            )
+                          } else {
+                            router.push(`/review/write?tripId=${trip.id}`)
+                          }
+                        }}
+                        className="absolute bottom-4 right-4 z-20 px-3 py-1 bg-purple-500 text-white rounded-md shadow-md hover:bg-purple-600 transition-opacity opacity-100 group-hover:opacity-100"
+                      >
+                        {trip.reviewId ? '리뷰 수정' : '리뷰 쓰기'}
                       </button>
                     </motion.div>
                   ))}
