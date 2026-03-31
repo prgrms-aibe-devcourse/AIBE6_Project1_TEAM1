@@ -27,6 +27,7 @@ interface Review {
   id: string // 리뷰 고유 ID
   trip_id: number // 연결된 여행 ID
   rating: number // 별점 (1~5)
+  img_url: string // 코스 이미지
   content: string // 리뷰 내용
   created_at: string // 작성일자 (ISO string)
   trips: {
@@ -89,7 +90,8 @@ function ReviewsPageContent() {
             trips (
               title,
               start_date,
-              end_date
+              end_date,
+              img_url
             ),
             images (
               file_url
@@ -104,6 +106,7 @@ function ReviewsPageContent() {
         const processedReviews: Review[] = (data ?? []).map((row) => ({
           id: String(row.id),
           trip_id: Number(row.trip_id),
+          img_url: row.img_url || '/image/jeju-east.png',
           rating: row.rating ?? 0,
           content: row.content ?? '',
           created_at: row.created_at ?? '',
@@ -287,7 +290,7 @@ function ReviewsPageContent() {
                     {/* Left: Course Image */}
                     <div className="relative h-20 w-20 overflow-hidden rounded-xl border border-gray-50 dark:border-gray-800 flex-shrink-0">
                       <Image
-                        src="/images/jeju-east.png"
+                        src={`${review.img_url}`}
                         alt={review.trips?.title || 'Trip'}
                         fill
                         className="object-cover transition-transform group-hover:scale-105"

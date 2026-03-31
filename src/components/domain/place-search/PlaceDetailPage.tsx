@@ -1,5 +1,6 @@
 'use client'
 
+import { useModalStore } from '@/store/useModalStore'
 import { createClient } from '@/utils/supabase/client'
 import {
   Bookmark,
@@ -21,7 +22,6 @@ import {
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
-import { useModalStore } from '@/store/useModalStore'
 
 interface Place {
   id: number
@@ -1323,7 +1323,6 @@ export default function PlaceDetailPage({ tripId }: PlaceDetailPageProps) {
               </div>
 
               {userId &&
-                isCompleted &&
                 (userReviewId ? (
                   <button
                     type="button"

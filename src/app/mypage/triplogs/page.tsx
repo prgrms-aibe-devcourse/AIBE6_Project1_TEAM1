@@ -103,7 +103,7 @@ export default function TriplogsPage() {
             date: trip.start_date
               ? new Date(trip.start_date).toLocaleDateString()
               : '-',
-            imageUrl: '/images/jeju-east.png',
+            imageUrl: trip.img_url,
             category: '추억 기록',
             isHot: false,
             summary: {
@@ -295,11 +295,12 @@ export default function TriplogsPage() {
                   {filteredHistory.map((trip, index) => (
                     <motion.div
                       key={trip.id}
+                      onClick={() => router.push(`/search/${trip.id}`)}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ delay: index * 0.05 }}
-                      className="relative group"
+                      className="relative group cursor-pointer"
                     >
                       <TravelCard
                         id={trip.id}
