@@ -8,8 +8,8 @@ import {
   MapPin,
   Route,
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type {
   Trip,
@@ -273,7 +273,9 @@ export default function PlaceCard({
             type="button"
             onClick={handleToggleBookmarkAction}
             className={`absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/80 shadow-sm backdrop-blur-sm transition-all hover:scale-110 active:scale-95 ${
-              isBookmarked ? 'text-purple-600 dark:text-purple-400' : 'text-gray-700 dark:text-gray-300'
+              isBookmarked
+                ? 'text-purple-600 dark:text-purple-400'
+                : 'text-gray-700 dark:text-gray-300'
             }`}
             aria-label={isBookmarked ? '북마크 해제' : '북마크 추가'}
           >
